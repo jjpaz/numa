@@ -1514,3 +1514,547 @@
     font-size: 15px;
   }
 }
+
+/* ───────── My garden: the sky, the meadow, the ground ───────── */
+.mg-page {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+.mg-sky {
+  padding-top: clamp(24px, 4vw, 48px);
+}
+.pt-app .mg-tagline {
+  margin-top: 10px;
+  font-family: var(--n-font-display);
+  font-size: var(--n-text-28);
+  line-height: 1.2;
+  letter-spacing: var(--n-tracking-display);
+}
+.pt-app .mg-facts {
+  max-width: 60ch;
+  margin-top: 12px;
+  font-size: var(--n-text-18);
+  font-variant-numeric: tabular-nums;
+  color: var(--n-forest-soft);
+}
+.mg-anchors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 28px;
+  margin-top: 18px;
+}
+.mg-anchors a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 500;
+  color: var(--n-forest);
+  text-decoration: underline;
+  text-decoration-color: rgb(47 58 46 / 0.35);
+  text-underline-offset: 6px;
+}
+.mg-anchors a:hover {
+  text-decoration-color: currentColor;
+}
+.mg-sky .pt-error {
+  margin-top: 16px;
+}
+/* The meadow's soil is the horizon: below it the page stays green to the end. */
+.mg-land {
+  view-transition-name: ground;
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  margin-top: clamp(4px, 2vw, 20px);
+}
+.mg-meadow {
+  margin-bottom: -1px;
+}
+.mg-ground {
+  flex: 1 0 auto;
+  background: var(--n-ground);
+  color: var(--n-on-ground);
+}
+.mg-ground :where(p, h2, h3, h4, label, li, dt, dd, span) {
+  color: inherit;
+}
+.pt-app .mg-ground :where(a, button, summary, input, textarea, select):focus-visible {
+  outline: 2px solid var(--n-on-ground);
+  outline-offset: 3px;
+}
+.mg-ground ::selection {
+  background: var(--n-butter);
+  color: var(--n-forest);
+}
+.mg-section {
+  scroll-margin-top: 12px;
+  padding-block: clamp(44px, 6vw, 80px);
+}
+.mg-section + .mg-section {
+  border-top: 1px solid rgb(246 239 221 / 0.22);
+}
+.mg-section h2 {
+  font-size: clamp(32px, 3.4vw, 40px);
+  line-height: 1.1;
+}
+.mg-section h2:focus {
+  outline: none;
+}
+.pt-app .mg-intro {
+  max-width: 60ch;
+  margin-top: 10px;
+  font-size: var(--n-text-18);
+  color: var(--n-on-ground-soft);
+}
+.mg-note {
+  margin-left: 8px;
+  font-size: var(--n-text-14);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.mg-h3 {
+  font-family: var(--n-font-display);
+  font-weight: 400;
+  font-size: var(--n-text-21);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+.mg-h4 {
+  font-size: var(--n-text-18);
+  font-weight: 600;
+  line-height: 1.35;
+}
+.pt-app .mg-text {
+  max-width: 64ch;
+  margin-top: 8px;
+  color: var(--n-on-ground-soft);
+}
+.pt-app .mg-small {
+  max-width: 80ch;
+  margin-top: 14px;
+  font-size: var(--n-text-14);
+  color: var(--n-on-ground-soft);
+}
+.mg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  margin-top: 16px;
+}
+.mg-ground .pt-error,
+.mg-ground .loading {
+  margin-top: 16px;
+  padding: 0;
+  color: var(--n-on-ground);
+}
+.mg-ground .pt-error svg {
+  color: var(--n-butter);
+}
+.mg-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--n-text-16);
+  font-weight: 500;
+  color: var(--n-on-ground);
+  text-decoration: underline;
+  text-decoration-color: rgb(246 239 221 / 0.5);
+  text-underline-offset: 6px;
+  cursor: pointer;
+}
+.mg-link:hover {
+  text-decoration-color: currentColor;
+}
+.mg-link:disabled,
+.mg-pebble:disabled,
+.mg-switch:disabled {
+  cursor: progress;
+}
+.mg-pebble {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 22px;
+  border: 1px solid var(--n-on-ground);
+  border-radius: var(--n-radius-pebble);
+  background: transparent;
+  font-size: var(--n-text-16);
+  font-weight: 500;
+  color: var(--n-on-ground);
+  cursor: pointer;
+}
+.mg-pebble:hover:not(:disabled) {
+  background: rgb(246 239 221 / 0.12);
+}
+.mg-pebble[aria-pressed="true"] {
+  background: var(--n-on-ground);
+  color: var(--n-forest);
+}
+.mg-pebble:disabled {
+  opacity: 0.7;
+}
+
+/* What helps: a row per activity, a thin bar, the count in words. */
+.mg-helps {
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid rgb(246 239 221 / 0.22);
+}
+.mg-helps li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(120px, 240px);
+  align-items: center;
+  gap: 8px 28px;
+  padding: 20px 0;
+  border-bottom: 1px solid rgb(246 239 221 / 0.22);
+}
+.mg-helps-name {
+  font-size: var(--n-text-21);
+  font-weight: 600;
+  line-height: 1.3;
+}
+.mg-helps-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--n-on-ground-soft) !important;
+}
+.mg-bar {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: rgb(246 239 221 / 0.25);
+  overflow: hidden;
+}
+.mg-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--n-on-ground);
+}
+.mg-empty {
+  margin-top: 20px;
+}
+.pt-app .mg-empty p {
+  max-width: 60ch;
+  font-size: var(--n-text-18);
+}
+
+/* Connections: today's values in one row, then the future, as rows. */
+.ctx-list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 20px 24px;
+  margin: 28px 0 0;
+}
+.ctx-list .context-card {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 4px;
+}
+.ctx-list dt {
+  font-size: var(--n-text-14);
+  color: var(--n-on-ground-soft) !important;
+}
+.ctx-list dd {
+  margin: 0;
+  font-family: var(--n-font-display);
+  font-size: var(--n-text-28);
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.mg-future-title {
+  margin-top: clamp(36px, 4vw, 52px);
+}
+.cx-list {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid rgb(246 239 221 / 0.22);
+}
+.cx-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 12rem) minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 4px 24px;
+  padding: 18px 0;
+  border-bottom: 1px solid rgb(246 239 221 / 0.22);
+}
+.cx-name {
+  font-family: var(--n-font-display);
+  font-size: var(--n-text-21);
+}
+.cx-text {
+  color: var(--n-on-ground-soft) !important;
+}
+.cx-state {
+  font-size: var(--n-text-14);
+  color: var(--n-on-ground-soft) !important;
+}
+
+/* Your space: modules as rows with a switch; their controls open below. */
+.mg-invitation {
+  margin-top: 28px;
+  padding-left: 20px;
+  border-left: 3px solid var(--n-butter);
+}
+.mg-modules {
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid rgb(246 239 221 / 0.22);
+}
+.mg-modules > li {
+  padding: 22px 0;
+  border-bottom: 1px solid rgb(246 239 221 / 0.22);
+}
+.mg-module-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px 32px;
+}
+.mg-module-text {
+  max-width: 62ch;
+  scroll-margin-top: 12px;
+}
+.pt-app .mg-module-text p {
+  margin-top: 4px;
+  color: var(--n-on-ground-soft);
+}
+.mg-module-text h3 {
+  scroll-margin-top: 16px;
+}
+/* An accessible switch: role="switch", aria-checked, the state in words. */
+.mg-switch {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--n-text-16);
+  color: var(--n-on-ground-soft);
+  cursor: pointer;
+}
+.mg-track {
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 28px;
+  border: 1.5px solid var(--n-on-ground);
+  border-radius: var(--n-radius-pebble);
+}
+.mg-knob {
+  position: absolute;
+  top: 3.5px;
+  left: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--n-on-ground);
+  transition: left 200ms var(--n-ease);
+}
+.mg-switch[aria-checked="true"] {
+  font-weight: 600;
+  color: var(--n-on-ground);
+}
+.mg-switch[aria-checked="true"] .mg-track {
+  background: var(--n-on-ground);
+}
+.mg-switch[aria-checked="true"] .mg-knob {
+  left: 21px;
+  background: var(--n-ground);
+}
+.mg-state {
+  min-width: 7.5em;
+  text-align: left;
+}
+.mg-module-more {
+  max-width: 760px;
+  margin-top: 18px;
+  padding-left: 20px;
+  border-left: 1px solid rgb(246 239 221 / 0.3);
+}
+.mg-label {
+  display: block;
+  margin: 18px 0 8px;
+  font-size: var(--n-text-16);
+  font-weight: 600;
+}
+.mg-h4 + .mg-label {
+  margin-top: 10px;
+}
+.mg-field {
+  display: block;
+  width: 100%;
+  max-width: 34rem;
+  min-height: 48px;
+  margin: 0;
+  padding: 11px 14px;
+  border: 0;
+  border-radius: var(--n-radius-field);
+  background: var(--n-oat);
+  box-shadow: none;
+  font-size: var(--n-text-16);
+  line-height: 1.5;
+  color: var(--n-forest);
+}
+textarea.mg-field {
+  max-width: 60ch;
+  resize: vertical;
+}
+.mg-field::placeholder {
+  color: var(--n-forest-soft);
+}
+.pt-app .mg-field:focus {
+  border: 0;
+  box-shadow: none;
+  outline: 2px solid var(--n-on-ground);
+  outline-offset: 2px;
+}
+.mg-form {
+  max-width: 34rem;
+}
+.mg-habit {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px 32px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid rgb(246 239 221 / 0.22);
+}
+.mg-habit-name {
+  font-family: var(--n-font-display);
+  font-size: var(--n-text-21);
+}
+.mg-habit .mg-small {
+  margin-top: 4px;
+}
+.mg-prefs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 28px;
+  margin-top: 10px;
+}
+.mg-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  font-weight: 400;
+  cursor: pointer;
+}
+.mg-check input {
+  flex: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  border: 1.5px solid var(--n-on-ground);
+  border-radius: 6px;
+  background: transparent center / 14px 14px no-repeat;
+  cursor: pointer;
+}
+.mg-check input:checked {
+  background-color: var(--n-on-ground);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2.5 7.4l3 3 6-6.6' fill='none' stroke='%234e6b45' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.mg-check input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+/* The voice chart keeps its own paper, so its lines read as on the clinic's. */
+.mg-chart {
+  margin-top: 16px;
+  padding: clamp(14px, 2vw, 24px);
+  border-radius: 20px;
+  background: var(--n-oat);
+  color: var(--n-forest);
+}
+.mg-chart :where(p, span, text) {
+  color: var(--n-forest);
+}
+.cl-chart.is-patient .cl-chart-dot.is-outside {
+  fill: var(--n-forest);
+}
+.cl-chart.is-patient .cl-chart-ring {
+  stroke: var(--n-forest);
+}
+.mg-experiments {
+  margin-top: clamp(36px, 4vw, 52px);
+}
+.mg-exp {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid rgb(246 239 221 / 0.22);
+}
+.pt-app .mg-exp-state {
+  margin-bottom: 6px;
+  font-size: var(--n-text-14);
+  font-weight: 600;
+  color: var(--n-on-ground-soft);
+}
+.mg-exp-quote {
+  max-width: 60ch;
+  margin: 12px 0 0;
+  padding-left: 18px;
+  border-left: 3px solid var(--n-butter);
+  font-family: var(--n-font-display);
+  font-size: var(--n-text-18);
+  line-height: 1.5;
+}
+.mg-foot {
+  padding-block: 36px 40px;
+  border-top: 1px solid rgb(246 239 221 / 0.22);
+}
+.pt-app .mg-foot p {
+  font-size: var(--n-text-14);
+  color: var(--n-on-ground-soft);
+}
+.mg-foot p + p {
+  margin-top: 8px;
+}
+
+@media (max-width: 900px) {
+  .ctx-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 720px) {
+  .ctx-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .mg-helps li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .mg-bar {
+    grid-column: 1 / -1;
+  }
+  .mg-helps-name {
+    font-size: var(--n-text-18);
+  }
+  .cx-list li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .mg-module-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .mg-module-more {
+    padding-left: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mg-knob {
+    transition: none;
+  }
+}

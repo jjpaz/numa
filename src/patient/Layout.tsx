@@ -177,7 +177,7 @@ function PatientFrame() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
   return (
-    <div className={"pt-app garden-app is-" + place}>
+    <div className={"pt-app is-" + place}>
       <a className="pt-skip" href="#pt-main">
         Skip to content
       </a>

@@ -243,7 +243,7 @@ export function Meadow({
   const grassHeight = compact ? height * 0.56 : height * (mobile ? 0.36 : 0.32);
   // How big a plant of scale 1 is. Every plant stands a little above the
   // grass around it: in the low strip they peek out, in the meadow they lead.
-  const unit = compact ? 0.92 : mobile ? 1.25 : 1.85;
+  const unit = compact ? 0.92 : mobile ? 1.5 : 2.3;
   const minTop = grassHeight * (compact ? 1.05 : 1.15);
   const pad = compact ? 24 : mobile ? 20 : 48;
   const placed = plants.map((p) => {

@@ -7,7 +7,7 @@ import { Check } from "lucide-react";
 import { useAuth, useResource } from "../auth";
 import { api, json } from "../api";
 import { useGrowth } from "../growth";
-import { ErrorNotice, GrowingTextarea, Loading, Recorder } from "../components";
+import { GrowingTextarea, Loading, Problem, Recorder } from "../components";
 import { FlowLink, useFlowNavigate } from "../design/flow";
 import { PlantFigure, plantTransitionName } from "../design/Meadow";
 import {
@@ -293,7 +293,7 @@ export function EntryPage() {
   if (!entry)
     return (
       <div className="ep-wrap ep-loading">
-        <ErrorNotice message={resource.error} />
+        <Problem message={resource.error} />
         {!resource.error && <Loading />}
       </div>
     );
@@ -437,9 +437,9 @@ export function EntryPage() {
                 </p>
               )}
               {entry.analysis?.errors.map((e, i) => (
-                <ErrorNotice key={i} message={e} />
+                <Problem key={i} message={e} />
               ))}
-              <ErrorNotice message={error} />
+              <Problem message={error} />
               <div className="ep-save">
                 {sample ? (
                   <p className="ep-saved">A fictional entry, read only.</p>

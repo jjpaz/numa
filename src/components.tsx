@@ -38,6 +38,24 @@ export function ErrorNotice({ message }: { message: string }) {
     </div>
   ) : null;
 }
+/** The patient's portal: a problem in words, always with an icon. */
+export function Problem({
+  message,
+  children,
+}: {
+  message: string;
+  children?: ReactNode;
+}) {
+  return message ? (
+    <p role="alert" className="pt-error">
+      <CircleAlert size={18} aria-hidden="true" />
+      <span>
+        {message}
+        {children && <> {children}</>}
+      </span>
+    </p>
+  ) : null;
+}
 export function Loading() {
   return (
     <div className="loading">

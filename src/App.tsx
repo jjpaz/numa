@@ -19,22 +19,13 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { YourSpace, useGrowth } from "./growth";
 import { Auth, useResource } from "./auth";
 import { PatientLayout } from "./patient/Layout";
 import { Home } from "./patient/Home";
 import { EntryPage } from "./patient/Entry";
 import { JournalPage } from "./patient/Journal";
-import {
-  EntryPlant,
-  GardenHome,
-  JournalLog,
-  LoginMotif,
-  ListeningLine,
-  MyGarden,
-  TodayNotice,
-} from "./garden";
-import { reflectionFor } from "./today";
+import { MyGardenPage } from "./patient/Garden";
+import { LoginMotif } from "./loginMotif";
 import { Landing } from "./landing";
 import {
   ArrowLeft,
@@ -145,9 +136,18 @@ export function App() {
               <Route path="garden" element={<MyGardenPage />} />
               <Route path="new" element={<Navigate to="/patient" replace />} />
               <Route path="entries/:id" element={<EntryPage />} />
-              <Route path="insights" element={<InsightsPage />} />
-              <Route path="connections" element={<Connections />} />
-              <Route path="space" element={<SpacePage />} />
+              <Route
+                path="insights"
+                element={<Navigate to="/patient/garden#what-helps" replace />}
+              />
+              <Route
+                path="connections"
+                element={<Navigate to="/patient/garden#connections" replace />}
+              />
+              <Route
+                path="space"
+                element={<Navigate to="/patient/garden#your-space" replace />}
+              />
             </Route>
           </Route>
           <Route element={<Guard role="psychologist" />}>
@@ -400,263 +400,6 @@ function Login() {
     </div>
   );
 }
-function MyGardenPage() {
-  const { user } = useContext(Auth);
-  const entries = useResource<Entry[]>("/patient/entries", 5000);
-  const insights = useResource<Insights>("/patient/insights", 5000);
-  return (
-    <MyGarden
-      user={user!}
-      entries={entries.data}
-      insights={insights.data}
-      error={entries.error || insights.error}
-    />
-  );
-}
-function SpacePage() {
-  const { user } = useContext(Auth);
-  return (
-    <div className="sc-page">
-      <div className="sc-wrap">
-        <nav className="sc-back" aria-label="Back">
-          <Link to="/patient/garden">My garden</Link>
-        </nav>
-        <YourSpace user={user!} />
-      </div>
-    </div>
-  );
-}
-
-function InsightsPage() {
-  const { data, error } = useResource<Insights>("/patient/insights", 5000);
-  const { user } = useContext(Auth);
-  const { growth } = useGrowth();
-  const [preferences, setPreferences] = useState<string[] | null>(null),
-    [saved, setSaved] = useState(false),
-    [saveError, setSaveError] = useState("");
-  if (!growth) return <Loading />;
-  const back = (
-    <nav className="sc-back" aria-label="Back">
-      <Link to="/patient/garden">My garden</Link>
-    </nav>
-  );
-  if (
-    growth.simple_mode ||
-    !growth.modules.some((m) => m === "voice" || m === "patterns")
-  )
-    return (
-      <div className="sc-page">
-        <div className="sc-wrap">
-          {back}
-          <section className="insights-empty">
-            <h1>What helps</h1>
-            <p>
-              Your journal is already enough. When you’re curious, you can add
-              this view from your space.
-            </p>
-            <Link className="quiet-link" to="/patient/space">
-              Choose what to explore
-            </Link>
-          </section>
-        </div>
-      </div>
-    );
-  const labels: Record<string, string> = {
-    walk: "Short walks",
-    music: "Music",
-    breathe: "Breathing",
-    connect: "Connection",
-  };
-  return (
-    <div className="sc-page">
-      <div className="sc-wrap">
-        {back}
-        <header className="sc-head">
-          <h1>What helps</h1>
-          <p>A little understanding, built from your own experience.</p>
-        </header>
-        <ErrorNotice message={error} />
-        {!data ? (
-          <Loading />
-        ) : (
-          <>
-            {growth.modules.includes("patterns") && (
-              <section className="sc-section" aria-labelledby="in-helpful">
-                <div className="sc-section-head">
-                  <h2 id="in-helpful">What you’ve found helpful</h2>
-                  <p>Based on your feedback</p>
-                </div>
-                {data.patterns.length ? (
-                  <ul className="in-patterns">
-                    {data.patterns.map((p) => (
-                      <li key={p.kind}>
-                        <span className="in-name">{p.label}</span>
-                        <span className="in-count">
-                          {p.helpful} helpful of{" "}
-                          {plural(p.observations, "response", "responses")}
-                        </span>
-                        <span className="cl-bar" aria-hidden="true">
-                          <span
-                            style={{
-                              width: `${p.observations ? (p.helpful / p.observations) * 100 : 0}%`,
-                            }}
-                          />
-                        </span>
-                        <span className="in-text">{p.text}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="sc-quiet">
-                    Try an optional activity and leave feedback when you want.
-                    Patterns will appear here as your journal grows.
-                  </p>
-                )}
-              </section>
-            )}
-            {growth.modules.includes("voice") && (
-              <section className="sc-section" aria-labelledby="in-voice">
-                <div className="sc-section-head">
-                  <h2 id="in-voice">Your voice over time</h2>
-                  <p>
-                    {data.trend.ready
-                      ? "Personal baseline: compared only with your own first days."
-                      : "Still learning your usual range."}
-                  </p>
-                </div>
-                <ObservationChart trend={data.trend} audience="patient" />
-                <p className="sc-small">
-                  Measurements are sensitive to microphones, surroundings and
-                  how you speak. These differences are observations, not a
-                  diagnosis.
-                </p>
-              </section>
-            )}
-            <section className="sc-section" aria-labelledby="in-prefs">
-              <h2 id="in-prefs">Make this space yours</h2>
-              <p className="sc-text">
-                Which small activities would you like Numa to suggest?
-              </p>
-              <div className="in-prefs">
-                {ACTION_KINDS.map((key) => (
-                  <label className="sc-check" key={key}>
-                    <input
-                      type="checkbox"
-                      disabled={user?.source === "simulated"}
-                      checked={(preferences || data.preferences).includes(key)}
-                      onChange={(e) => {
-                        const current = preferences || data.preferences;
-                        setPreferences(
-                          e.target.checked
-                            ? [...current, key]
-                            : current.filter((k) => k !== key),
-                        );
-                        setSaved(false);
-                      }}
-                    />
-                    <span>{labels[key]}</span>
-                  </label>
-                ))}
-              </div>
-              {user?.source !== "simulated" && (
-                <div className="sc-actions">
-                  <button
-                    type="button"
-                    className="sc-pebble"
-                    disabled={!preferences?.length || saved}
-                    onClick={async () => {
-                      try {
-                        await api("/patient/preferences", {
-                          method: "PATCH",
-                          body: json({ actions: preferences }),
-                        });
-                        setSaved(true);
-                        setSaveError("");
-                      } catch (e) {
-                        setSaveError((e as Error).message);
-                      }
-                    }}
-                  >
-                    {saved ? "Preferences saved" : "Save preferences"}
-                  </button>
-                </div>
-              )}
-              <ErrorNotice message={saveError} />
-            </section>
-          </>
-        )}
-        <p className="sc-small sc-section">
-          Your words stay in your journal. Your psychologist sees trends only.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-const FUTURE_CONNECTIONS = [
-  {
-    title: "Apple Health",
-    text: "Sleep, steps and activity, with your permission.",
-  },
-  {
-    title: "Last.fm",
-    text: "Listening habits alongside your own journal observations.",
-  },
-  {
-    title: "Calendar",
-    text: "The shape of your day, with the details you choose.",
-  },
-  { title: "Wearables", text: "Possible future links to Oura or Garmin." },
-];
-
-function Connections() {
-  const { data } = useResource<Insights>("/patient/insights");
-  return (
-    <div className="sc-page">
-      <div className="sc-wrap">
-        <nav className="sc-back" aria-label="Back">
-          <Link to="/patient/space">Your space</Link>
-        </nav>
-        <header className="sc-head">
-          <h1>The context of your days.</h1>
-          <p>
-            Future connections could help you notice how everyday habits go
-            together.
-          </p>
-        </header>
-        <section className="sc-section" aria-labelledby="cx-today">
-          <div className="sc-section-head">
-            <h2 id="cx-today">Today’s context</h2>
-            <p>Simulated data</p>
-          </div>
-          {data ? <ContextCards context={data.context} /> : <Loading />}
-          <p className="sc-small">
-            Sleep, activity, weather and listening history use simulated data in
-            this prototype. No external accounts are connected.
-          </p>
-        </section>
-        <section className="sc-section" aria-labelledby="cx-future">
-          <h2 id="cx-future">Possible future connections</h2>
-          <ul className="cx-list">
-            {FUTURE_CONNECTIONS.map((c) => (
-              <li key={c.title}>
-                <span className="cx-name">{c.title}</span>
-                <span className="cx-text">{c.text}</span>
-                <span className="cx-state">
-                  Not connected, a future integration
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-        <p className="sc-small sc-section">
-          Your words stay in your journal. Your psychologist sees trends only.
-        </p>
-      </div>
-    </div>
-  );
-}
-
 /* ───────────── Clinic: the psychologist's portal ─────────────
    See DESIGN.md → "Clinic". A professional tool: same tokens and type as the
    patient's space, but no garden, plants or decorative voice line. It only
