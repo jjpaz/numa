@@ -48,6 +48,8 @@ The preview explicitly uses ephemeral process memory, not a second persistent da
 
 For the isolated DAM experiment (Python 3.11, CPU, no Gemini/database), see **[docs/ML_DAM.md](docs/ML_DAM.md)**. Its CLI is separate from the application's existing SpeechBrain adapter. Completing that check does not enable DAM in either portal.
 
+The isolated **Modal/Linux CPU execution with real DAM weights** is also verified; see **[docs/ML_DAM_MODAL.md](docs/ML_DAM_MODAL.md)** for the lock, command, timings and limitations. It does not change the public demo or connect DAM to the journal.
+
 1. Activate the event's Gemini, Aiven and Modal offers (see `docs/RESOURCES.md`). None have been redeemed automatically.
 2. Create one Aiven PostgreSQL service. Use its TLS connection URI with `postgresql://` or `postgresql+psycopg://` and certificate verification (`sslmode=verify-full` and the supplied CA if required). Never expose it to the browser.
 3. Create Modal secret `numa-secrets` with values listed in `.env.production.example`. Set unique demo-account passwords and a random session secret. Set `NUMA_SEED_DEMO=true` for the fictional presentation profiles; the fresh profile never receives seeded history.
