@@ -11,7 +11,7 @@ Este documento permite retomar el trabajo con Codex sin reconstruir el contexto 
 |---|---|---|
 | Producto e interfaz | Dos portales, journal privado, grabación y texto, acciones, feedback, preferencias, hábitos y experimentos | QA manual final en dispositivos reales e informe impreso |
 | Experiencia progresiva | Inicio sencillo, módulos elegidos, invitaciones y modo sencillo reversible; nueva paleta | Conservar el diseño y comportamiento durante las integraciones |
-| Audio | Micrófono, waveform, normalización y medición de duración, energía RMS, pausas y clipping | Detección de habla efectiva y evaluación de calidad más completa |
+| Audio | Micrófono y acústica de la demo; filtro aislado Silero VAD/30 s de habla estimada verificado en Modal con 18 casos controlados | Capturas reales de navegador/dispositivo y posterior integración del filtro en la aplicación |
 | ML vocal | SpeechBrain preparado en la aplicación; **DAM ejecutado aisladamente en CPU/Windows y Modal/Linux**, con revisiones fijadas y pruebas reales | Integrar VAD y DAM en la aplicación; evaluar robustez y validez para el uso previsto |
 | Historial personal | Baseline acústico con mediana/MAD y heurísticas de cambios | Incorporar resultados versionados del modelo y evaluar su estabilidad |
 | Recomendaciones | Reglas sobre preferencias, contexto y feedback | Evaluación con datos reales; no hay un recomendador entrenado |
@@ -19,7 +19,7 @@ Este documento permite retomar el trabajo con Codex sin reconstruir el contexto 
 | Persistencia | Repositorio PostgreSQL y comprobación de propiedad/rol | Conexión real a Aiven y prueba de persistencia |
 | Despliegue | Backend demo Modal + frontend Vercel publicados; prueba aislada DAM/Linux ejecutada | Integrar el pipeline y servicios conectados sin perder el punto de retorno demo |
 
-Última verificación conjunta de backend/contratos: **54 pruebas aprobadas, 2 omitidas** (PostgreSQL sin conexión y prueba local DAM opt-in desactivada). Además, DAM se ejecutó realmente en **Modal/Linux/CPU**, desde una caché de pesos persistida y con la red bloqueada durante inferencia; dos repeticiones produjeron valores finitos e idénticos. Audio: voz sintética inglesa de 57,095 segundos, sin evaluación clínica. La demo pública tiene acceso por nombre; sus últimos 7 escenarios de navegador pasaron al implementarlo y el usuario confirmó grabación en móvil. No se repitieron al añadir esta validación aislada. Ver `docs/ML_DAM_MODAL.md` y `docs/IMPLEMENTATION_LOG.md`.
+Última verificación conjunta de backend/contratos: **81 pruebas aprobadas, 2 omitidas** (PostgreSQL sin conexión y prueba local DAM opt-in desactivada). DAM y el filtro VAD/calidad se ejecutaron realmente en **Modal/Linux/CPU**, con red bloqueada: la batería VAD pasó **18/18 casos**, incluido DAM después de medir 40,704 s de habla en un archivo TTS de 57,095 s. No es evaluación clínica. La demo pública sigue con acceso por nombre; sus últimos 7 escenarios de navegador pasaron al implementarlo y el usuario confirmó grabación en móvil. No se repitieron para el filtro aislado. Las capturas reales de navegador/dispositivo de fase B siguen pendientes. Ver `docs/ML_VAD.md`, `docs/ML_DAM_MODAL.md` y `docs/IMPLEMENTATION_LOG.md`.
 
 El modo local y la demo pública utilizan memoria temporal. Existe una utilidad de copia/restauración para reinicios controlados, pero no sustituye la persistencia conectada. Backend demo y frontend ya están publicados; el acceso del equipo a Modal está configurado. No se han activado Gemini/Aiven ni se afirma haber canjeado créditos del evento.
 
@@ -53,7 +53,7 @@ Si hay una vista previa activa con datos que conservar, no reiniciarla sin copia
 **Orden acordado tras completar la fase A:** las letras siguientes conservan los bloques de trabajo originales; la ejecución pendiente sigue este orden para validar primero el entorno definitivo:
 
 1. **Validación inicial de Modal (adelanto de la fase F), completada técnicamente:** entorno Linux/CPU fijado, pesos reales e inferencia remota aislada verificados. Ver `docs/ML_DAM_MODAL.md`. No conecta DAM a la aplicación ni completa toda la fase F.
-2. **Fase B, siguiente trabajo:** VAD y calidad del audio sobre el entorno ya verificado.
+2. **Fase B, núcleo aislado implementado y probado:** VAD/calidad pasó en Modal; cerrar aceptación con capturas reales de navegador/dispositivo. Ver `docs/ML_VAD.md`; la captura Chromium no se ejecutó porque se rechazó abrir el navegador.
 3. **Fases C/D:** integrar el contrato del backend y el historial versionado; completar las comprobaciones técnicas correspondientes.
 4. **Fase E y cierre de F:** conectar Aiven/Gemini y terminar el despliegue del backend con sus secretos, orígenes y comprobaciones.
 5. **Fase G:** conectar/publicar el frontend y verificar el recorrido externo completo.
@@ -64,7 +64,7 @@ Cerrar cada bloque con implementación, pruebas y documentación antes de abrir 
 
 **Objetivo:** obtener una inferencia real reproducible, sin necesitar Gemini, Aiven o el servidor web.
 
-**Estado al 14 de noviembre:** entorno `.venv-ml` con Python 3.11.14, PyTorch/torchaudio 2.7.0 CPU, lock de dependencias y manifiesto con revisiones completas. CLI `python -m backend.ml.check`, caché ignorada e informes privados explícitos. Inferencia Windows real sin red: carga 6,796 s, inferencia 5,340 s en un proceso nuevo con pesos ya descargados. **La validación aislada Modal/Linux también pasó**; el siguiente bloque es fase B. El audio fue generado con TTS inglesa de Windows; no se usaron grabaciones privadas. Los pasos conservados a continuación documentan la fase A; instrucciones en `docs/ML_DAM.md` y `docs/ML_DAM_MODAL.md`.
+**Estado al 14 de noviembre:** entorno `.venv-ml` con Python 3.11.14, PyTorch/torchaudio 2.7.0 CPU, lock de dependencias y manifiesto con revisiones completas. CLI `python -m backend.ml.check`, caché ignorada e informes privados explícitos. Inferencia Windows real sin red: carga 6,796 s, inferencia 5,340 s en un proceso nuevo con pesos ya descargados. **La validación aislada Modal/Linux también pasó**; el avance posterior de VAD y sus pendientes están en fase B. El audio fue generado con TTS inglesa de Windows; no se usaron grabaciones privadas. Los pasos conservados a continuación documentan la fase A; instrucciones en `docs/ML_DAM.md` y `docs/ML_DAM_MODAL.md`.
 
 1. Crear un entorno ML separado con Python 3.11. No alterar la `.venv` que mantiene funcionando el prototipo hasta verificar compatibilidad.
 2. Consultar la ficha, código, dependencias y licencia actuales de [KintsugiHealth/DAM](https://huggingface.co/KintsugiHealth/dam). Fijar un commit completo, no una rama móvil como `main`, para la ejecución reproducible.
@@ -81,6 +81,8 @@ Cerrar cada bloque con implementación, pruebas y documentación antes de abrir 
 ### Fase B — habla efectiva y rechazo de muestras inadecuadas
 
 **Objetivo:** decidir cuándo existe audio suficiente para intentar el análisis.
+
+**Estado al 14 de noviembre:** `backend/ml/audio_quality.py`, Silero 6.2.3 fijado por versión/hashes y política `numa-audio-gate-v1`. En Modal pasaron 18 casos controlados: borde inferior/superior de 30 s, poca habla en archivo largo, silencio, clipping, ruido, melodía sintética, dos voces sintéticas y formatos WebM/MP4 generados por FFmpeg. Una muestra elegible completó DAM real. Los casos sin alcance confirmado no invocan DAM; no se detectan automáticamente idioma, hablantes o SNR. **Capturas reales de Chrome/Safari y micrófonos físicos pendientes**; no dar toda la aceptación por completada. La aplicación pública no usa todavía este filtro. Detalles y comandos en `docs/ML_VAD.md`.
 
 1. Mantener el límite actual de dos minutos, normalización mono/16 kHz, comprobaciones de silencio/clipping y límites de carga.
 2. Integrar [Silero VAD](https://github.com/snakers4/silero-vad) como detector de habla, fijando versión y verificando licencia/dependencias. Es una utilidad de preprocesamiento en el mismo entorno, no otro proveedor cloud ni otro modelo clínico.
@@ -220,8 +222,9 @@ Añadir comandos ML independientes y documentarlos cuando existan. No ejecutar u
 
 - [x] Entorno DAM CPU/Windows y validación aislada Modal/Linux con revisiones fijadas.
 - [x] Inferencia real ejecutada con voz sintética; pruebas con mocks identificadas por separado.
-- [ ] VAD y duración hablada verificados.
-- [ ] Calidad acústica y estado ML separados.
+- [x] VAD y duración hablada estimada verificados en la ruta aislada con muestras sintéticas.
+- [ ] Cerrar aceptación VAD con capturas reales de navegador/dispositivo y mayor variedad de audio.
+- [x] Calidad acústica y estado ML separados en el filtro aislado; integración del contrato público pendiente.
 - [ ] Salidas crudas guardadas sin fingir probabilidades o escalas clínicas.
 - [ ] Nota guardable cuando hay poco habla, error de modelo o fallo de Gemini.
 - [ ] Texto y voz siguen siendo independientes; editar texto no altera la señal vocal.
@@ -265,4 +268,4 @@ Procesar una grabación no implica permiso para reutilizarla en entrenamiento. M
 
 ## 9. Texto listo para iniciar otro chat con Codex
 
-> Trabaja en `C:\JUNCTION\numa`. Lee `NUMA_NEXT_STEPS.md` y verifica el estado del repositorio antes de editar. Fase A y la validación aislada de DAM en Modal/Linux están completadas técnicamente; consulta `docs/ML_DAM.md` y `docs/ML_DAM_MODAL.md`. La demo pública con acceso por nombre se conserva como punto de retorno; DAM aún no está conectado al journal. El siguiente bloque es B (VAD/calidad), luego C/D (contrato e historial), E/cierre de F (Gemini/Aiven y backend completo) y G (recorrido conectado). Conserva el frontend, las sesiones demo y las decisiones de privacidad/crecimiento. Usa el entorno Linux verificado, CPU y cero contenedores mínimos salvo una decisión explícita posterior. No confundas pruebas TTS con evaluación clínica ni amplíes esta fase a integraciones no solicitadas. No imprimas secretos o contenido privado y registra pruebas reales y pendientes en `docs/IMPLEMENTATION_LOG.md`.
+> Trabaja en `C:\JUNCTION\numa`. Lee `NUMA_NEXT_STEPS.md` y verifica el estado del repositorio antes de editar. DAM aislado y el núcleo de fase B VAD/calidad pasaron en Modal/Linux/CPU; consulta `docs/ML_DAM_MODAL.md` y `docs/ML_VAD.md`. Falta cerrar aceptación de B con capturas reales de navegador/dispositivo; la captura Chromium anterior no se autorizó, por lo que no se debe reintentar sin nueva autorización. Después siguen C/D (contrato e historial), E/cierre de F (Gemini/Aiven y backend completo) y G (recorrido conectado). La demo pública con acceso por nombre se conserva como punto de retorno; DAM/VAD aún no están conectados al journal. Conserva frontend, sesiones, privacidad y crecimiento. Usa CPU y cero contenedores mínimos salvo decisión explícita posterior. No confundas pruebas TTS o transcodificación FFmpeg con evaluación clínica o capturas reales. No imprimas secretos o contenido privado y registra pruebas reales y pendientes en `docs/IMPLEMENTATION_LOG.md`.

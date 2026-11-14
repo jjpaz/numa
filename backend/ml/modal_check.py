@@ -25,7 +25,7 @@ VOLUME_NAME = 'numa-dam-validation-weights'
 CACHE = Path('/models')
 app = modal.App(APP_NAME)
 weights = modal.Volume.from_name(VOLUME_NAME, create_if_missing=True)
-image = (
+base_image = (
     modal.Image.debian_slim(python_version='3.11.18')
     .apt_install('libsndfile1')
     .pip_install('torch==2.7.0+cpu', 'torchaudio==2.7.0+cpu',
@@ -34,6 +34,9 @@ image = (
     .run_commands('python -m pip check')
     .env({'HF_HOME': '/models/hf', 'HF_HUB_DISABLE_PROGRESS_BARS': '1',
           'TOKENIZERS_PARALLELISM': 'false'})
+)
+image = (
+    base_image
     .add_local_python_source('backend')
     .add_local_file('backend/ml/dam_manifest.json', '/root/backend/ml/dam_manifest.json')
 )

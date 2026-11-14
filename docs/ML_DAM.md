@@ -2,7 +2,7 @@
 
 Esta ruta comprueba la ejecución técnica de DAM, sin FastAPI, Gemini, Aiven ni credenciales. No modifica la `.venv` de la demo, el frontend o el adaptador SpeechBrain de la aplicación. La integración en el journal corresponde a las fases B/C de `NUMA_NEXT_STEPS.md`.
 
-**Estado de despliegue:** la validación aislada en Modal/Linux/CPU ya se ejecutó con pesos reales y está documentada en **[ML_DAM_MODAL.md](ML_DAM_MODAL.md)**. El siguiente bloque es VAD/calidad, fase B. El adaptador recibe rutas y dispositivo como parámetros; el lock CPU/Windows y el generador TTS son herramientas opcionales de desarrollo, no requisitos del servidor. La aplicación pública sigue sin integrar DAM y el cierre de fase F continúa pendiente. Las futuras ampliaciones deben conservar esta ruta de hosting y funcionar sin el ordenador del desarrollador.
+**Estado de despliegue:** la validación aislada en Modal/Linux/CPU ya se ejecutó con pesos reales y está documentada en **[ML_DAM_MODAL.md](ML_DAM_MODAL.md)**. El filtro VAD/calidad posterior también se implementó y probó aisladamente: **[ML_VAD.md](ML_VAD.md)**; faltan capturas reales de navegador/dispositivo para cerrar su aceptación. Los comandos de este documento conservan la referencia de fase A sin VAD. El adaptador recibe rutas y dispositivo como parámetros; el lock CPU/Windows y el generador TTS son herramientas opcionales de desarrollo, no requisitos del servidor. La aplicación pública sigue sin integrar DAM y el cierre de fase F continúa pendiente. Las futuras ampliaciones deben conservar esta ruta de hosting y funcionar sin el ordenador del desarrollador.
 
 ## Recursos fijados y auditoría
 

@@ -140,9 +140,10 @@ application analysis or frontend sources relative to `c460316`. No live sessions
 journals or user preview processes were modified by the validation. No frontend
 build/browser suite was repeated because application code did not change.
 
-Next block: phase B, VAD/effective speech and quality in this verified Linux
-environment. Full DAM integration into the journal and connected deployments remain
-later work; this isolated pass does not complete all of phase F.
+Follow-up: the isolated phase-B VAD/quality gate now has its own verified synthetic
+Modal battery; see [ML_VAD.md](ML_VAD.md). Actual browser/device capture acceptance
+remains pending. Full DAM integration into the journal and connected deployments
+remain later work; this isolated pass does not complete all of phase F.
 
 References: [Modal resources](https://modal.com/docs/guide/resources),
 [model artifact Volumes](https://modal.com/docs/guide/volumes),

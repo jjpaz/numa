@@ -1,0 +1,14 @@
+{
+  "model": "snakers4/silero-vad",
+  "version": "6.2.3",
+  "revision": "5cd7945676eb32225748052e2e6a0580e4686a08",
+  "license": "MIT",
+  "wheel_sha256": "7b7f5436cfcb02fae583a05b512ea96467fd449fe54cb49a5e4f06c51a1e43b8",
+  "files": {
+    "__init__.py": "45fcf7e268eb0ba83ccee737b1a86cc94d7cf7487e2a1c0a31b9b72b899201f1",
+    "model.py": "40762a80d1278605480f75f90c6510c1a4ab71bd230f45c334e4f9c5e402181d",
+    "utils_vad.py": "15d0f6b3ef9590e22ca2f146e1436f6901da356cb552d3183df4100862b333cb",
+    "data/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "data/silero_vad.jit": "e1122837f4154c511485fe0b9c64455f7b929c96fbb8d79fbdb336383ebd3720"
+  }
+}
