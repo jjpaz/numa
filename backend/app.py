@@ -381,9 +381,7 @@ def create_app(repo=None, demo=None, secret=None):
     @app.get('/api/patient/recommendation')
     def recommendation(user=Depends(patient)):
         result=recommend(repo.all('entries',user['id']),user.get('preferences',list(ACTIONS)),simulated_context())
-        if not demo:
-            try: result['explanation']=explain_recommendation(result)
-            except Exception: result['explanation']=result['reason']
+        result['explanation']=result['reason']
         return result
 
     @app.get('/api/clinic/patients')
