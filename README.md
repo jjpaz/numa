@@ -6,13 +6,13 @@ Referencia de diseño conservada: **[REDESIGN_BRIEF_JOURNAL.md](REDESIGN_BRIEF_J
 
 A private voice journal that learns a person's patterns and what they report finding helpful. Built as an independent Junction prototype with a patient portal and a psychologist portal.
 
-The patient experience starts with a journal page and previous entries. In **Your space**, the person can choose sleep, movement, music, one small intention, personal patterns or voice observations. Nothing is unlocked by a mood score. **Today, something simple** temporarily hides optional modules while keeping their settings, entries and experiments. Invitations require recorded observations and can be dismissed. A botanical illustration remembers shared pages, with no streak loss or decline during absences.
+The patient portal has three places: **Home** (record or write in the mailbox, review, then plant the entry), **My journal** (saved entries), and **My garden** (What helps, Connections and optional Your space modules). Nothing is unlocked by a mood score. Invitations require recorded observations and can be dismissed. Plants remember shared pages, with no streak loss or decline during absences. The old simple-mode control has been removed from the interface.
 
-Visual identity: Ivory `#F5E6C5`, Apricot `#D78B30`, Natural `#9F886F`, Organic `#3F422E`. Serif journal headings and paper edges distinguish the personal space from the professional overview.
+The patient portal uses the cream/forest/peach palette; the public pages and clinic retain their paper/moss/apricot identity. [DESIGN.md](DESIGN.md) documents the current routes, tokens and transitions. [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) distinguishes the connected application from isolated ML experiments.
 
 ## Run locally (Windows PowerShell)
 
-Requirements: Node 20.19+ or 22.12+, Python 3.11+ for the API, and ffmpeg on PATH for browser recordings. The deployed SpeechBrain image specifically uses Python 3.11.
+Requirements: Node 20.19+ or 22.12+, Python 3.11+ for the API, and ffmpeg on PATH for browser recordings. The public Modal API uses Python 3.11 on CPU with vocal ML disabled; isolated DAM/VAD has its own pinned dependencies.
 
 ```powershell
 cd C:\JUNCTION\numa
@@ -46,12 +46,20 @@ The preview explicitly uses ephemeral process memory, not a second persistent da
 
 ## Connected mode
 
+The connected deployment was verified with Aiven PostgreSQL persistence, Gemini transcription/summaries and name-only presentation access in the integration record for `8b6859b`. The public API keeps `NUMA_DEMO_MODE=false` and `NUMA_ML_ENABLED=false`. Recovering the ML experiments does not enable them or redeploy the application. See [docs/IMPLEMENTATION_LOG.md](docs/IMPLEMENTATION_LOG.md) for historical live checks and [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) for current source validation.
+
 For the isolated DAM experiment (Python 3.11, CPU, no Gemini/database), see **[docs/ML_DAM.md](docs/ML_DAM.md)**. Its CLI is separate from the application's existing SpeechBrain adapter. Completing that check does not enable DAM in either portal.
 
-1. Activate the event's Gemini, Aiven and Modal offers (see `docs/RESOURCES.md`). None have been redeemed automatically.
-2. Create one Aiven PostgreSQL service. Use its TLS connection URI with `postgresql://` or `postgresql+psycopg://` and certificate verification (`sslmode=verify-full` and the supplied CA if required). Never expose it to the browser.
-3. Create Modal secret `numa-secrets` with values listed in `.env.production.example`. Set unique demo-account passwords and a random session secret. Set `NUMA_SEED_DEMO=true` for the fictional presentation profiles; the fresh profile never receives seeded history.
-4. Install the Modal CLI in your deployment environment, authenticate, then run from the project root:
+The isolated **Modal/Linux CPU execution with real DAM weights** is also verified; see **[docs/ML_DAM_MODAL.md](docs/ML_DAM_MODAL.md)** for the lock, command, timings and limitations. It does not change the public demo or connect DAM to the journal.
+
+The separate **VAD/audio-quality gate** has a recorded 19-case Modal validation, including a real Chromium MediaRecorder file with synthetic input and DAM inference on the reference fixture. See **[docs/ML_VAD.md](docs/ML_VAD.md)**. The user reported a working Safari recording UI; VAD/DAM over a real Safari file is still unverified. These historical remote tests were not rerun during branch recovery.
+
+To reproduce the connected deployment in an authorized environment:
+
+1. Use the team's configured Gemini, Aiven and Modal accounts. Event offer information is in `docs/RESOURCES.md`; a working service does not prove that an offer was redeemed.
+2. Use the Aiven PostgreSQL TLS URI with `postgresql://` or `postgresql+psycopg://`, `sslmode=verify-full` and the supplied CA when required. Never expose it to the browser. Tests use a different database through `TEST_DATABASE_URL`.
+3. Configure the existing Modal secret `numa-secrets` from `.env.production.example` / `backend/connected.env.example`. Keep `NUMA_DEMO_MODE=false`, `NUMA_ML_ENABLED=false`, unique account passwords and a random session secret. `NUMA_DEMO_NAME_LOGIN=true` explicitly enables open presentation access with shared demo profiles; names are not separate private accounts. Keep `NUMA_SEED_DEMO=true` only for the fictional presentation profiles.
+4. Install and authenticate the Modal CLI if needed, then deploy from the project root when a deployment is intended:
 
 ```powershell
 python -m pip install modal
@@ -60,15 +68,15 @@ modal deploy -m backend.modal_app
 ```
 
 5. Put the returned backend origin (without `/api`) in Vercel's `VITE_API_BASE` variable. Set Modal's `NUMA_ALLOWED_ORIGINS` to the exact HTTPS frontend origin. Redeploy after changing frontend build variables. Vercel build command: `npm run build`; output: `dist`.
-6. Run `python -m backend.smoke` with the same environment before presenting. This verifies PostgreSQL read-back, Gemini access and, with `--voice`, actual SpeechBrain loading/inference. It prints status only, not secrets or journal content.
+6. `python -m backend.smoke` checks PostgreSQL write/read/delete and Gemini JSON using the configured environment. It creates a verification record and makes a live provider request. Do not add `--voice` to the ML-disabled public setup: that legacy option targets SpeechBrain and is not a DAM test. DAM/VAD checks use the separate runbooks above.
 
-`GEMINI_MODEL` defaults to `gemini-3.8-flash` from the planning-time official model catalogue. Access is account-dependent; set another supported Gemini audio-capable model if the smoke test rejects access. No other LLM provider is wired in. Model weights are cached in a Modal Volume; that volume is for model artifacts, not a second journal datastore. The API uses one Modal container to retain a bounded in-process processing queue; this is a demo architecture, not a durable job worker system.
+`GEMINI_MODEL` has no guessed default: select and verify an accessible audio/JSON model explicitly. Gemini handles transcription and summaries; recommendation explanations use the deterministic rule's reason. The public API image has no model Volume or heavyweight ML installs. Only the isolated validation apps use an artifact-only Volume. The API uses one Modal container and bounded in-memory queues; pending writes are not durable during a database outage plus process loss.
 
 ## Verification
 
 ```powershell
 npm run build
-.\.venv\Scripts\python.exe -m pytest backend/tests -q
+.\.venv\Scripts\python.exe -m pytest backend/tests backend/ml/tests -q
 npm run test:e2e
 ```
 
@@ -85,10 +93,11 @@ Set `TEST_DATABASE_URL` to a dedicated PostgreSQL instance to enable the persist
 - Optional actions, preferences, helpfulness feedback and a separate voice comparison.
 - A baseline from five distinct days, robust deviation observations and a three-observation review heuristic.
 - Fictional longitudinal scenarios, a private page timeline, optional context and evidence-counted personal patterns.
-- Patient-selected disclosure, persistent simple-view preferences, optional habits and private experiments.
+- Patient-selected disclosure, optional modules, habits and private experiments; the removed simple-mode field remains only for backend compatibility.
 - Server-side authorization and a restrictive clinical projection; no private journal fields in psychologist endpoints.
 - Five-second dashboard refresh, notes and printable observation report.
-- Configured Gemini adapter, SpeechBrain inference adapter, PostgreSQL repository and Modal deployment definition.
+- Connected Gemini/PostgreSQL backend and CPU Modal deployment with vocal ML disabled.
+- Isolated DAM and Silero VAD validation tools, manifests, CPU locks and contract tests; no journal integration yet.
 
 ## Boundaries
 

@@ -1,6 +1,11 @@
 # Numa — guía para retomar la implementación pendiente
 
-Fecha de referencia: **14 de noviembre de 2026**.
+Fecha de referencia: **15 de noviembre de 2026**.
+
+**Seguimiento más reciente:** consultar `docs/PROJECT_STATUS.md`. El buzón y el
+backend conectado se integraron mediante la PR #2. Se recuperan los experimentos
+DAM/VAD sin activarlos en el diario. Gemini y Aiven ya tienen verificación real
+registrada; la prueba VAD/DAM sobre un archivo real de Safari sigue pendiente.
 Proyecto: `C:\JUNCTION\numa`.
 
 Este documento permite retomar el trabajo con Codex sin reconstruir el contexto del chat. Describe tareas futuras: **su presencia aquí no significa que estén implementadas o verificadas**. No ejecutar estas tareas al leer el documento; ejecutarlas cuando el usuario pida continuar.
@@ -9,19 +14,27 @@ Este documento permite retomar el trabajo con Codex sin reconstruir el contexto 
 
 | Área | Implementado | Pendiente |
 |---|---|---|
-| Producto e interfaz | Dos portales, journal privado, grabación y texto, acciones, feedback, preferencias, hábitos y experimentos | QA manual final en dispositivos reales e informe impreso |
-| Experiencia progresiva | Inicio sencillo, módulos elegidos, invitaciones y modo sencillo reversible; nueva paleta | Conservar el diseño y comportamiento durante las integraciones |
-| Audio | Micrófono, waveform, normalización y medición de duración, energía RMS, pausas y clipping | Detección de habla efectiva y evaluación de calidad más completa |
-| ML vocal | SpeechBrain preparado en la aplicación; **DAM ejecutado de forma independiente en CPU**, con revisiones fijadas, CLI y pruebas reales | Integrar VAD y DAM en la aplicación; evaluar robustez y validez para el uso previsto |
-| Historial personal | Baseline acústico con mediana/MAD y heurísticas de cambios | Incorporar resultados versionados del modelo y evaluar su estabilidad |
-| Recomendaciones | Reglas sobre preferencias, contexto y feedback | Evaluación con datos reales; no hay un recomendador entrenado |
-| Gemini | Código para transcribir, resumir y extraer menciones explícitas | Credenciales y pruebas reales de las llamadas |
-| Persistencia | Repositorio PostgreSQL y comprobación de propiedad/rol | Conexión real a Aiven y prueba de persistencia |
-| Despliegue | Definiciones de Modal y Vercel | Adaptar imagen a DAM, desplegar y probar el recorrido público |
+| Producto e interfaz | Home con buzón, My journal y My garden; clínica y acceso por nombre; sin control de modo sencillo | QA final en móviles reales e impresión |
+| Audio | Grabación y acústica en la aplicación; filtro VAD/calidad aislado y validación histórica de 19 casos en Modal | VAD/DAM con un archivo Safari real y mayor variedad de audio |
+| ML vocal | DAM aislado CPU/Windows y Modal/Linux; código, manifiestos y tests recuperados | Integración del diario separada y aplazada; ML desactivado a propósito |
+| Historial personal | Baseline acústico con mediana/MAD y heurísticas | Resultados DAM versionados y evaluación técnica |
+| Recomendaciones | Reglas sobre preferencias, contexto y feedback; explicación determinista | Evaluación con datos reales; no hay recomendador entrenado |
+| Gemini | Transcripción/resumen reales y contratos de fallos; verificación registrada en `8b6859b` | Revalidar si cambian modelo, credenciales o runtime |
+| Persistencia | PostgreSQL/Aiven conectado, TLS, aislamiento y pruebas de persistencia registradas | Mantener pruebas en una base dedicada; cola de reintentos sigue siendo volátil |
+| Despliegue | Backend conectado en Modal y frontend en Vercel registrados | Comprobar versión publicada tras los merges; no asumir despliegue automático |
 
-Última verificación de backend/contratos: **44 pruebas aprobadas, 2 omitidas** (PostgreSQL sin conexión y prueba DAM desactivada en la suite normal). En el entorno ML separado, **19 pruebas aprobadas**, incluida una prueba con pesos reales y dos inferencias repetidas. La comprobación técnica usó una voz sintética inglesa de 57,095 segundos; no evalúa precisión clínica. La última compilación y los 7 escenarios de navegador aprobados son de la revisión de frontend anterior; no se han repetido al añadir la CLI aislada. Ver `docs/ML_DAM.md` y `docs/IMPLEMENTATION_LOG.md`.
+Verificación de la recuperación: **111 pruebas de backend/contratos aprobadas,
+3 omitidas** (dos PostgreSQL dedicado y una DAM real opt-in). Compilación de
+producción aprobada. La suite Edge pasó 30/31; se corrigió la aserción de etiqueta
+ML del caso de grabación y se repitieron grabación y descarte, 2/2 aprobadas.
+Los 31 escenarios quedan cubiertos entre esas ejecuciones. No se repitieron
+inferencias remotas ni llamadas a producción. Los resultados históricos con TTS
+son comprobaciones técnicas, no validación clínica.
 
-El modo local utiliza memoria temporal. Existe una utilidad de copia/restauración para reinicios controlados, pero no sustituye la persistencia conectada. Las cuentas del evento, sus créditos y los despliegues públicos no se han activado desde este proyecto.
+La vista previa local usa memoria temporal. La aplicación conectada usa Aiven
+como única base persistente y Gemini para transcripción/resumen. El registro del
+despliegue conectado está en `docs/IMPLEMENTATION_LOG.md`; recuperar las ramas
+no cambia secretos, no activa ML y no despliega servicios.
 
 ## 2. Decisiones que se deben conservar
 
@@ -29,14 +42,14 @@ El modo local utiliza memoria temporal. Existe una utilidad de copia/restauraci�
 - Usar **DAM preentrenado y congelado** como candidato principal. No entrenar una red desde cero para completar el MVP.
 - Mantener independientes la señal vocal y las declaraciones explícitas del journal. No interpretar desacuerdo como mentira.
 - El diario se puede guardar sin un resultado de ML, sin una puntuación de ánimo y aunque una integración falle.
-- No determinar qué módulos puede ver alguien a partir de una estimación emocional. Conservar elección, privacidad y modo sencillo.
+- No determinar qué módulos puede ver alguien a partir de una estimación emocional. Conservar elección y privacidad; el frontend retiró el control de modo sencillo y mantiene los módulos opcionales.
 - **Una base persistente: PostgreSQL en Aiven. Un proveedor de LLM: Gemini. Un entorno de cómputo ML: Modal.** No añadir otra base, LLM o nube para aumentar participaciones en premios.
 - **Toda funcionalidad nueva debe poder desplegarse y funcionar fuera del ordenador de desarrollo.** Destinos previstos: frontend en Vercel, backend/ML en Modal (Linux) y persistencia en Aiven. Evitar dependencias de rutas `C:\`, procesos de desarrollo, archivos del usuario o utilidades exclusivas de Windows en el runtime. Configurar rutas de caché, secretos y orígenes mediante entorno o parámetros; usar el volumen de Modal solo para artefactos del modelo y audio temporal para procesamiento. Fixtures, comandos y locks de Windows son herramientas de desarrollo opcionales. Cada entrega debe documentar su ruta de despliegue y distinguir portabilidad prevista de despliegue realmente verificado; una prueba local no completa la aceptación cloud de las fases F/G.
 - El psicólogo continúa recibiendo una proyección restringida. Ni transcripciones, resúmenes privados, audio, preguntas de experimentos ni reflexiones se incorporan a sus respuestas.
 - Sueño, actividad, meteorología y música siguen simulados y etiquetados. Apple Health, Last.fm, calendario y wearables no son requisitos de esta entrega.
 - Ninguna salida nueva debe presentarse como diagnóstico, medida de sinceridad o recaída confirmada tras TMS.
 
-La documentación anterior sigue siendo contexto útil. **DAM ya funciona como experimento independiente; la aplicación continúa con su adaptador SpeechBrain/acústico anterior.** No confundir la CLI verificada con una migración del backend conectado.
+La documentación anterior sigue siendo contexto útil. **DAM/VAD son experimentos independientes; la aplicación conectada usa acústica y mantiene ML desactivado.** El adaptador SpeechBrain histórico existe, pero no está activo en el despliegue público. No confundir la CLI verificada con una migración del backend conectado.
 
 ## 3. Primer paso al retomar
 
@@ -50,13 +63,13 @@ Si hay una vista previa activa con datos que conservar, no reiniciarla sin copia
 
 ## 4. Orden de implementación
 
-**Orden acordado tras completar la fase A:** las letras siguientes conservan los bloques de trabajo originales; la ejecución pendiente sigue este orden para validar primero el entorno definitivo:
+**Estado tras integrar las ramas:** las letras siguientes conservan el plan técnico original. Recuperar código experimental no ejecuta sus fases futuras; la activación de ML sigue aplazada y requeriría un trabajo separado.
 
-1. **Validación inicial de Modal (adelanto de la fase F):** fijar un entorno Linux compatible, cargar los pesos y ejecutar una inferencia remota aislada. No exigir Gemini/Aiven para esta comprobación ni conectar todavía la aplicación. Registrar resultados y dependencias antes de construir sobre ellos.
-2. **Fase B:** VAD y calidad del audio sobre el entorno ya verificado.
-3. **Fases C/D:** integrar el contrato del backend y el historial versionado; completar las comprobaciones técnicas correspondientes.
-4. **Fase E y cierre de F:** conectar Aiven/Gemini y terminar el despliegue del backend con sus secretos, orígenes y comprobaciones.
-5. **Fase G:** conectar/publicar el frontend y verificar el recorrido externo completo.
+1. **Validación inicial de Modal (adelanto de la fase F), completada técnicamente:** entorno Linux/CPU fijado, pesos reales e inferencia remota aislada verificados. Ver `docs/ML_DAM_MODAL.md`. No conecta DAM a la aplicación ni completa toda la fase F.
+2. **Fase B, núcleo aislado implementado y probado:** seguimiento Chromium verificado, 19/19 casos. El usuario confirmó grabación/reproducción/revisión en iPhone/Safari; VAD/DAM sobre su archivo real sigue pendiente. Ver `docs/ML_VAD.md` y `docs/PROJECT_STATUS.md`.
+3. **Fases C/D, aplazadas:** contrato DAM/VAD e historial versionado todavía no integrados. Mantener ML desactivado durante esta recuperación.
+4. **Fase E y despliegue conectado de F/G, realizados sin ML:** conservar Gemini/Aiven, secretos, TLS, orígenes y pruebas registradas. Revalidar cuando cambie el runtime.
+5. **QA restante:** versión publicada del frontend nuevo, dispositivos reales, archivo Safari e impresión. Una integración Git no acredita un despliegue.
 
 Cerrar cada bloque con implementación, pruebas y documentación antes de abrir otro. Si no hay margen para completarlo, detenerse antes de empezarlo. No avanzar con dependencias exclusivas de desarrollo que después haya que sustituir para alojar el producto.
 
@@ -64,7 +77,7 @@ Cerrar cada bloque con implementación, pruebas y documentación antes de abrir 
 
 **Objetivo:** obtener una inferencia real reproducible, sin necesitar Gemini, Aiven o el servidor web.
 
-**Estado al 14 de noviembre:** entorno `.venv-ml` con Python 3.11.14, PyTorch/torchaudio 2.7.0 CPU, lock de dependencias y manifiesto con revisiones completas. CLI `python -m backend.ml.check`, caché ignorada e informes privados explícitos. Inferencia real sin red: carga 6,796 s, inferencia 5,340 s en un proceso nuevo con pesos ya descargados. Prueba separada con pesos reales y repetición aprobada. El audio fue generado con TTS inglesa de Windows; no se usaron grabaciones privadas. **El siguiente trabajo es validar DAM en Modal antes de la fase B**, según el orden acordado arriba. Los pasos conservados a continuación documentan lo realizado y cómo reproducirlo; las instrucciones exactas están en `docs/ML_DAM.md`.
+**Estado al 14 de noviembre:** entorno `.venv-ml` con Python 3.11.14, PyTorch/torchaudio 2.7.0 CPU, lock de dependencias y manifiesto con revisiones completas. CLI `python -m backend.ml.check`, caché ignorada e informes privados explícitos. Inferencia Windows real sin red: carga 6,796 s, inferencia 5,340 s en un proceso nuevo con pesos ya descargados. **La validación aislada Modal/Linux también pasó**; el avance posterior de VAD y sus pendientes están en fase B. El audio fue generado con TTS inglesa de Windows; no se usaron grabaciones privadas. Los pasos conservados a continuación documentan la fase A; instrucciones en `docs/ML_DAM.md` y `docs/ML_DAM_MODAL.md`.
 
 1. Crear un entorno ML separado con Python 3.11. No alterar la `.venv` que mantiene funcionando el prototipo hasta verificar compatibilidad.
 2. Consultar la ficha, código, dependencias y licencia actuales de [KintsugiHealth/DAM](https://huggingface.co/KintsugiHealth/dam). Fijar un commit completo, no una rama móvil como `main`, para la ejecución reproducible.
@@ -82,6 +95,8 @@ Cerrar cada bloque con implementación, pruebas y documentación antes de abrir 
 
 **Objetivo:** decidir cuándo existe audio suficiente para intentar el análisis.
 
+**Estado al 14 de noviembre:** `backend/ml/audio_quality.py`, Silero 6.2.3 fijado por versión/hashes y política `numa-audio-gate-v1`. En Modal pasaron 19 casos controlados: borde inferior/superior de 30 s, poca habla en archivo largo, silencio, clipping, ruido, melodía sintética, dos voces sintéticas, formatos WebM/MP4 de FFmpeg y un archivo real de MediaRecorder Chromium con entrada sintética. Una muestra elegible completó DAM real. Los casos sin alcance confirmado no invocan DAM; no se detectan automáticamente idioma, hablantes o SNR. **VAD/DAM con archivo real de Safari pendiente**; el usuario confirmó grabación/reproducción/revisión de la demo anterior. La aplicación aún no usa este filtro, así que esa confirmación no acredita su inferencia. Detalles en `docs/ML_VAD.md`.
+
 1. Mantener el límite actual de dos minutos, normalización mono/16 kHz, comprobaciones de silencio/clipping y límites de carga.
 2. Integrar [Silero VAD](https://github.com/snakers4/silero-vad) como detector de habla, fijando versión y verificando licencia/dependencias. Es una utilidad de preprocesamiento en el mismo entorno, no otro proveedor cloud ni otro modelo clínico.
 3. Calcular intervalos de habla y `speech_duration_sec`. No equiparar la duración del archivo a la duración hablada.
@@ -93,11 +108,11 @@ Cerrar cada bloque con implementación, pruebas y documentación antes de abrir 
 
 **Aceptación:** un archivo largo con poco habla no recibe una predicción clínica; tampoco la reciben silencio o audio inválido. La entrada sigue siendo guardable. Probar muestras justo por debajo y por encima del umbral, música, ruido, varios hablantes y formatos reales de Chrome/Safari. Documentar limitaciones que todavía no puedan detectarse de forma automática.
 
-### Fase C — sustituir el adaptador y definir un contrato correcto
+### Fase C — sustituir el adaptador y definir un contrato correcto (aplazada)
 
 **Objetivo:** incorporar DAM al backend sin reinterpretar sus salidas ni romper registros anteriores.
 
-1. Cambiar la selección de modelo en `backend/analysis.py` y la configuración del entorno. Hoy `MODEL_ID` está fijado a SpeechBrain y `NUMA_VOICE_MODEL` de la plantilla no gobierna realmente la carga: corregir esa discrepancia.
+1. Si se autoriza esta fase, definir una selección explícita de DAM en `backend/analysis.py`. Hoy `MODEL_ID` apunta al adaptador SpeechBrain histórico y `NUMA_ML_ENABLED=false` impide cargarlo. Activar ese flag por sí solo no selecciona DAM.
 2. Separar calidad acústica, ejecución de ML y resultado. Una nota puede tener acústica utilizable y no alcanzar el mínimo de habla para DAM.
 3. Mantener la compatibilidad de campos existentes. Añadir un esquema versionado con, como mínimo:
 
@@ -116,7 +131,7 @@ Cerrar cada bloque con implementación, pruebas y documentación antes de abrir 
 6. No aplicar los umbrales clínicos upstream a los pacientes de Numa ni mostrar puntuaciones PHQ/GAD estimadas sin evaluación específica. Las observaciones deben describir el estado de procesamiento y sus límites.
 7. Conservar las ramas de voz y texto independientes. Una edición de transcripción vuelve a evaluar el texto, nunca el audio ni sus resultados.
 8. Preservar idempotencia, estados de trabajo, recuperación de tareas interrumpidas y posibilidad de guardar después de un fallo parcial.
-9. Actualizar el health check para distinguir «configurado» de «cargado/probado». Actualmente `voice_model_enabled` depende del modo demo; eso no demuestra una inferencia exitosa.
+9. Conservar la distinción del health check: `voice_model_enabled` y `ml_enabled` consideran modo demo y flag; `ml_status` es `not_configured` o `configured_not_verified`. Una futura integración debe distinguir además carga/inferencia realmente verificadas.
 10. Mantener la vista previa acústica como fallback explícito. No sustituir DAM silenciosamente por otro modelo ni por una predicción simulada.
 
 **Aceptación:** se guarda una salida real versionada sin porcentajes falsos; modelos antiguos no cambian de significado; fallos no bloquean el journal; el psicólogo sigue sin recibir campos privados. Las etiquetas visibles describen correctamente lo que está activo, sin reabrir el diseño.
@@ -136,7 +151,11 @@ Cerrar cada bloque con implementación, pruebas y documentación antes de abrir 
 
 **Aceptación:** existe un informe reproducible de mediciones reales, con límites de las muestras y errores observados. Los audios de compañeros interpretando emociones no se presentan como validación de depresión o de seguimiento tras TMS.
 
-### Fase E — conectar Gemini y Aiven
+### Fase E — Gemini y Aiven (integrados; conservar y revalidar)
+
+La conexión real y el recorrido público sin ML están registrados en `8b6859b`.
+Los pasos siguientes describen la reproducción y regresión de esas integraciones,
+no un bloqueo actual por ausencia de credenciales.
 
 **Gemini:**
 
@@ -158,9 +177,12 @@ Cerrar cada bloque con implementación, pruebas y documentación antes de abrir 
 
 ### Fase F — adaptar Modal y los comandos de comprobación
 
-**Ejecutar primero la validación aislada del entorno e inferencia en Modal**, antes de la fase B. El despliegue de la aplicación completa y las comprobaciones de credenciales/concurrencia de este bloque se terminan después de las integraciones. No confundir estos dos hitos ni marcar toda la fase F completada con una sola inferencia remota.
+La validación aislada DAM en Modal está registrada en `docs/ML_DAM_MODAL.md`.
+El backend conectado sin ML ya tiene despliegue y verificación registrados.
+Los pasos siguientes son exclusivamente una futura ampliación para alojar ML
+en el flujo de la aplicación; no forman parte de recuperar estos commits.
 
-1. Sustituir las dependencias de SpeechBrain de `backend/modal_app.py` por el entorno DAM ya verificado. Conservar Python 3.11 y ffmpeg si siguen siendo compatibles.
+1. Añadir un runtime DAM aislado cuando se aborde su integración. La imagen pública actual solo instala `backend/requirements.txt`, Python 3.11, ffmpeg y libsndfile; no tiene dependencias ML que sustituir. Conservar el backend conectado mientras se valida el cambio.
 2. Reutilizar un único modelo cargado y la caché de pesos. No guardar audio de pacientes en el volumen del modelo.
 3. Separar configuración de inferencia del modo de datos demo. Una CLI ML no debe exigir Gemini/PostgreSQL; la aplicación conectada sí debe validar sus credenciales.
 4. Configurar el secreto `numa-secrets`, los límites de uso y la allowlist de orígenes. Comprobar presupuesto antes de mantener una GPU encendida.
@@ -171,6 +193,10 @@ Cerrar cada bloque con implementación, pruebas y documentación antes de abrir 
 **Aceptación:** imagen construida, pesos correctos, inferencia real por el endpoint, tiempos y errores registrados, límites de coste conocidos. Para varios contenedores o trabajo durable se necesitaría otra fase; no activar escalado distribuido con los locks y cola actuales.
 
 ### Fase G — recorrido conectado y publicación
+
+El recorrido público sin ML tiene verificación registrada; la integración del
+frontend nuevo y las herramientas aisladas no equivale a un nuevo despliegue.
+Repetir las comprobaciones aplicables cuando se publique una versión distinta.
 
 1. Compilar y publicar el frontend en Vercel; configurar `VITE_API_BASE` con el origen de Modal y reconstruir.
 2. Establecer el origen HTTPS exacto del frontend en `NUMA_ALLOWED_ORIGINS`. No exponer secretos del servidor mediante variables `VITE_*`.
@@ -189,10 +215,10 @@ Revisar y actualizar las plantillas, sin escribir valores secretos en documentac
 
 | Variable | Uso al completar el trabajo |
 |---|---|
-| `NUMA_VOICE_MODEL` | Selección real del adaptador DAM |
+| `NUMA_VOICE_MODEL` | Propuesta para futura selección DAM; no implementada |
 | `NUMA_MODEL_REVISION` | Commit completo de pesos/código |
 | `NUMA_MODEL_CACHE` / `HF_HOME` | Caché de artefactos del modelo |
-| `NUMA_ML_ENABLED` | Flag explícito **a implementar**; default desactivado hasta configurar/probar |
+| `NUMA_ML_ENABLED` | Implementado; default y despliegue público en `false`; no activa DAM |
 | `GEMINI_API_KEY`, `GEMINI_MODEL` | Comprensión del journal |
 | `DATABASE_URL` | Única persistencia PostgreSQL |
 | `TEST_DATABASE_URL` | Integración en una base de prueba |
@@ -200,7 +226,7 @@ Revisar y actualizar las plantillas, sin escribir valores secretos en documentac
 | `NUMA_ALLOWED_ORIGINS` | Orígenes autorizados del frontend |
 | `VITE_API_BASE` | Origen público del backend; sin secretos |
 
-`NUMA_ML_ENABLED` es una propuesta de implementación pendiente, no una variable que funcione en el código actual. Añadir también identificación de la versión del pipeline y la política mínima de habla, con valores documentados y probados.
+`NUMA_ML_ENABLED` ya se comprueba en `backend/analysis.py`; conservarlo desactivado. La futura integración DAM necesitaría seleccionar su adaptador y exponer versión de pipeline/política. Los experimentos aislados ya incluyen esos metadatos.
 
 Consultar `docs/RESOURCES.md` para ofertas y activación: Gemini, Aiven, Modal y Codex. Los importes y términos allí son del evento de noviembre de 2026; si se retoma más tarde, verificar vigencia antes de contar con ellos. Créditos de Codex y créditos de API son conceptos distintos. No crear cuentas, canjear enlaces personales ni asumir gastos sin la autoridad o acceso necesarios.
 
@@ -210,26 +236,30 @@ Comandos ya existentes, desde la raíz del proyecto:
 
 ```powershell
 npm run build
-.\.venv\Scripts\python.exe -m pytest backend/tests -q
+.\.venv\Scripts\python.exe -m pytest backend/tests backend/ml/tests -q
 npm run test:e2e
 ```
 
-Añadir comandos ML independientes y documentarlos cuando existan. No ejecutar una ruta de ejemplo inexistente y registrar su fallo como un resultado del modelo.
+Los comandos ML independientes existentes están en `docs/ML_DAM.md`, `docs/ML_DAM_MODAL.md` y `docs/ML_VAD.md`. Las rutas Modal usan cómputo remoto y un fixture elegido explícitamente; no se ejecutan como parte de la suite normal.
 
-- [x] Entorno DAM CPU/Windows reproducible y revisiones fijadas; Modal/Linux pendiente en fase F.
+- [x] Entorno DAM CPU/Windows y validación aislada Modal/Linux con revisiones fijadas.
 - [x] Inferencia real ejecutada con voz sintética; pruebas con mocks identificadas por separado.
-- [ ] VAD y duración hablada verificados.
-- [ ] Calidad acústica y estado ML separados.
+- [x] VAD y duración hablada estimada verificados en la ruta aislada con muestras sintéticas.
+- [ ] Cerrar aceptación VAD con capturas reales de navegador/dispositivo y mayor variedad de audio.
+- [x] Calidad acústica y estado ML separados en el filtro aislado; integración del contrato público pendiente.
 - [ ] Salidas crudas guardadas sin fingir probabilidades o escalas clínicas.
 - [ ] Nota guardable cuando hay poco habla, error de modelo o fallo de Gemini.
 - [ ] Texto y voz siguen siendo independientes; editar texto no altera la señal vocal.
 - [ ] Registros antiguos conservan su tipo y versión.
 - [ ] Informe de estabilidad técnica, latencia y errores.
-- [ ] Gemini conectado y validado con casos positivos y negativos de mención explícita.
-- [ ] PostgreSQL conectado y prueba de persistencia ejecutada.
-- [ ] Modal desplegado y probado con pesos reales.
-- [ ] Frontend publicado con configuración y orígenes correctos.
-- [ ] Privacidad y propiedad verificadas en API, no solo en pantalla.
+- [x] Gemini conectado con transcripción/resumen reales registrados; casos positivos/negativos de mención explícita cubiertos por mocks.
+- [x] PostgreSQL/Aiven conectado y prueba de persistencia registrada; suite real solo con base dedicada.
+- [x] DAM ejecutado aisladamente en Modal/Linux con pesos reales; no integrado todavía en el API público.
+- [x] Backend conectado sin ML desplegado y probado según el registro.
+- [ ] DAM/VAD integrado en ese backend y probado con pesos reales.
+- [x] Frontend conectado publicado y recorrido registrado antes del nuevo buzón.
+- [ ] Verificar la versión desplegada del nuevo buzón tras integrar Git.
+- [x] Privacidad, rol y propiedad cubiertos en API; verificación pública histórica registrada.
 - [ ] QA en móviles reales e impresión A4.
 - [ ] Documentación y vídeo reflejan lo que realmente se ejecutó.
 
@@ -262,4 +292,4 @@ Procesar una grabación no implica permiso para reutilizarla en entrenamiento. M
 
 ## 9. Texto listo para iniciar otro chat con Codex
 
-> Trabaja en `C:\JUNCTION\numa`. Lee `NUMA_NEXT_STEPS.md` y verifica el estado del repositorio antes de editar. La fase A está completada como prueba técnica independiente de DAM en CPU; consulta `docs/ML_DAM.md`. El siguiente bloque es validar DAM en Modal/Linux mediante una inferencia remota aislada, adelantando esa parte de la fase F sin exigir Gemini/Aiven. Después sigue B (VAD/calidad), C/D (contrato e historial), E/cierre de F (integraciones y backend) y G (frontend y recorrido externo). Toda funcionalidad debe funcionar alojada fuera del ordenador de desarrollo. Trabaja en secciones acotadas y no empieces una si no hay margen para terminarla, verificarla y documentarla. Conserva el frontend y las decisiones de privacidad y crecimiento. Usa Aiven como única base persistente, Gemini como único LLM y Modal para ML. No confundas código preparado con integraciones ejecutadas ni una prueba TTS con validación clínica. No entrenes desde cero ni inventes resultados clínicos. Mantén el journal utilizable si una rama falla. No imprimas secretos ni contenido privado; conserva cambios y datos locales del usuario antes de reiniciar servicios. Ejecuta las verificaciones correspondientes y deja un registro honesto de lo completado y lo bloqueado por acceso externo.
+> Trabaja en `C:\JUNCTION\numa`. Lee `NUMA_NEXT_STEPS.md` y `docs/PROJECT_STATUS.md`; verifica el repositorio antes de editar. El nuevo buzón, el backend conectado y los experimentos aislados DAM/VAD tienen ramas de integración verificadas. Gemini/Aiven ya tienen conexión real registrada; no restaures la configuración antigua de demo efímera. Conserva `NUMA_DEMO_MODE=false` y `NUMA_ML_ENABLED=false` en la API pública. DAM/VAD siguen fuera del diario: su recuperación no autoriza activar el modelo ni ejecutar las fases C/D. Las validaciones históricas de Modal son técnicas, con fixtures sintéticos, no clínicas; VAD/DAM sobre un archivo Safari real sigue pendiente. Diferencia código integrado de versión desplegada. Conserva el frontend, sesiones, privacidad y datos del usuario. Revalida solo lo afectado por el nuevo trabajo autorizado y documenta resultados reales, sin imprimir secretos ni datos privados.

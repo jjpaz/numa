@@ -1,5 +1,212 @@
 # Implementation and verification record
 
+## Mailbox integration and isolated ML recovery — 14–15 November 2026
+
+- PR #2 merged the complete patient mailbox branch and all pending connected
+  backend/garden history into main (`01522d7`). Production build passed after
+  `npm ci`. Existing API/ML contracts: 82 passed, 3 skipped. Edge full suite:
+  30/31; the recording assertion expected an old disabled-ML label although
+  audio measurements succeeded. After accepting the backend's actual label,
+  recording and draft discard passed 2/2. No product behavior changed for that fix.
+- Recovered only `3388445`, `2a4c8e6` and `8e3cd21`, retaining cherry-pick origin
+  references. The only cherry-pick conflict was the implementation log; both the
+  isolated experiment evidence and all connected-backend records were preserved.
+  Rebased the recovered work onto the main produced by PR #2.
+- Combined API and ML contract suite: **111 passed, 3 skipped**, three existing
+  Starlette/Modal deprecation warnings. Command: `.\.venv\Scripts\python.exe -m
+  pytest backend/tests backend/ml/tests -q --basetemp=.local/pytest-ml-recovery
+  -o faulthandler_timeout=30`. Dedicated PostgreSQL checks (two) and opt-in real
+  DAM inference (one) were skipped. `node --check
+  scripts/make-vad-browser-fixture.cjs` passed.
+- Recovery leaves the API runtime, deployment configuration, API requirements,
+  frontend and environment templates unchanged. Gemini/Aiven stay connected;
+  `NUMA_DEMO_MODE=false` and `NUMA_ML_ENABLED=false` remain in the public image.
+  No production data, credentials, model weights or private reports were copied.
+- Updated current guides to remove obsolete ephemeral-public-demo, missing
+  Gemini/Aiven and unimplemented-ML-flag statements. The entries below are
+  historical evidence from their respective checkpoints, not today's runtime.
+  Remote DAM/VAD runs were not repeated and no service was redeployed here.
+  Restoring the experiments does not authorize or implement DAM/VAD in the diary.
+
+## Chromium MediaRecorder capture verified in Modal — 14 November 2026
+
+- Base `2a4c8e6`, clean tree; branch `ml/vad-browser-check`. User authorized
+  continuing the remaining work and requested progress/credit tracking. Browser
+  execution was newly authorized after the previous rejected attempt.
+- `node scripts/make-vad-browser-fixture.cjs`: **PASS**, Edge 157.0.4341.57,
+  actual MediaRecorder/WebAudio using only the existing synthetic English fixture.
+  Created ignored WebM/Opus, 842,832 bytes; no microphone or public Numa access.
+  SHA-256 `ad21026d44785ab1d49c1095410540d901ba0f1e19c02a8d18fae69a9cfaa646`.
+- Actual command with profile `rebollmartin` and UTF-8 output:
+  `.\.venv\Scripts\python.exe -m modal run -m backend.ml.modal_vad_check --audio .local/ml-fixtures/synthetic-en.wav --browser-audio .local/ml-fixtures/chromium-synthetic.webm --report .local/ml-results/vad-browser-modal-20261114-01.json`.
+  **PASS**, exit 0, **19/19 cases**;
+  [run](https://modal.com/apps/rebollmartin/main/ap-Xscv7fKItnmWQRi9TTzbKK).
+  Existing image reused, CPU/no GPU, minimum/reserve zero, offline inference.
+- Chromium file decoded to 57.060 seconds, speech 40.704 seconds, clipping zero;
+  status **eligible**, filter/decode 1.055 s. No DAM call requested for this new
+  case; exactly one successful real DAM call on the reference TTS fixture.
+  Whole suite 43.170 s, intervals repeatable, no API imports. Scores remain only
+  in the ignored report; no audio saved in the model Volume.
+- Final `modal app list --json` filtered to validation apps: **both stopped,
+  0 tasks each**. No public deployment or application/frontend source changes.
+- User confirmed a physical iPhone/Safari test: recording, playback and arrival at
+  review all worked in the public demo. This is user-reported, not agent-observed.
+  No claim of real Safari-file VAD validation, even if that manual UI test passes.
+- Updated runbook and project progress. Backend tests not repeated because source
+  is unchanged; previous actual result remains **81 passed, 2 skipped**. No Git push.
+  Account credit readings are private session progress data, not committed here.
+
+## Isolated phase-B VAD and audio-quality gate — 14 November 2026
+
+- Started from clean `3388445` (`ml/modal-dam-check`); created `ml/vad-quality`.
+  User authorized the next isolated VAD/quality block. No public demo deployment,
+  frontend, API/domain/analysis logic, Gemini, Aiven or secret changes.
+- Added `backend/ml/audio_quality.py`: bounded WAV/WebM/MP4 decoding to mono16k,
+  existing RMS/clipping limits, versioned/configurable 30-second speech policy,
+  unpadded Silero sample intervals, and a gate before optional real DAM execution.
+  Full normalized audio retains pauses/energy and goes unchanged to DAM's reference
+  preprocessing. No clinical categories, probabilities, thresholds or fake scores.
+- Silero **6.2.3**, revision `5cd7945676eb32225748052e2e6a0580e4686a08`, MIT.
+  Audited official wheel/source/license; wheel SHA-256
+  `7b7f5436cfcb02fae583a05b512ea96467fd449fe54cb49a5e4f06c51a1e43b8`.
+  Bundled JIT checkpoint SHA-256
+  `e1122837f4154c511485fe0b9c64455f7b929c96fbb8d79fbdb336383ebd3720`.
+  Runtime verifies source/checkpoint hashes before loading. Frozen CPU model,
+  inference mode, serialized recurrent state and reset per file.
+- GitHub's unauthenticated metadata API returned 403/rate limit once; read public
+  Git tags and PyPI metadata instead. Installed only the pinned wheel into the
+  existing isolated `.venv-ml`, using `pip install --no-deps` after verification.
+  API `.venv` packages unchanged. Local `.venv-ml ... -m pip check`: **PASS**.
+- First local VAD load returned `RuntimeError`: blanket `requires_grad_` is not
+  supported by TorchScript modules. Changed freezing to each parameter; retry
+  succeeded with **40.704 s** of estimated speech in the existing **57.095 s** TTS.
+  No private recordings were processed. Optional second Windows English TTS voice
+  was unavailable; reverted the generator change and generated the second controlled
+  English voice with eSpeak NG inside Linux instead.
+- Added `vad_validation.py` with 18 deterministic/controlled cases and
+  `modal_vad_check.py`, app **numa-vad-validation**, workspace **rebollmartin**.
+  Extracted the existing isolated DAM image's `base_image` for reuse; its original
+  dependency/image definition and public `backend/modal_app.py` remain unchanged.
+  New test image adds pinned Silero, FFmpeg and eSpeak NG (fixture generator only).
+- Remote resources: CPU 4 / RAM 8192 MiB / timeout 300 s / retries 0 / minimum and
+  reserve 0 / maximum 1 / idle 30 s / **no GPU**. Outbound network blocked, Hugging
+  Face offline, no app secrets or HTTP endpoint. Reuses the previous artifact-only
+  weights Volume; all audio is temporary outside it, and Silero is in the image.
+- Actual remote command, with `MODAL_PROFILE=rebollmartin` and UTF-8 output:
+  `.\.venv\Scripts\python.exe -m modal run -m backend.ml.modal_vad_check --audio .local/ml-fixtures/synthetic-en.wav --report .local/ml-results/vad-modal-20261114-01.json`.
+  **PASS**, exit 0, **18/18 cases**;
+  [run](https://modal.com/apps/rebollmartin/main/ap-dhJv8bSdLgnTACqgQrMAxI).
+  Final image `im-1EccIn8NCKtu2K6lax4GCm`; Python 3.11.18, torch/torchaudio
+  2.7.0+cpu, Silero 6.2.3, FFmpeg 7.1.5-0+deb13u1, eSpeak NG 1.52.0.
+  Remote `pip check` passed. Other ML versions match the preceding verified lock.
+- Real observations: 29.504 s of speech rejected; 30.496 s accepted; a 60-second
+  file containing 5.056 s of speech rejected. Silence, quiet voice, clipping,
+  corrupt/truncated containers, upload excess and overlength PCM/compressed audio
+  rejected. White noise and synthesized melody detected as 0 speech. Stereo48k
+  WebM/Opus and MP4/AAC created by FFmpeg normalized successfully (40.736 s speech).
+- Noise plus voice (39.936 s) and two consecutive synthetic voices (48.416 s)
+  demonstrate limits: VAD detects speech but not suitability, language or speaker
+  count. They were excluded from DAM by the explicit caller-scope guard, **not**
+  automatic noise/diarization detection. These are characterization fixtures only.
+- Exactly one real DAM call: the principal controlled English fixture passed the
+  gate and completed inference. Raw scores exist only for that case in the ignored
+  report; the other 17 contain none. Public summaries use an allowlist. Repeating
+  the primary VAD after the other cases yielded identical intervals/duration.
+  Total remote suite **44.366 s**; first case including DAM/model load **27.267 s**;
+  subsequent VAD cases approximately **0.83–1.37 s**. No isolated DAM latency,
+  clinical accuracy, SNR, concurrent-load or cost benchmark claimed.
+- `.\.venv\Scripts\python.exe -m modal app list --json`, filtered to this app:
+  **stopped / 0 tasks**. No extra persistent Volume; previous weights cache retained.
+- Local pytest attempts inside the sandbox blocked on TestClient's loopback
+  socket (`socket._fallback_socketpair`); interrupted them. A desktop update also
+  interrupted an approval/execution. Authorized execution outside the sandbox
+  passed **80 tests / 2 skipped**; after adding the public-summary privacy check,
+  final `.\.venv\Scripts\python.exe -m pytest backend/tests backend/ml/tests -q --basetemp=.local/pytest-vad-final -o faulthandler_timeout=30`:
+  **81 passed, 2 skipped, 3 existing warnings**, 4.18 s. Skips: dedicated PostgreSQL
+  and opt-in local DAM test. The new gate module alone passed **27 tests**.
+- Attempt to run `node scripts/make-vad-browser-fixture.cjs` was rejected before
+  opening Edge. Did not retry or use another capture tool. The optional script is
+  prepared but **capture execution unverified**; `node --check` passed syntax only.
+  No actual Chrome/Safari or physical microphone fixture was validated here.
+  FFmpeg-produced formats are not substituted as evidence of real browser capture.
+- Documented [ML_VAD.md](ML_VAD.md), updated reference guides/README/roadmap, and
+  preserved all public source and existing synthetic fixture generator. No public
+  HTTP or browser regression rerun; no user journal/session mutation. **The isolated
+  core is verified; full phase-B acceptance still needs real browser/device captures.**
+  Phase-C journal integration and provider work have not started. No Git push.
+
+## Isolated DAM on Modal/Linux CPU — 14 November 2026
+
+- Starting checkpoint: `c4603165170571480d4c26efb01e81ed7c02232c`, clean
+  `deploy/modal-demo`; created `ml/modal-dam-check` for the explicitly authorized
+  isolated Linux validation before phase B. Public demo remains the return point.
+- Added `backend/ml/modal_check.py`, a separate authenticated RPC app,
+  `numa-dam-validation`, with no public HTTP endpoint or app secrets. Added a
+  Linux CPU dependency lock and two privacy/import-boundary tests. Existing DAM
+  adapter, preprocessing, model manifest, API and frontend are unchanged.
+- Modal CLI **1.6.4**, existing authenticated workspace **rebollmartin**. Verified
+  Python **3.11.18**, Linux x86_64/glibc 2.41, torch/torchaudio **2.7.0+cpu**,
+  Transformers **4.52.3**, PEFT **0.15.2**, huggingface-hub **0.31.4**, safetensors
+  **0.5.3**, SoundFile **0.13.1**, NumPy **2.2.6**. Both remote builds passed
+  `python -m pip check`; heavy ML packages were not installed into the API venv.
+- DAM revision `df83a1e00101d9c06a5042b96b921eb94d5a2528`; Whisper revision
+  `e8727524f962ee844a7319d92be39ac1bd25655a`; pipeline
+  `numa-dam-standalone-v1`. Existing SHA-256 checks ran before model code/load.
+- Used only the existing fictitious English TTS fixture, 57.095 seconds,
+  mono/16 kHz/PCM16, SHA-256
+  `05e22f170a9cb7c817754eb44024d468bede1e1b7ca6070dfeafa906e2fe3789`.
+  No patient audio, credentials or application data were uploaded.
+- Preparation: 1 CPU / 1024 MiB / timeout 600 seconds. Check: 4 CPU / 8192 MiB /
+  timeout 300 seconds, `block_network=True` and both Hugging Face offline flags.
+  Both functions use minimum/reserve 0, maximum 1, idle window 30 seconds,
+  retries 0 and no GPU. Model artifacts are explicitly committed before a
+  separate container loads them offline; temporary audio stays outside the Volume.
+- Actual local commands and results:
+  - `.\.venv\Scripts\python.exe -m modal --version` and
+    `.\.venv\Scripts\python.exe -m modal profile current`: **1.6.4 / rebollmartin**.
+  - `.\.venv\Scripts\python.exe -m pytest backend/ml/tests -q --basetemp=.local/pytest-dam-modal-baseline`:
+    **18 passed, 1 skipped**.
+  - `.\.venv\Scripts\python.exe -m pytest backend/ml/tests -q --basetemp=.local/pytest-dam-modal-contract`:
+    **20 passed, 1 skipped** after the two new tests.
+  - `.\.venv\Scripts\python.exe -m pytest backend/tests backend/ml/tests -q --basetemp=.local/pytest-dam-modal-final`:
+    **54 passed, 2 skipped**, three existing Starlette/httpx and local Python/Modal
+    deprecation warnings. Skipped dedicated PostgreSQL and opt-in local real-model
+    checks; the remote real-model results below are separate, executed evidence.
+- Actual remote command, with `$env:MODAL_PROFILE='rebollmartin'` and
+  `$env:PYTHONIOENCODING='utf-8'`:
+  `.\.venv\Scripts\python.exe -m modal run -m backend.ml.modal_check --audio .local/ml-fixtures/synthetic-en.wav --report .local/ml-results/dam-modal-linux-20261114-01.json`.
+  **PASS**, exit 0; [initial run](https://modal.com/apps/rebollmartin/main/ap-jUR8JP063KjwEyDxWML7en).
+  Preparation 16.585 s; load 10.469 s; real inference 7.775 / 6.900 s;
+  total check 27.906 s; peak process RSS 3264.71 MiB.
+- Pinned the observed interpreter to full `3.11.18` and executed the same command
+  with `--report .local/ml-results/dam-modal-linux-20261114-02.json` in a fresh app.
+  **PASS**, exit 0; [final run](https://modal.com/apps/rebollmartin/main/ap-FNMjzQ10t1PaE3IHQTD2cX).
+  Image `im-1xsMMSLgAc1vfT3uLhZoAP`; cached preparation 2.285 s; load 6.861 s;
+  real inference 6.932 / 6.898 s; total check 23.108 s; peak RSS 3271.11 MiB.
+  The base-image build encountered transient package-mirror read timeouts and
+  recovered through pip's automatic retries; neither remote command failed.
+- Both runs: finite outputs, maximum absolute repeat difference **0.0**, model
+  reused/frozen/eval all true, CUDA false, no API/analysis/repository imports.
+  Raw scores are only in the ignored local JSON reports; terminal output redacts
+  them. Reports are never overwritten. This is technical execution with synthetic
+  English speech, not clinical validation, a throughput benchmark or billing proof.
+- Final `.\.venv\Scripts\python.exe -m modal app list --json`, filtered to the
+  validation app: **both stopped, 0 tasks each**. Retained artifact-only Volume
+  `numa-dam-validation-weights`: approximately 1.70 GB of weights plus metadata;
+  storage persists and may incur charges. No audio or scores are written there.
+- Read-only public HTTP checks after the initial run: `Invoke-RestMethod
+  https://rebollmartin--numa-api.us-east.modal.run/api/health` returned ok, ephemeral
+  demo memory, name-only access enabled, Gemini/voice model disabled.
+  `Invoke-WebRequest https://numa-one-xi.vercel.app/login/patient` returned **200**.
+  Source diff against the starting checkpoint confirms no changes to public
+  Modal configuration, API, application analysis, frontend or production env example.
+  No public redeployment, session/journal mutation, frontend build or browser rerun.
+- Added the reproducible runbook [ML_DAM_MODAL.md](ML_DAM_MODAL.md) and updated the
+  README, prior DAM guide and roadmap. Next is **phase B: VAD/effective speech and
+  quality**. VAD, speech duration, clinical validity, journal integration, Gemini,
+  Aiven and the full connected backend remain unverified by this task. User-reported
+  mobile recording is not an independent device test. No Git push occurred.
+
 ## Minimal connected backend: phase 3, Gemini contracts — 14 November 2026
 
 - Previous phase committed as `25aa632`. Added model listing with pagination via
