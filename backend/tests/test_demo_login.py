@@ -11,7 +11,7 @@ from backend.repository import Repository
 def app_client(monkeypatch, enabled=True, demo=True):
     monkeypatch.setenv('NUMA_DEMO_NAME_LOGIN', 'true' if enabled else 'false')
     if not demo:
-        for key in ('NUMA_PATIENT_PASSWORD', 'NUMA_SAMPLE_PASSWORD', 'NUMA_CLINICIAN_PASSWORD', 'GEMINI_API_KEY'):
+        for key in ('NUMA_PATIENT_PASSWORD', 'NUMA_SAMPLE_PASSWORD', 'NUMA_CLINICIAN_PASSWORD', 'GEMINI_API_KEY', 'GEMINI_MODEL'):
             monkeypatch.setenv(key, 'test-only-configuration')
     return TestClient(create_app(repo=Repository(demo=True), demo=demo, secret='a'*40))
 
@@ -56,8 +56,8 @@ def test_demo_login_rejects_invalid_input(monkeypatch, payload):
     assert app_client(monkeypatch).post('/api/auth/demo', json=payload).status_code == 422
 
 
-@pytest.mark.parametrize('enabled,demo', [(False, True), (True, False)])
-def test_demo_access_is_disabled_without_both_switches(monkeypatch, enabled, demo):
+@pytest.mark.parametrize('enabled,demo', [(False, True), (False, False), (True, False)])
+def test_demo_access_follows_explicit_switch_in_connected_mode(monkeypatch, enabled, demo):
     client = app_client(monkeypatch, enabled, demo)
-    assert client.get('/api/health').json()['demo_name_login'] is False
-    assert client.post('/api/auth/demo', json={'name': 'Demo', 'role': 'patient'}).status_code == 404
+    assert client.get('/api/health').json()['demo_name_login'] is enabled
+    assert client.post('/api/auth/demo', json={'name': 'Demo', 'role': 'patient'}).status_code == (200 if enabled else 404)
