@@ -303,7 +303,9 @@ function Login() {
               ? "Explore Robin’s fictional journal and discover how personal patterns take shape."
               : "Leave a voice note about your day. There is no questionnaire to complete."}
         </p>
-        {health?.demo_name_login ? (
+        {!health ? (
+          <p role="status">Connecting to your space…</p>
+        ) : health.demo_name_login ? (
           <form
             onSubmit={async (e) => {
               e.preventDefault();
