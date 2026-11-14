@@ -1,15 +1,30 @@
 /* Numa design tokens. Prefixed --n- so they never collide with older variables
    (--paper, --muted…). See DESIGN.md for roles and rules. */
 :root {
-  /* Colour */
-  --n-paper: #f8f0df; /* page background */
-  --n-ivory: #f5e6c5; /* paper sheets, halos */
-  --n-moss: #3f422e; /* main ink and the dark "earth" surface */
-  --n-moss-deep: #2e3122; /* strong ink */
-  --n-ink-soft: #5f5643; /* secondary text — 6.4:1 on paper, 5.9:1 on ivory */
-  --n-apricot: #d78b30; /* only the flower and the primary action */
-  --n-past-bloom: #d9b98a; /* "past bloom": flowers of earlier days, never text */
-  --n-danger: #9a3b26; /* destructive confirmation only; ivory text on it is 5.6:1 */
+  /* ── Patient portal: a softened Everforest (see DESIGN.md → "Tokens") ── */
+  --n-cream: #f6efdd; /* page background */
+  --n-oat: #efe5cc; /* the mailbox and fields */
+  --n-forest: #2f3a2e; /* main text: 11.4:1 on cream, 10.4:1 on oat */
+  --n-forest-soft: #56604c; /* secondary text: 5.8:1 on cream, 5.3:1 on oat */
+  --n-line: rgb(47 58 46 / 0.14); /* 1px lines */
+  --n-peach: #e9a06b; /* only the primary action and the flowers */
+  --n-peach-hover: #df8f55;
+  --n-grass-1: #a7b88a; /* light blades, at the back */
+  --n-grass-2: #7f9a68; /* middle blades */
+  --n-grass-3: #5f7f52; /* dark blades, at the front */
+  --n-ground: #4e6b45; /* My garden's soil, below the grass */
+  --n-on-ground: #f6efdd; /* text on the ground: 5.2:1 */
+  --n-on-ground-soft: rgb(246 239 221 / 0.92); /* secondary on the ground: 4.6:1 (80% would be 4.0:1) */
+  --n-butter: #ebcb7a; /* flower centres, tiny details */
+  --n-danger: #9a3b26; /* errors and delete, always with an icon and words: 6.0:1 on cream */
+
+  /* ── Login, landing and clinic (unchanged) ── */
+  --n-paper: #f8f0df;
+  --n-ivory: #f5e6c5;
+  --n-moss: #3f422e;
+  --n-moss-deep: #2e3122;
+  --n-ink-soft: #5f5643;
+  --n-apricot: #d78b30;
   --n-attention: #9a5b13; /* clinic "review" state only; 4.8:1 on paper. Never on plain ivory (4.4:1) */
   --n-natural: #9f886f; /* decorative only, never text */
   --n-sage: #a3ac84; /* leaves, never text */
@@ -32,13 +47,14 @@
   --n-leading-display: 1.04;
   --n-tracking-display: -0.02em;
 
-  /* Shape — radius follows hierarchy */
+  /* Shape: like stones and seeds */
+  --n-radius-mailbox: 32px;
   --n-radius-sheet: 6px;
-  --n-radius-field: 12px;
+  --n-radius-field: 14px;
   --n-radius-pebble: 999px;
 
-  /* Lines and paper */
-  --n-stroke: 1.75px; /* the voice line and the stem */
+  /* Lines and paper (login, landing and clinic) */
+  --n-stroke: 1.75px;
   --n-sheet-border: rgb(46 49 34 / 0.12);
   --n-sheet-shadow:
     0 1px 0 rgb(46 49 34 / 0.06), 0 8px 20px -14px rgb(43 33 14 / 0.45);

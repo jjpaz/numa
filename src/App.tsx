@@ -1,6 +1,4 @@
 import {
-  createContext,
-  useCallback,
   useContext,
   useEffect,
   useLayoutEffect,
@@ -21,14 +19,15 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { GrowthProvider, YourSpace, useGrowth } from "./growth";
+import { YourSpace, useGrowth } from "./growth";
+import { Auth, useResource } from "./auth";
+import { PatientLayout } from "./patient/Layout";
 import {
   EntryPlant,
   GardenHome,
   JournalLog,
   LoginMotif,
   ListeningLine,
-  LeafMenu,
   MyGarden,
   TodayNotice,
 } from "./garden";
@@ -78,59 +77,6 @@ import {
   actionIcons,
 } from "./components";
 import { ObservationChart, Sparkline } from "./clinicCharts";
-
-const Auth = createContext<{
-  user: User | null;
-  health: Health | null;
-  login: (email: string, password: string) => Promise<User>;
-  demoLogin: (
-    name: string,
-    role: "patient" | "psychologist",
-    sample: boolean,
-  ) => Promise<User>;
-  logout: () => void;
-}>({
-  user: null,
-  health: null,
-  login: async () => {
-    throw Error();
-  },
-  demoLogin: async () => {
-    throw Error();
-  },
-  logout: () => {},
-});
-function useResource<T>(path: string, interval = 0) {
-  const [data, setData] = useState<T | null>(null),
-    [error, setError] = useState("");
-  const active = useRef(0);
-  const refresh = useCallback(async () => {
-    const id = ++active.current;
-    try {
-      const result = await api<T>(path);
-      if (id === active.current) {
-        setData(result);
-        setError("");
-      }
-    } catch (e) {
-      if (id === active.current) setError((e as Error).message);
-    }
-  }, [path]);
-  useEffect(() => {
-    setData(null);
-    void refresh();
-    const timer = interval
-      ? setInterval(() => {
-          if (document.visibilityState === "visible") void refresh();
-        }, interval)
-      : undefined;
-    return () => {
-      active.current++;
-      clearInterval(timer);
-    };
-  }, [refresh, interval]);
-  return { data, error, refresh };
-}
 
 export function App() {
   const [user, setUser] = useState<User | null>(null),
@@ -456,57 +402,6 @@ function Login() {
     </div>
   );
 }
-/** Which preview this is, written as sentences for the patient's space. */
-function PatientFootnote() {
-  const { health, user } = useContext(Auth);
-  const mode =
-    health?.mode === "local_preview"
-      ? "Local preview: temporary data, acoustic measurements only"
-      : "Connected prototype with experimental voice analysis";
-  return (
-    <p>
-      {mode}
-      {user?.source === "simulated" ? ", on a fictional profile." : "."}{" "}
-      Research prototype, no clinical diagnosis.
-    </p>
-  );
-}
-function PatientLayout() {
-  const { user } = useContext(Auth);
-  return (
-    <GrowthProvider key={user!.id}>
-      <PatientFrame />
-    </GrowthProvider>
-  );
-}
-function PatientFrame() {
-  const { logout } = useContext(Auth);
-  const { growth } = useGrowth();
-  return (
-    <div
-      className={
-        "patient-app garden-app " + (growth?.simple_mode ? "is-simple" : "")
-      }
-    >
-      <header className="garden-header">
-        <Link to="/patient" className="wordmark" aria-label="Your garden home">
-          <svg viewBox="0 0 40 40" aria-hidden="true">
-            <path d="M7 29V16c0-9 13-9 13 0v13-9c0-9 13-9 13 0v9" />
-          </svg>
-          numa<span className="wordmark-dot">.</span>
-        </Link>
-        <LeafMenu onSignOut={logout} />
-      </header>
-      <main className="garden-main">
-        <Outlet />
-      </main>
-      <footer className="garden-footer">
-        <PatientFootnote />
-      </footer>
-    </div>
-  );
-}
-
 function Journal() {
   const { user } = useContext(Auth);
   const entries = useResource<Entry[]>("/patient/entries", 5000);
