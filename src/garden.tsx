@@ -641,7 +641,17 @@ const HOME_SLOT = 84;
  * voice line: a past plant (past-bloom flower) for earlier days, today's
  * flowering plant (apricot) for today's saved entry, a young plant for a draft.
  */
-export function EntryPlant({ entry }: { entry: Entry }) {
+export function EntryPlant({
+  entry,
+  glyph = false,
+  decorative = false,
+}: {
+  entry: Entry;
+  /** A small glyph (the journal's rows): cropped around the plant. */
+  glyph?: boolean;
+  /** Inside a link that already names the entry: hidden from assistive tech. */
+  decorative?: boolean;
+}) {
   const reduced = useReducedMotion();
   const plant = plantsFrom([{ ...entry, saved: true }])[0];
   const mode = !entry.saved
@@ -695,60 +705,86 @@ export function EntryPlant({ entry }: { entry: Entry }) {
     points.reduce((a, b) => (Math.abs(b[1] - y) < Math.abs(a[1] - y) ? b : a));
   const leaves = mode === "today" ? [0.24, 0.4, 0.55, 0.68, 0.8] : [0.34, 0.58];
   const seed = hashString(entry.id);
+  // As a glyph, the plant fills its box: base 6px above the bottom (where the
+  // date's baseline sits), top 4px below the edge. Measured, never guessed.
+  const svgRef = useRef<SVGSVGElement>(null);
+  const plantRef = useRef<SVGGElement>(null);
+  const [glyphBox, setGlyphBox] = useState("16 12 168 168");
+  useLayoutEffect(() => {
+    if (!glyph || !svgRef.current || !plantRef.current) return;
+    const measured = svgRef.current.getBoundingClientRect().height;
+    const px = measured > 10 ? measured : 56;
+    const b = plantRef.current.getBBox();
+    const air = 4,
+      under = 6;
+    const scale = (px - air - under) / Math.max(1, axis - b.y); // px per unit
+    const side = px / scale;
+    setGlyphBox(
+      [b.x + b.width / 2 - side / 2, b.y - air / scale, side, side]
+        .map(r1)
+        .join(" "),
+    );
+  }, [glyph, entry.id, mode, plant.kind]);
   return (
     <svg
-      className="entry-plant"
-      viewBox={`0 0 ${size} ${size}`}
-      role="img"
-      aria-label={
-        mode === "today"
-          ? "Today's plant in your garden, in flower."
-          : mode === "young"
-            ? "A young plant: this entry is not saved yet."
-            : "This entry's plant in your garden."
-      }
+      ref={svgRef}
+      className={"entry-plant" + (glyph ? " is-glyph" : "")}
+      viewBox={glyph ? glyphBox : `0 0 ${size} ${size}`}
+      {...(decorative
+        ? { "aria-hidden": true }
+        : {
+            role: "img",
+            "aria-label":
+              mode === "today"
+                ? "Today's plant in your garden, in flower."
+                : mode === "young"
+                  ? "A young plant: this entry is not saved yet."
+                  : "This entry's plant in your garden.",
+          })}
     >
       <path className="gh-line" d={d} pathLength={1} />
-      {mode === "past" ? (
-        <g
-          transform={`translate(${cx} ${axis}) scale(1.3) rotate(${r1(shape.tilt)})`}
-        >
-          <PastPlant
-            kind={plant.kind}
-            h={shape.h}
-            hue={plant.hue}
-            leaf={shape.leaf}
-            sway={shape.sway}
-            bloomClass={opening ? "is-opening" : undefined}
-          />
-        </g>
-      ) : (
-        <>
-          <path
-            className="gh-stem entry-plant-stem"
-            d={`M${cx} ${axis}` + cubicD(stem)}
-          />
-          {leaves.map((f, i) => {
-            const [x, y] = onStem(axis - tall * f);
-            return (
-              <LeafAt
-                key={f}
-                x={x}
-                y={y}
-                side={i % 2 ? -1 : 1}
-                length={(mode === "today" ? 40 : 34) * (1 - i * 0.07)}
-                tone={LEAF_TONES[(seed + i) % 3]}
-                tilt={-16 + (((seed >>> (i * 3)) % 7) - 3)}
-              />
-            );
-          })}
-          {mode === "today" && (
-            <g transform={`translate(${cx + 1} ${axis - tall})`}>
-              <Bloom r={17} petal="var(--n-apricot)" />
-            </g>
-          )}
-        </>
-      )}
+      <g ref={plantRef}>
+        {mode === "past" ? (
+          <g
+            transform={`translate(${cx} ${axis}) scale(1.3) rotate(${r1(shape.tilt)})`}
+          >
+            <PastPlant
+              kind={plant.kind}
+              h={shape.h}
+              hue={plant.hue}
+              leaf={shape.leaf}
+              sway={shape.sway}
+              bloomClass={opening ? "is-opening" : undefined}
+            />
+          </g>
+        ) : (
+          <>
+            <path
+              className="gh-stem entry-plant-stem"
+              d={`M${cx} ${axis}` + cubicD(stem)}
+            />
+            {leaves.map((f, i) => {
+              const [x, y] = onStem(axis - tall * f);
+              return (
+                <LeafAt
+                  key={f}
+                  x={x}
+                  y={y}
+                  side={i % 2 ? -1 : 1}
+                  length={(mode === "today" ? 40 : 34) * (1 - i * 0.07)}
+                  tone={LEAF_TONES[(seed + i) % 3]}
+                  tilt={-16 + (((seed >>> (i * 3)) % 7) - 3)}
+                />
+              );
+            })}
+            {mode === "today" && (
+              <g transform={`translate(${cx + 1} ${axis - tall})`}>
+                <Bloom r={17} petal="var(--n-apricot)" />
+              </g>
+            )}
+          </>
+        )}
+      </g>
     </svg>
   );
 }
@@ -814,9 +850,15 @@ interface PlacedPlant {
 function VoiceGarden({
   entries,
   state,
+  days: fixedDays,
+  compact = false,
 }: {
   entries: Entry[] | null;
   state: TodayState<Entry> | null;
+  /** A fixed number of days; by default 14 (7 on small screens). */
+  days?: number;
+  /** About 110px tall, no growth animation: the journal's week. */
+  compact?: boolean;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 0, mobile: false });
@@ -835,17 +877,44 @@ function VoiceGarden({
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-  const growing = useGrowOnce(GROWN_KEY, !!entries) && !!entries;
+  // The compact week never animates and never uses up the home's first growth.
+  const growOnce = useGrowOnce(
+    compact ? "numa-journal-week" : GROWN_KEY,
+    !!entries,
+  );
+  const growing = !compact && growOnce && !!entries;
 
   const { width: W, mobile } = size;
-  const days = mobile ? 7 : 14;
-  const k = mobile ? 0.72 : Math.min(1, Math.max(0.82, W / 1280)); // earlier plants' scale
-  const amp = Math.min(22, Math.max(9, (19 * W) / 1440)); // ±16–22px at 1440
-  const radius = mobile ? 34 : 64;
-  const petal = mobile ? 14 : 20; // today's flower radius
-  const todayH = mobile ? 150 : Math.min(195, Math.max(170, W * 0.15));
+  const days = fixedDays ?? (mobile ? 7 : 14);
+  const k = compact
+    ? mobile
+      ? 0.5
+      : 0.58
+    : mobile
+      ? 0.72
+      : Math.min(1, Math.max(0.82, W / 1280)); // earlier plants' scale
+  const amp = compact
+    ? mobile
+      ? 9
+      : 12
+    : Math.min(22, Math.max(9, (19 * W) / 1440)); // ±16–22px at 1440
+  const radius = compact ? (mobile ? 22 : 30) : mobile ? 34 : 64;
+  const petal = compact ? (mobile ? 9 : 11) : mobile ? 14 : 20; // today's flower radius
+  const todayH = compact
+    ? mobile
+      ? 64
+      : 76
+    : mobile
+      ? 150
+      : Math.min(195, Math.max(170, W * 0.15));
   const kind = state?.kind ?? "loading";
-  const todayLeafLength = mobile ? 30 : Math.min(52, todayH * 0.27);
+  const todayLeafLength = compact
+    ? mobile
+      ? 17
+      : 21
+    : mobile
+      ? 30
+      : Math.min(52, todayH * 0.27);
   // Today's plant (leaves included) stays inside the content column.
   const reach =
     kind === "done" || kind === "in_progress"
@@ -867,7 +936,7 @@ function VoiceGarden({
     state?.kind === "done"
       ? todaysSaved.filter((e) => e.id !== state.entry.id).slice(0, 3)
       : [];
-  const sproutGap = mobile ? 14 : 20;
+  const sproutGap = compact ? 12 : mobile ? 14 : 20;
 
   // Earlier days fill the line up to just before the turn.
   const start = mobile ? 8 : 12;
@@ -930,9 +999,9 @@ function VoiceGarden({
     return {
       id: entry.id,
       x,
-      h: (40 + 20 * unit(4, 30)) * (mobile ? 0.8 : 1),
+      h: (40 + 20 * unit(4, 30)) * (compact ? 0.55 : mobile ? 0.8 : 1),
       tilt: -5 + 10 * unit(9, 20),
-      leaf: (mobile ? 16 : 22) * (0.85 + 0.3 * unit(13, 30)),
+      leaf: (compact ? 13 : mobile ? 16 : 22) * (0.85 + 0.3 * unit(13, 30)),
       sway: (unit(17, 8) - 0.5) * 4,
       hue: h % 3,
     };
@@ -1001,19 +1070,23 @@ function VoiceGarden({
 
   const count = placed.length;
   const todayCount = todaysSaved.length;
-  const label =
-    `Your garden over the last ${mobile ? "seven days" : "two weeks"}: ` +
-    (count
-      ? `${count} small ${count === 1 ? "plant" : "plants"} on earlier days, one for each entry you saved. `
-      : "no plants on earlier days yet. ") +
-    (kind === "done"
-      ? `Today, ${todayCount} ${todayCount === 1 ? "entry" : "entries"}: your plant has flowered` +
-        (sprouts.length
-          ? `, with ${sprouts.length} small ${sprouts.length === 1 ? "sprout" : "sprouts"} beside it.`
-          : ".")
-      : kind === "in_progress"
-        ? "Today, a young plant: your entry is not saved yet."
-        : "Today, a seed waits for an entry.");
+  const daysWithEntry = Array.from({ length: days }, (_, i) =>
+    localDayKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - i)),
+  ).filter((key) => byDay.has(key)).length;
+  const label = compact
+    ? `This week: ${daysWithEntry} of the last ${days} days ${daysWithEntry === 1 ? "has" : "have"} an entry.`
+    : `Your garden over the last ${mobile ? "seven days" : "two weeks"}: ` +
+      (count
+        ? `${count} small ${count === 1 ? "plant" : "plants"} on earlier days, one for each entry you saved. `
+        : "no plants on earlier days yet. ") +
+      (kind === "done"
+        ? `Today, ${todayCount} ${todayCount === 1 ? "entry" : "entries"}: your plant has flowered` +
+          (sprouts.length
+            ? `, with ${sprouts.length} small ${sprouts.length === 1 ? "sprout" : "sprouts"} beside it.`
+            : ".")
+        : kind === "in_progress"
+          ? "Today, a young plant: your entry is not saved yet."
+          : "Today, a seed waits for an entry.");
 
   return (
     <div className="gh-garden-art" ref={box}>
@@ -1231,44 +1304,9 @@ export function GardenHome({
 
 /* ───────────────────────── Journal (log) ───────────────────────── */
 
-function WeekTrace({ entries }: { entries: Entry[] }) {
-  const now = new Date();
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() - 6 + i,
-    );
-    const key = localDayKey(d);
-    return {
-      key,
-      label: d.toLocaleDateString("en-GB", { weekday: "short" }),
-      tended: entries.some((e) => e.saved && localDayKey(e.created_at) === key),
-      today: i === 6,
-    };
-  });
-  return (
-    <ol className="week-trace" aria-label="The last seven days">
-      {days.map((d) => (
-        <li
-          key={d.key}
-          className={(d.tended ? "tended " : "") + (d.today ? "today" : "")}
-        >
-          <span className="week-seed" aria-hidden="true">
-            {d.tended && <Leaf size={13} />}
-          </span>
-          <span>
-            {d.label}
-            <span className="visually-hidden">
-              {d.today ? ", today" : ""}:{" "}
-              {d.tended ? "entry planted" : "no entry"}
-            </span>
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
-}
+/** The first line of the person's own words, if there are any. */
+const firstLine = (text: string | null | undefined) =>
+  (text ?? "").trim().split(/\n+/)[0]?.trim() ?? "";
 
 export function JournalLog({
   entries,
@@ -1292,87 +1330,106 @@ export function JournalLog({
     if (months.at(-1)?.label !== label) months.push({ label, items: [] });
     months.at(-1)!.items.push(e);
   }
+  const state = entries ? todayState(entries) : null;
   return (
-    <div className="journal-log">
-      <header className="garden-page-heading">
-        <h1>Journal</h1>
-        <p>Every entry you’ve planted, newest first.</p>
-      </header>
-      <ErrorNotice message={error} />
-      {!entries ? (
-        <Loading />
-      ) : (
-        <>
-          <WeekTrace entries={entries} />
-          {sorted.length === 0 ? (
-            <div className="garden-empty">
-              <p>Your journal is waiting for its first entry.</p>
-              {!sample && (
-                <Link className="text-link" to="/patient/new">
-                  Add an entry <ArrowRight size={16} aria-hidden="true" />
-                </Link>
-              )}
-            </div>
-          ) : (
-            months.map((month) => (
-              <section key={month.label} className="log-month">
+    <div className="jl-page">
+      <div className="jl-wrap">
+        <nav className="jl-back" aria-label="Back">
+          <Link to="/patient/garden">My garden</Link>
+        </nav>
+        <header className="jl-head">
+          <h1>Journal</h1>
+          <p>Every entry you’ve planted, newest first.</p>
+        </header>
+        <ErrorNotice message={error} />
+        {!entries ? (
+          <Loading />
+        ) : sorted.length === 0 ? (
+          <div className="jl-empty">
+            <p>Your journal is waiting for its first entry.</p>
+            {!sample && (
+              <Link className="ep-primary" to="/patient/new">
+                Add an entry
+              </Link>
+            )}
+          </div>
+        ) : (
+          <>
+            <section className="jl-week" aria-label="This week">
+              <VoiceGarden entries={entries} state={state} days={7} compact />
+              <div className="jl-week-labels" aria-hidden="true">
+                <span>This week</span>
+                <span>Today</span>
+              </div>
+            </section>
+            {months.map((month) => (
+              <section
+                key={month.label}
+                className="jl-month"
+                aria-label={month.label}
+              >
                 <h2>{month.label}</h2>
-                <ol className="log-list">
+                <ol className="jl-list">
                   {month.items.map((e) => {
                     const today = isToday(e.created_at);
                     const busy = ["pending", "processing"].includes(e.status);
+                    const words = firstLine(e.transcript);
+                    const meta = busy
+                      ? "Still listening"
+                      : !e.saved
+                        ? "Draft, not saved yet"
+                        : e.action?.feedback === "helpful"
+                          ? "Something helped"
+                          : "";
                     return (
                       <li key={e.id}>
                         <Link
                           to={"/patient/entries/" + e.id}
-                          className={"log-entry " + (today ? "is-today" : "")}
+                          className={
+                            "log-entry jl-row" +
+                            (today ? " is-today" : "") +
+                            (e.saved ? "" : " is-draft")
+                          }
                         >
-                          <span
-                            className={
-                              "log-seed " + (e.saved ? "" : "is-draft")
-                            }
-                            aria-hidden="true"
-                          >
-                            {e.saved ? (
-                              <Leaf size={16} />
-                            ) : (
-                              <Sprout size={16} />
-                            )}
+                          <span className="jl-date">
+                            <time dateTime={e.created_at}>
+                              {today ? "Today" : shortDate(e.created_at)}
+                            </time>
                           </span>
-                          <span className="log-body">
-                            <span className="log-date">
-                              {shortDate(e.created_at)}
-                              {today && (
-                                <span className="today-tag">Today</span>
-                              )}
-                            </span>
-                            <strong>
+                          <span className="jl-plant">
+                            <EntryPlant entry={e} glyph decorative />
+                          </span>
+                          <span className="jl-body">
+                            <span className="jl-title">
                               {busy ? "Listening to your day…" : e.title}
-                            </strong>
-                            <span className="log-reflection">
-                              {reflectionFor(e)}
                             </span>
-                            {(!e.saved || e.action?.feedback === "helpful") && (
-                              <span className="log-meta">
-                                {!e.saved &&
-                                  (busy
-                                    ? "Still listening"
-                                    : "Draft · not saved yet")}
-                                {e.saved && "Something helped"}
+                            {!busy && (
+                              <span className="jl-reflection">
+                                {reflectionFor(e)}
+                              </span>
+                            )}
+                            {words && (
+                              <span className="jl-quote">{words}</span>
+                            )}
+                            {meta && (
+                              <span className="jl-meta">
+                                {meta === "Something helped" && (
+                                  <Sprout size={14} aria-hidden="true" />
+                                )}
+                                {meta}
                               </span>
                             )}
                           </span>
-                          <ArrowRight size={17} aria-hidden="true" />
                         </Link>
                       </li>
                     );
                   })}
                 </ol>
               </section>
-            ))
-          )}
-        </>
-      )}
+            ))}
+          </>
+        )}
+      </div>
     </div>
   );
 }

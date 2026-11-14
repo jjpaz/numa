@@ -711,123 +711,12 @@
   line-height: var(--n-leading-text);
   color: var(--n-ink-soft);
 }
-.week-trace {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 4px;
-  max-width: 420px;
-  margin: 16px 0 6px;
-  padding: 0;
-  list-style: none;
-}
-.week-trace li {
-  display: grid;
-  justify-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--forest-soft);
-}
-.week-seed {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50% 50% 46% 54%;
-  border: 1.5px dashed #a3ab8c;
-  color: var(--g-stem);
-}
-.week-trace li.tended .week-seed {
-  border: 1.5px solid var(--g-leaf);
-  background: #e5ebd3;
-}
-.week-trace li.today {
-  font-weight: 650;
-  color: var(--forest);
-}
-.log-month h2 {
-  margin: 30px 0 10px;
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: 21px;
-  color: var(--forest);
-}
-.log-list,
 .recent-list {
   display: grid;
   gap: 10px;
   margin: 0;
   padding: 0;
   list-style: none;
-}
-.log-entry {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 14px;
-  padding: 18px 18px;
-  border-radius: 26px 22px 28px 24px;
-  background: var(--ivory-soft);
-  border: 1px solid var(--line);
-  color: var(--forest);
-  transition: background 0.3s ease;
-}
-.log-entry:hover {
-  background: #fffdf3;
-}
-.log-entry > svg {
-  margin-top: 4px;
-  color: var(--forest-soft);
-}
-.log-entry.is-today {
-  border-color: var(--g-leaf);
-  box-shadow: inset 4px 0 0 var(--g-sage);
-}
-.log-seed {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50% 46% 54% 50%;
-  background: #e5ebd3;
-  color: var(--g-stem);
-}
-.log-seed.is-draft {
-  background: transparent;
-  border: 1.5px dashed #a3ab8c;
-}
-.log-body {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-.log-body strong {
-  font-size: 17px;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-.log-date {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: var(--forest-soft);
-}
-.today-tag {
-  padding: 1px 9px;
-  border-radius: 999px;
-  background: var(--g-butter);
-  color: var(--forest);
-  font-size: 13px;
-  font-weight: 600;
-}
-.log-reflection {
-  font-family: var(--display);
-  font-size: 16px;
-  color: var(--g-stem);
-}
-.log-meta {
-  font-size: 14px;
-  color: var(--forest-soft);
 }
 .garden-empty {
   margin: 24px 0;

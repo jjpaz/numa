@@ -220,6 +220,53 @@ voice.**
   line draws once and a dot breathes at its end while the entry is read. With
   reduced motion it is still.
 
+## Journal (`/patient/journal`)
+
+Every entry the person has planted, newest first, on the same 1280px column.
+Styled in [`src/journal.css`](src/journal.css).
+
+- **Header.** "My garden" as a quiet underlined link, then the only `h1`,
+  "Journal" (Young Serif, `clamp(40px, 5vw, 64px)`), and one 18px ink-soft line.
+- **The week is the home's garden, compact.** `VoiceGarden` with `days={7}` and
+  `compact`: the same voice line and plants, about 110px tall, with no growth
+  animation, no today action and no state text. Only "This week" and "Today"
+  (14px ink-soft) sit under it. Its `aria-label` says how many of the last 7
+  days have an entry.
+- **Months** are `h2`s in Young Serif 28px with 48px of air above and a 1px
+  `--n-sheet-border` rule under them.
+- **Rows, never cards.** Each entry is one link across the whole row, separated
+  by 1px `--n-sheet-border` lines: no background, no radius, no shadow, no
+  arrow.
+  - Three columns: the date (~112px, 16px tabular; "Today" in 600 moss-deep,
+    never apricot), 16px of air, the entry's plant (56px), then the content
+    (max 64ch). The date's baseline sits on the plant's base; the content
+    starts at the top of the row.
+  - Hierarchy, strongest first: the title in Young Serif 28px; the reflection
+    in Hanken 18px ink-soft; then the first line of the person's own words,
+    without quotation marks, in Hanken 16px ink-soft (line height 1.5), cut to
+    one line with an ellipsis (two on small screens, and left out when there are
+    no words). Last, a 14px 600 moss meta line: "Something helped" (with a 14px
+    sprout), "Draft, not saved yet" or "Still listening".
+  - Hover tints the row with `--n-ivory` at 50%, with no animation. Keyboard
+    focus (`:focus-visible`) is a 2px `--n-focus` outline at −2px around the
+    whole row, with a 6px radius.
+  - 28–32px of vertical padding per row.
+- **The plant per entry** is `EntryPlant` from the entry page, as a decorative
+  56px glyph (`glyph`, `decorative`): the same kind and the same deterministic
+  variation as in the garden. The glyph measures its own plant (`getBBox`) and
+  sets its viewBox so the plant fills the box from its base (6px above the
+  bottom) to 4px below the top. The flower is apricot only for today's saved
+  entries. Earlier ones use past bloom, deepened in the rows only to `#C4A06B`
+  so it still reads at 56px (still a muted tan, never apricot). A draft is a young sprout with
+  a dotted stem. While an entry is being read, its title is "Listening to your
+  day…".
+- **Empty.** No box: "Your journal is waiting for its first entry." (18px), then
+  the apricot pebble "Add an entry" (no icon). The fictional sample shows only
+  the sentence.
+- **≤720px.** The 44px plant on the left with the date (14px) on its base line;
+  under the date, the title (24px), reflection (16px), words (15px, two lines)
+  and meta.
+
 ## Recording (`/patient/new`, and the voice comparison)
 
 **Your voice draws the line.** The system's voice line is the recording canvas.
