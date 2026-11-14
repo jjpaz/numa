@@ -2,7 +2,7 @@
 
 Esta ruta comprueba la ejecución técnica de DAM, sin FastAPI, Gemini, Aiven ni credenciales. No modifica la `.venv` de la demo, el frontend o el adaptador SpeechBrain de la aplicación. La integración en el journal corresponde a las fases B/C de `NUMA_NEXT_STEPS.md`.
 
-**Estado de despliegue:** la validación aislada en Modal/Linux/CPU ya se ejecutó con pesos reales y está documentada en **[ML_DAM_MODAL.md](ML_DAM_MODAL.md)**. El filtro VAD/calidad posterior también se implementó y probó aisladamente: **[ML_VAD.md](ML_VAD.md)**; faltan capturas reales de navegador/dispositivo para cerrar su aceptación. Los comandos de este documento conservan la referencia de fase A sin VAD. El adaptador recibe rutas y dispositivo como parámetros; el lock CPU/Windows y el generador TTS son herramientas opcionales de desarrollo, no requisitos del servidor. La aplicación pública sigue sin integrar DAM y el cierre de fase F continúa pendiente. Las futuras ampliaciones deben conservar esta ruta de hosting y funcionar sin el ordenador del desarrollador.
+**Estado de despliegue:** la validación aislada en Modal/Linux/CPU con pesos reales está registrada en **[ML_DAM_MODAL.md](ML_DAM_MODAL.md)**. VAD/calidad también tiene validación aislada y captura MediaRecorder Chromium con entrada sintética: **[ML_VAD.md](ML_VAD.md)**. Falta evaluar VAD/DAM sobre un archivo real de Safari y ampliar la diversidad del audio. Los comandos de este documento conservan la referencia de fase A sin VAD. La aplicación conectada ya usa Gemini/Aiven, pero mantiene ML desactivado y no importa DAM/VAD. Recuperar estos experimentos no cambia ese runtime; consultar **[PROJECT_STATUS.md](PROJECT_STATUS.md)**. El lock Windows y el generador TTS son herramientas opcionales de desarrollo.
 
 ## Recursos fijados y auditoría
 
@@ -29,7 +29,7 @@ py -3.11 -m venv .venv-ml
 .\.venv-ml\Scripts\python.exe -m pip check
 ```
 
-El par PyTorch/torchaudio se instala primero desde el índice oficial de CPU; PyPI no publica esas ruedas con sufijo `+cpu`. El archivo `requirements.txt` fija las dependencias directas; `requirements-cpu-win.lock.txt` fija también las transitivas del entorno verificado. Instalar el lock después del par CPU permite reproducir las versiones exactas. No es un lock verificado de CUDA/Linux: Modal se resolverá en la fase F.
+El par PyTorch/torchaudio se instala primero desde el índice oficial de CPU; PyPI no publica esas ruedas con sufijo `+cpu`. El archivo `requirements.txt` fija las dependencias directas; `requirements-cpu-win.lock.txt` fija también las transitivas del entorno Windows verificado. Instalar el lock después del par CPU permite reproducir las versiones exactas. Modal/Linux tiene su propio `requirements-cpu-linux.lock.txt` y runbook `ML_DAM_MODAL.md`; ninguno de estos locks verifica CUDA.
 
 En esta máquina no había Python 3.11 registrado. uv 0.9.11 descargó el intérprete pero falló al renombrar su carpeta. La preparación local utiliza el mismo archivo oficial, extraído directamente, sin instalar Python globalmente:
 
@@ -58,7 +58,7 @@ Las puntuaciones solo se escriben cuando se solicita un informe nuevo dentro de 
 
 En esta fase la CLI exige WAV PCM16, mono, 16 kHz, de 30–120 segundos y hasta 10 MB. Rechaza silencio/energía muy baja, clipping intenso, datos truncados y formatos incompatibles antes de cargar el modelo. Conserva el preprocesamiento de referencia del archivo aceptado.
 
-**Duración del archivo no significa habla efectiva.** `speech_duration_sec` permanece `null` y `vad_verified=false`. Todavía no se detectan música, múltiples hablantes o idioma. Solo usar fixtures controlados de una voz inglesa. La fase B añadirá VAD y el umbral de habla efectiva antes de conectar DAM al journal.
+**Duración del archivo no significa habla efectiva.** En esta CLI de fase A, `speech_duration_sec` permanece `null` y `vad_verified=false`. No identifica música, múltiples hablantes o idioma. Solo usar fixtures controlados de una voz inglesa. La ruta separada `backend.ml.modal_vad_check` ya añade VAD y un umbral de habla estimada; tampoco identifica automáticamente idioma o hablantes, y sigue sin conectarse al journal.
 
 El script Windows crea voz sintética inglesa, con un texto ficticio explícitamente técnico. Sirve para probar carga e inferencia, no para evaluar depresión ni generalización a pacientes. No contiene datos personales y no sobrescribe fixtures existentes.
 

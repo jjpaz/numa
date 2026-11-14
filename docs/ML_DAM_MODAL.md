@@ -133,17 +133,20 @@ import-boundary checks: **20 passed, 1 skipped**. Combined API/ML suite: **54 pa
 Skipped: dedicated PostgreSQL test and opt-in local real-model test. Remote real
 inference above is independently executed; mocks do not supply its results.
 
-Post-run public HTTP checks: backend health **200/ok**, demo/ephemeral memory,
+Historical post-run public HTTP checks at `c460316`: backend health **200/ok**, demo/ephemeral memory,
 name-only login enabled, Gemini off and app voice model disabled; frontend login
 route **200**. `git diff` confirms no changes to `backend/modal_app.py`, API,
 application analysis or frontend sources relative to `c460316`. No live sessions,
 journals or user preview processes were modified by the validation. No frontend
 build/browser suite was repeated because application code did not change.
 
-Follow-up: the isolated phase-B VAD/quality gate now has its own verified synthetic
-Modal battery; see [ML_VAD.md](ML_VAD.md). Actual browser/device capture acceptance
-remains pending. Full DAM integration into the journal and connected deployments
-remain later work; this isolated pass does not complete all of phase F.
+Follow-up: the isolated phase-B VAD/quality gate has a recorded 19-case Modal
+battery, including Chromium MediaRecorder with synthetic input; see
+[ML_VAD.md](ML_VAD.md). VAD/DAM over a real Safari file remains pending.
+The later connected backend uses PostgreSQL/Gemini and keeps vocal ML disabled;
+the ephemeral deployment above is historical, not its current configuration.
+DAM/VAD integration into the journal remains separate future work. See
+[PROJECT_STATUS.md](PROJECT_STATUS.md) for the recovered source and current checks.
 
 References: [Modal resources](https://modal.com/docs/guide/resources),
 [model artifact Volumes](https://modal.com/docs/guide/volumes),

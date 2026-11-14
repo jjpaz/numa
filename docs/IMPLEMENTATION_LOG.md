@@ -1,5 +1,33 @@
 # Implementation and verification record
 
+## Mailbox integration and isolated ML recovery — 14–15 November 2026
+
+- PR #2 merged the complete patient mailbox branch and all pending connected
+  backend/garden history into main (`01522d7`). Production build passed after
+  `npm ci`. Existing API/ML contracts: 82 passed, 3 skipped. Edge full suite:
+  30/31; the recording assertion expected an old disabled-ML label although
+  audio measurements succeeded. After accepting the backend's actual label,
+  recording and draft discard passed 2/2. No product behavior changed for that fix.
+- Recovered only `3388445`, `2a4c8e6` and `8e3cd21`, retaining cherry-pick origin
+  references. The only cherry-pick conflict was the implementation log; both the
+  isolated experiment evidence and all connected-backend records were preserved.
+  Rebased the recovered work onto the main produced by PR #2.
+- Combined API and ML contract suite: **111 passed, 3 skipped**, three existing
+  Starlette/Modal deprecation warnings. Command: `.\.venv\Scripts\python.exe -m
+  pytest backend/tests backend/ml/tests -q --basetemp=.local/pytest-ml-recovery
+  -o faulthandler_timeout=30`. Dedicated PostgreSQL checks (two) and opt-in real
+  DAM inference (one) were skipped. `node --check
+  scripts/make-vad-browser-fixture.cjs` passed.
+- Recovery leaves the API runtime, deployment configuration, API requirements,
+  frontend and environment templates unchanged. Gemini/Aiven stay connected;
+  `NUMA_DEMO_MODE=false` and `NUMA_ML_ENABLED=false` remain in the public image.
+  No production data, credentials, model weights or private reports were copied.
+- Updated current guides to remove obsolete ephemeral-public-demo, missing
+  Gemini/Aiven and unimplemented-ML-flag statements. The entries below are
+  historical evidence from their respective checkpoints, not today's runtime.
+  Remote DAM/VAD runs were not repeated and no service was redeployed here.
+  Restoring the experiments does not authorize or implement DAM/VAD in the diary.
+
 ## Chromium MediaRecorder capture verified in Modal — 14 November 2026
 
 - Base `2a4c8e6`, clean tree; branch `ml/vad-browser-check`. User authorized
