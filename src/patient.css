@@ -1361,3 +1361,156 @@
     animation: none;
   }
 }
+
+/* ───────── My journal: every entry as a row, never a card ───────── */
+.jl-page {
+  padding-bottom: clamp(32px, 5vw, 64px);
+}
+.jl-head {
+  padding-top: clamp(24px, 4vw, 48px);
+}
+.pt-app .jl-head p {
+  margin-top: 14px;
+  font-size: var(--n-text-18);
+  color: var(--n-forest-soft);
+}
+.jl-month {
+  margin-top: clamp(36px, 5vw, 56px);
+}
+.jl-month h2 {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--n-line);
+  font-size: var(--n-text-28);
+  line-height: 1.2;
+}
+.jl-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.jl-list > li {
+  border-bottom: 1px solid var(--n-line);
+}
+/* One link across the whole row: date, plant, words. No arrow. */
+.jl-row {
+  display: grid;
+  grid-template-columns: 112px 16px 56px 24px minmax(0, 64ch);
+  grid-template-areas: "date . plant . body";
+  align-items: start;
+  margin-inline: -16px;
+  padding: 28px 16px;
+  border-radius: 18px;
+  color: var(--n-forest);
+  text-decoration: none;
+}
+.jl-row:hover {
+  background: rgb(239 229 204 / 0.6);
+}
+.pt-app .jl-row:focus-visible {
+  outline: 2px solid var(--n-forest);
+  outline-offset: -2px;
+}
+.jl-date {
+  grid-area: date;
+  padding-top: 6px;
+  font-size: var(--n-text-16);
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  color: var(--n-forest-soft);
+}
+.jl-row.is-today .jl-date {
+  font-weight: 700;
+  color: var(--n-forest);
+}
+.jl-plant {
+  grid-area: plant;
+  display: block;
+  width: 56px;
+  height: 58px;
+}
+.jl-plant .pt-figure {
+  width: 56px;
+  height: 58px;
+}
+/* A draft is a young sprout, a little faded. */
+.jl-row.is-draft .jl-plant {
+  opacity: 0.6;
+}
+.jl-body {
+  grid-area: body;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.jl-title {
+  font-family: var(--n-font-display);
+  font-size: var(--n-text-28);
+  line-height: 1.2;
+  letter-spacing: var(--n-tracking-display);
+  overflow-wrap: anywhere;
+}
+.jl-reflection {
+  font-size: var(--n-text-18);
+  line-height: var(--n-leading-text);
+  color: var(--n-forest-soft);
+}
+/* The person's own first words: one line, then an ellipsis. */
+.jl-quote {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  overflow: hidden;
+  font-size: var(--n-text-16);
+  line-height: 1.5;
+  color: var(--n-forest-soft);
+}
+.jl-meta {
+  margin-top: 2px;
+  font-size: var(--n-text-14);
+  font-weight: 600;
+  color: var(--n-grass-3);
+}
+.jl-row .jl-meta {
+  color: #4a6640;
+}
+/* Empty: a sentence, and the one action. */
+.jl-empty {
+  margin-top: clamp(28px, 4vw, 44px);
+}
+.pt-app .jl-empty p {
+  margin-bottom: 24px;
+  font-size: var(--n-text-18);
+  color: var(--n-forest-soft);
+}
+
+@media (max-width: 720px) {
+  .jl-row {
+    grid-template-columns: 44px 14px minmax(0, 1fr);
+    grid-template-areas:
+      "plant . date"
+      "plant . body";
+    row-gap: 4px;
+    padding-block: 22px;
+  }
+  .jl-date {
+    padding-top: 0;
+    font-size: var(--n-text-14);
+  }
+  .jl-plant,
+  .jl-plant .pt-figure {
+    width: 44px;
+    height: 46px;
+  }
+  .jl-title {
+    font-size: 24px;
+  }
+  .jl-reflection {
+    font-size: var(--n-text-16);
+  }
+  .jl-quote {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    font-size: 15px;
+  }
+}

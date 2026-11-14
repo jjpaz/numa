@@ -24,6 +24,7 @@ import { Auth, useResource } from "./auth";
 import { PatientLayout } from "./patient/Layout";
 import { Home } from "./patient/Home";
 import { EntryPage } from "./patient/Entry";
+import { JournalPage } from "./patient/Journal";
 import {
   EntryPlant,
   GardenHome,
@@ -397,17 +398,6 @@ function Login() {
         )}
       </div>
     </div>
-  );
-}
-function JournalPage() {
-  const { user } = useContext(Auth);
-  const entries = useResource<Entry[]>("/patient/entries", 5000);
-  return (
-    <JournalLog
-      entries={entries.data}
-      error={entries.error}
-      sample={user!.source === "simulated"}
-    />
   );
 }
 function MyGardenPage() {
