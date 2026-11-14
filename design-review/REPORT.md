@@ -181,6 +181,22 @@ psicólogo, `backend/`, la API, `vercel.json` y `.env*` no han cambiado.
 - **Sin soporte de View Transitions** (API eliminada a propósito): la navegación es normal y sin errores.
 - **El login, la portada, la clínica y el 404 se ven igual que antes:** los comparé con capturas anteriores.
 
+### Revalidación para integrar en main — 14 de noviembre de 2026
+
+- Compilación de producción: aprobada con las dependencias de `package-lock.json`.
+- Backend y contratos ML existentes: **82 aprobadas, 3 omitidas** (dos pruebas de
+  PostgreSQL dedicado y una inferencia DAM opt-in); sin credenciales de producción.
+- Edge con FFmpeg instalado: la suite completa pasó 30/31. El caso de grabación
+  sí obtenía mediciones; fallaba porque su aserción no aceptaba el texto real del
+  backend conectado: «Vocal ML is intentionally disabled».
+- Se corrigió únicamente esa aserción, conservando la comprobación de una sola
+  línea de procedencia y de los segundos medidos. Se repitieron grabación y
+  descarte del borrador: **2/2 aprobadas**. Los 31 escenarios quedan verificados
+  entre la suite completa y esta repetición dirigida; no se cambió el runtime.
+- La ejecución se realizó en una copia aislada con puertos 5174/8001. Los fallos
+  previos de sockets del sandbox y de preparación del servidor local no se
+  cuentan como validaciones de la aplicación.
+
 ## Lo que quedó imperfecto
 
 - La prueba de medidas de voz necesita `ffmpeg`; sin Gemini, la transcripción local llega vacía y se ve el texto de ayuda («Transcription unavailable?…»), como estaba previsto.

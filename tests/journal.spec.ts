@@ -287,7 +287,10 @@ test("record from Home with the browser microphone, review, plant, and find it i
   await expect(
     page
       .locator(".ep-source")
-      .filter({ hasText: /voice model is not enabled|ML not active/ }),
+      .filter({
+        hasText:
+          /voice model is not enabled|ML not active|Vocal ML is intentionally disabled/,
+      }),
   ).toHaveCount(1);
   await expect(page.locator(".voice-facts")).toContainText("seconds recorded");
   await context.close();
