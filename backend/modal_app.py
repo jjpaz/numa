@@ -5,7 +5,7 @@ app = modal.App('numa')
 image = (modal.Image.debian_slim(python_version='3.11')
     .apt_install('ffmpeg','libsndfile1')
     .pip_install_from_requirements('backend/requirements.txt')
-    .env({'NUMA_ML_ENABLED':'false','NUMA_DEMO_MODE':'true','NUMA_DEMO_NAME_LOGIN':'true'})
+    .env({'NUMA_ML_ENABLED':'false','NUMA_DEMO_MODE':'false','NUMA_DEMO_NAME_LOGIN':'false'})
     .add_local_python_source('backend'))
 
 @app.function(image=image,secrets=[modal.Secret.from_name('numa-secrets')],timeout=300,min_containers=0,buffer_containers=0,scaledown_window=30,max_containers=1)

@@ -18,13 +18,15 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { motion, useReducedMotion } from "motion/react";
+import { GrowthProvider, YourSpace, useGrowth } from "./growth";
 import {
-  GrowthProvider,
-  GrowingJournal,
-  YourSpace,
-  SimpleModeControl,
-  useGrowth,
-} from "./growth";
+  GardenHome,
+  JournalLog,
+  LeafMenu,
+  MyGarden,
+  TodayNotice,
+} from "./garden";
+import { reflectionFor } from "./today";
 import {
   ArrowLeft,
   ArrowRight,
@@ -80,11 +82,15 @@ const Auth = createContext<{
   user: User | null;
   health: Health | null;
   login: (email: string, password: string) => Promise<User>;
+  demoLogin: (name: string, role: "patient" | "psychologist", sample: boolean) => Promise<User>;
   logout: () => void;
 }>({
   user: null,
   health: null,
   login: async () => {
+    throw Error();
+  },
+  demoLogin: async () => {
     throw Error();
   },
   logout: () => {},
@@ -156,13 +162,22 @@ export function App() {
     setUser(result.user);
     return result.user;
   }
+  async function demoLogin(name: string, role: "patient" | "psychologist", sample: boolean) {
+    const result = await api<{ token: string; user: User }>("/auth/demo", {
+      method: "POST",
+      body: json({ name, role, sample }),
+    });
+    setToken(result.token);
+    setUser(result.user);
+    return result.user;
+  }
   function logout() {
     setToken(null);
     setUser(null);
   }
   if (!ready) return <Loading />;
   return (
-    <Auth.Provider value={{ user, health, login, logout }}>
+    <Auth.Provider value={{ user, health, login, demoLogin, logout }}>
       <motion.div
         initial={reducedMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -177,6 +192,8 @@ export function App() {
           <Route element={<Guard role="patient" />}>
             <Route path="/patient" element={<PatientLayout />}>
               <Route index element={<Journal />} />
+              <Route path="journal" element={<JournalPage />} />
+              <Route path="garden" element={<MyGardenPage />} />
               <Route path="new" element={<NewEntry />} />
               <Route path="entries/:id" element={<EntryPage />} />
               <Route path="insights" element={<InsightsPage />} />
@@ -321,7 +338,7 @@ function Login() {
     [params] = useSearchParams();
   const sample = params.has("sample");
   const clinic = role === "psychologist";
-  const { login, user, health } = useContext(Auth);
+  const { login, demoLogin, user, health } = useContext(Auth);
   const navigate = useNavigate();
   const [email, setEmail] = useState(
     clinic
@@ -331,6 +348,7 @@ function Login() {
         : "patient@numa.demo",
   );
   const [password, setPassword] = useState("");
+  const [name, setName] = useState(clinic ? "Dr. Emma" : sample ? "Robin" : "Alex");
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
   if (user)
@@ -361,7 +379,33 @@ function Login() {
               ? "Explore Robin’s fictional journal and discover how personal patterns take shape."
               : "Leave a voice note about your day. There is no questionnaire to complete."}
         </p>
-        <form
+        {health?.demo_name_login ? (
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setBusy(true);
+              setError("");
+              try {
+                const u = await demoLogin(name, clinic ? "psychologist" : "patient", sample);
+                navigate(u.role === "patient" ? "/patient" : "/clinic");
+              } catch (err) {
+                setError((err as Error).message);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <label>
+              Your name
+              <input value={name} onChange={(e) => setName(e.target.value)} required maxLength={80} />
+            </label>
+            <ErrorNotice message={error} />
+            <button disabled={busy} className="button primary full">
+              {busy ? "Opening your space." : clinic ? "Open practice dashboard" : sample ? "Explore the sample" : "Open my journal"}
+              <ArrowRight size={17} />
+            </button>
+          </form>
+        ) : <form
           onSubmit={async (e) => {
             e.preventDefault();
             setBusy(true);
@@ -427,7 +471,7 @@ function Login() {
                   : "Open my journal"}
             <ArrowRight size={17} />
           </button>
-        </form>
+        </form>}
         <small>
           Demonstration accounts only. Please use fictional experiences.
         </small>
@@ -463,53 +507,28 @@ function PatientLayout() {
   );
 }
 function PatientFrame() {
-  const { user, logout } = useContext(Auth);
+  const { logout } = useContext(Auth);
   const { growth } = useGrowth();
   return (
-    <div className={"patient-app " + (growth?.simple_mode ? "is-simple" : "")}>
-      <header className="app-header">
-        <Wordmark />
-        <nav aria-label="Patient navigation">
-          <NavLink to="/patient" end>
-            <BookOpen size={16} />
-            My journal
-          </NavLink>
-          {!growth?.simple_mode &&
-            (growth?.modules.includes("patterns") ||
-              growth?.modules.includes("voice")) && (
-              <NavLink to="/patient/insights">
-                <Sprout size={16} />
-                What helps
-              </NavLink>
-            )}
-          <NavLink to="/patient/space">
-            <Sprout size={16} />
-            Your space
-          </NavLink>
-        </nav>
-        <div className="header-profile">
-          <span className="avatar">
-            {user!.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")}
-          </span>
-          <SimpleModeControl />
-          <button
-            className="icon-button"
-            onClick={logout}
-            aria-label="Sign out"
-          >
-            <LogOut size={17} />
-          </button>
-        </div>
+    <div
+      className={
+        "patient-app garden-app " + (growth?.simple_mode ? "is-simple" : "")
+      }
+    >
+      <header className="garden-header">
+        <Link to="/patient" className="wordmark" aria-label="Your garden home">
+          <svg viewBox="0 0 40 40" aria-hidden="true">
+            <path d="M7 29V16c0-9 13-9 13 0v13-9c0-9 13-9 13 0v9" />
+          </svg>
+          numa<span className="wordmark-dot">.</span>
+        </Link>
+        <LeafMenu onSignOut={logout} />
       </header>
-      <main className="patient-main">
-        <ModeBanner />
+      <main className="garden-main">
         <Outlet />
       </main>
-      <footer className="app-footer">
-        <span>numa · Room to be yourself.</span>
+      <footer className="garden-footer">
+        <ModeBanner />
         <span>Research prototype · No clinical diagnosis</span>
       </footer>
     </div>
@@ -519,56 +538,43 @@ function PatientFrame() {
 function Journal() {
   const { user } = useContext(Auth);
   const entries = useResource<Entry[]>("/patient/entries", 5000);
+  return (
+    <GardenHome user={user!} entries={entries.data} error={entries.error} />
+  );
+}
+function JournalPage() {
+  const { user } = useContext(Auth);
+  const entries = useResource<Entry[]>("/patient/entries", 5000);
+  return (
+    <JournalLog
+      entries={entries.data}
+      error={entries.error}
+      sample={user!.source === "simulated"}
+    />
+  );
+}
+function MyGardenPage() {
+  const { user } = useContext(Auth);
+  const entries = useResource<Entry[]>("/patient/entries", 5000);
   const insights = useResource<Insights>("/patient/insights", 5000);
   return (
-    <GrowingJournal
+    <MyGarden
       user={user!}
       entries={entries.data}
       insights={insights.data}
       error={entries.error || insights.error}
-      renderEntry={(entry) => <EntryCard key={entry.id} entry={entry} />}
     />
   );
 }
 function SpacePage() {
   const { user } = useContext(Auth);
-  return <YourSpace user={user!} />;
-}
-function EntryCard({ entry }: { entry: Entry }) {
   return (
-    <Link to={"/patient/entries/" + entry.id} className="entry-card">
-      <div className="entry-date">
-        <strong>{new Date(entry.created_at).getDate()}</strong>
-        <span>
-          {new Date(entry.created_at).toLocaleDateString("en-GB", {
-            month: "short",
-          })}
-        </span>
-      </div>
-      <div className="entry-card-content">
-        <div className="entry-top">
-          <h3>{entry.title}</h3>
-          {entry.source === "simulated" && (
-            <span className="tiny-label">Fictional</span>
-          )}
-        </div>
-        <p>{entry.summary || "A voice note from your day."}</p>
-        <div className="tag-row">
-          {entry.tags.map((t) => (
-            <span className="tag" key={t}>
-              {t}
-            </span>
-          ))}
-          {entry.action?.feedback === "helpful" && (
-            <span className="tag green">
-              <Leaf size={11} />
-              Something helped
-            </span>
-          )}
-        </div>
-      </div>
-      <ArrowUpRight size={18} />
-    </Link>
+    <>
+      <Link to="/patient/garden" className="back-link">
+        <ArrowLeft size={15} /> My garden
+      </Link>
+      <YourSpace user={user!} />
+    </>
   );
 }
 
@@ -582,6 +588,7 @@ function NewEntry() {
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const requestId = useRef(crypto.randomUUID());
+  const existing = useResource<Entry[]>("/patient/entries");
   async function submit() {
     setBusy(true);
     setError("");
@@ -617,10 +624,10 @@ function NewEntry() {
   return (
     <div className="narrow-page">
       <Link to="/patient" className="back-link">
-        <ArrowLeft size={15} /> My journal
+        <ArrowLeft size={15} /> Your garden
       </Link>
+      <TodayNotice entries={existing.data} />
       <div className="centred-heading">
-        <span className="eyebrow">A page of your own</span>
         <h1>What happened in your world?</h1>
         <p>
           Tell me about something from your day.
@@ -748,15 +755,23 @@ function EntryPage() {
     sample = entry.source === "simulated";
   return (
     <div className="entry-page">
-      <Link to="/patient" className="back-link">
-        <ArrowLeft size={15} /> My journal
-      </Link>
+      <div className="back-row">
+        <Link to="/patient" className="back-link">
+          <ArrowLeft size={15} /> Your garden
+        </Link>
+        <Link to="/patient/journal" className="back-link">
+          Journal
+        </Link>
+      </div>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">
-            {dateLabel(entry.created_at)} · A page of your own
-          </span>
+          <p className="soft-date">{dateLabel(entry.created_at)}</p>
           <h1>{processing ? "Listening to your day…" : entry.title}</h1>
+          {!processing && (
+            <p className="reflection entry-reflection">
+              {reflectionFor(entry)}
+            </p>
+          )}
         </div>
         <Badge>
           <LockKeyhole size={12} /> Private entry
@@ -1205,6 +1220,9 @@ function InsightsPage() {
     );
   return (
     <>
+      <Link to="/patient/garden" className="back-link">
+        <ArrowLeft size={15} /> My garden
+      </Link>
       <div className="page-heading">
         <div>
           <span className="eyebrow">One day at a time</span>
@@ -1335,6 +1353,9 @@ function InsightsPage() {
 function Connections() {
   return (
     <>
+      <Link to="/patient/space" className="back-link">
+        <ArrowLeft size={15} /> Your space
+      </Link>
       <div className="page-heading">
         <div>
           <span className="eyebrow">

@@ -106,6 +106,7 @@ export interface Health {
   storage: string;
   gemini_configured: boolean;
   voice_model_enabled: boolean;
+  demo_name_login: boolean;
 }
 export type GrowthModule =
   | "sleep"

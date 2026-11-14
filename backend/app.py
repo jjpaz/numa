@@ -85,7 +85,9 @@ def create_app(repo=None, demo=None, secret=None):
     @app.exception_handler(StorageUnavailable)
     async def storage_unavailable(request, exc):
         return JSONResponse(status_code=503,content={'detail':'Storage is temporarily unavailable. Keep your words and retry.','persistence_status':'unavailable'},headers={'Retry-After':'5'})
-    demo_name_login = demo and os.getenv('NUMA_DEMO_NAME_LOGIN','false').lower()=='true'
+    # Optional presentation login can be enabled in connected mode without
+    # switching storage or Gemini back to the local demo implementation.
+    demo_name_login = os.getenv('NUMA_DEMO_NAME_LOGIN','false').lower()=='true'
     app.add_middleware(CORSMiddleware,allow_origins=[o.strip() for o in os.getenv('NUMA_ALLOWED_ORIGINS','http://127.0.0.1:5173,http://localhost:5173').split(',')],allow_methods=['GET','POST','PATCH','DELETE'],allow_headers=['Authorization','Content-Type'])
     bearer = HTTPBearer(auto_error=False)
 
