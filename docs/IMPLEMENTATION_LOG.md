@@ -1,5 +1,33 @@
 # Implementation and verification record
 
+## Chromium MediaRecorder capture verified in Modal — 14 November 2026
+
+- Base `2a4c8e6`, clean tree; branch `ml/vad-browser-check`. User authorized
+  continuing the remaining work and requested progress/credit tracking. Browser
+  execution was newly authorized after the previous rejected attempt.
+- `node scripts/make-vad-browser-fixture.cjs`: **PASS**, Edge 157.0.4341.57,
+  actual MediaRecorder/WebAudio using only the existing synthetic English fixture.
+  Created ignored WebM/Opus, 842,832 bytes; no microphone or public Numa access.
+  SHA-256 `ad21026d44785ab1d49c1095410540d901ba0f1e19c02a8d18fae69a9cfaa646`.
+- Actual command with profile `rebollmartin` and UTF-8 output:
+  `.\.venv\Scripts\python.exe -m modal run -m backend.ml.modal_vad_check --audio .local/ml-fixtures/synthetic-en.wav --browser-audio .local/ml-fixtures/chromium-synthetic.webm --report .local/ml-results/vad-browser-modal-20261114-01.json`.
+  **PASS**, exit 0, **19/19 cases**;
+  [run](https://modal.com/apps/rebollmartin/main/ap-Xscv7fKItnmWQRi9TTzbKK).
+  Existing image reused, CPU/no GPU, minimum/reserve zero, offline inference.
+- Chromium file decoded to 57.060 seconds, speech 40.704 seconds, clipping zero;
+  status **eligible**, filter/decode 1.055 s. No DAM call requested for this new
+  case; exactly one successful real DAM call on the reference TTS fixture.
+  Whole suite 43.170 s, intervals repeatable, no API imports. Scores remain only
+  in the ignored report; no audio saved in the model Volume.
+- Final `modal app list --json` filtered to validation apps: **both stopped,
+  0 tasks each**. No public deployment or application/frontend source changes.
+- User confirmed a physical iPhone/Safari test: recording, playback and arrival at
+  review all worked in the public demo. This is user-reported, not agent-observed.
+  No claim of real Safari-file VAD validation, even if that manual UI test passes.
+- Updated runbook and project progress. Backend tests not repeated because source
+  is unchanged; previous actual result remains **81 passed, 2 skipped**. No Git push.
+  Account credit readings are private session progress data, not committed here.
+
 ## Isolated phase-B VAD and audio-quality gate — 14 November 2026
 
 - Started from clean `3388445` (`ml/modal-dam-check`); created `ml/vad-quality`.

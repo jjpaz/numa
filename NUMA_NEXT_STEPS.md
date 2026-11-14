@@ -1,6 +1,11 @@
 # Numa — guía para retomar la implementación pendiente
 
 Fecha de referencia: **14 de noviembre de 2026**.
+
+**Seguimiento más reciente:** consultar `docs/PROJECT_STATUS.md`: captura
+Chromium verificada y flujo Safari/iPhone confirmado por el usuario. Las menciones
+de capturas pendientes de los párrafos anteriores de referencia se actualizan con
+ese seguimiento. VAD/DAM sobre un archivo real de Safari sigue pendiente.
 Proyecto: `C:\JUNCTION\numa`.
 
 Este documento permite retomar el trabajo con Codex sin reconstruir el contexto del chat. Describe tareas futuras: **su presencia aquí no significa que estén implementadas o verificadas**. No ejecutar estas tareas al leer el documento; ejecutarlas cuando el usuario pida continuar.
@@ -11,7 +16,7 @@ Este documento permite retomar el trabajo con Codex sin reconstruir el contexto 
 |---|---|---|
 | Producto e interfaz | Dos portales, journal privado, grabación y texto, acciones, feedback, preferencias, hábitos y experimentos | QA manual final en dispositivos reales e informe impreso |
 | Experiencia progresiva | Inicio sencillo, módulos elegidos, invitaciones y modo sencillo reversible; nueva paleta | Conservar el diseño y comportamiento durante las integraciones |
-| Audio | Micrófono y acústica de la demo; filtro aislado Silero VAD/30 s de habla estimada verificado en Modal con 18 casos controlados | Capturas reales de navegador/dispositivo y posterior integración del filtro en la aplicación |
+| Audio | Micrófono y acústica de la demo; VAD/calidad aislado verificado en Modal con 19 casos, incluida captura MediaRecorder Chromium | Safari/micrófono físico y posterior integración del filtro en la aplicación |
 | ML vocal | SpeechBrain preparado en la aplicación; **DAM ejecutado aisladamente en CPU/Windows y Modal/Linux**, con revisiones fijadas y pruebas reales | Integrar VAD y DAM en la aplicación; evaluar robustez y validez para el uso previsto |
 | Historial personal | Baseline acústico con mediana/MAD y heurísticas de cambios | Incorporar resultados versionados del modelo y evaluar su estabilidad |
 | Recomendaciones | Reglas sobre preferencias, contexto y feedback | Evaluación con datos reales; no hay un recomendador entrenado |
@@ -53,7 +58,7 @@ Si hay una vista previa activa con datos que conservar, no reiniciarla sin copia
 **Orden acordado tras completar la fase A:** las letras siguientes conservan los bloques de trabajo originales; la ejecución pendiente sigue este orden para validar primero el entorno definitivo:
 
 1. **Validación inicial de Modal (adelanto de la fase F), completada técnicamente:** entorno Linux/CPU fijado, pesos reales e inferencia remota aislada verificados. Ver `docs/ML_DAM_MODAL.md`. No conecta DAM a la aplicación ni completa toda la fase F.
-2. **Fase B, núcleo aislado implementado y probado:** VAD/calidad pasó en Modal; cerrar aceptación con capturas reales de navegador/dispositivo. Ver `docs/ML_VAD.md`; la captura Chromium no se ejecutó porque se rechazó abrir el navegador.
+2. **Fase B, núcleo aislado implementado y probado:** seguimiento Chromium verificado, 19/19 casos. El usuario confirmó grabación/reproducción/revisión en iPhone/Safari; VAD/DAM sobre su archivo real sigue pendiente. Ver `docs/ML_VAD.md` y `docs/PROJECT_STATUS.md`.
 3. **Fases C/D:** integrar el contrato del backend y el historial versionado; completar las comprobaciones técnicas correspondientes.
 4. **Fase E y cierre de F:** conectar Aiven/Gemini y terminar el despliegue del backend con sus secretos, orígenes y comprobaciones.
 5. **Fase G:** conectar/publicar el frontend y verificar el recorrido externo completo.
@@ -82,7 +87,7 @@ Cerrar cada bloque con implementación, pruebas y documentación antes de abrir 
 
 **Objetivo:** decidir cuándo existe audio suficiente para intentar el análisis.
 
-**Estado al 14 de noviembre:** `backend/ml/audio_quality.py`, Silero 6.2.3 fijado por versión/hashes y política `numa-audio-gate-v1`. En Modal pasaron 18 casos controlados: borde inferior/superior de 30 s, poca habla en archivo largo, silencio, clipping, ruido, melodía sintética, dos voces sintéticas y formatos WebM/MP4 generados por FFmpeg. Una muestra elegible completó DAM real. Los casos sin alcance confirmado no invocan DAM; no se detectan automáticamente idioma, hablantes o SNR. **Capturas reales de Chrome/Safari y micrófonos físicos pendientes**; no dar toda la aceptación por completada. La aplicación pública no usa todavía este filtro. Detalles y comandos en `docs/ML_VAD.md`.
+**Estado al 14 de noviembre:** `backend/ml/audio_quality.py`, Silero 6.2.3 fijado por versión/hashes y política `numa-audio-gate-v1`. En Modal pasaron 19 casos controlados: borde inferior/superior de 30 s, poca habla en archivo largo, silencio, clipping, ruido, melodía sintética, dos voces sintéticas, formatos WebM/MP4 de FFmpeg y un archivo real de MediaRecorder Chromium con entrada sintética. Una muestra elegible completó DAM real. Los casos sin alcance confirmado no invocan DAM; no se detectan automáticamente idioma, hablantes o SNR. **Safari y micrófonos físicos pendientes**; el usuario dispone de iPhone y se solicitó prueba manual. La demo aún no usa este filtro, así que la prueba manual no acredita VAD/DAM sobre Safari. Detalles en `docs/ML_VAD.md`.
 
 1. Mantener el límite actual de dos minutos, normalización mono/16 kHz, comprobaciones de silencio/clipping y límites de carga.
 2. Integrar [Silero VAD](https://github.com/snakers4/silero-vad) como detector de habla, fijando versión y verificando licencia/dependencias. Es una utilidad de preprocesamiento en el mismo entorno, no otro proveedor cloud ni otro modelo clínico.
@@ -268,4 +273,4 @@ Procesar una grabación no implica permiso para reutilizarla en entrenamiento. M
 
 ## 9. Texto listo para iniciar otro chat con Codex
 
-> Trabaja en `C:\JUNCTION\numa`. Lee `NUMA_NEXT_STEPS.md` y verifica el estado del repositorio antes de editar. DAM aislado y el núcleo de fase B VAD/calidad pasaron en Modal/Linux/CPU; consulta `docs/ML_DAM_MODAL.md` y `docs/ML_VAD.md`. Falta cerrar aceptación de B con capturas reales de navegador/dispositivo; la captura Chromium anterior no se autorizó, por lo que no se debe reintentar sin nueva autorización. Después siguen C/D (contrato e historial), E/cierre de F (Gemini/Aiven y backend completo) y G (recorrido conectado). La demo pública con acceso por nombre se conserva como punto de retorno; DAM/VAD aún no están conectados al journal. Conserva frontend, sesiones, privacidad y crecimiento. Usa CPU y cero contenedores mínimos salvo decisión explícita posterior. No confundas pruebas TTS o transcodificación FFmpeg con evaluación clínica o capturas reales. No imprimas secretos o contenido privado y registra pruebas reales y pendientes en `docs/IMPLEMENTATION_LOG.md`.
+> Trabaja en `C:\JUNCTION\numa`. Lee `NUMA_NEXT_STEPS.md` y `docs/PROJECT_STATUS.md`; verifica el repositorio antes de editar. DAM y VAD/calidad aislados pasaron en Modal/Linux/CPU; seguimiento MediaRecorder Chromium autorizado y verificado, 19/19 casos. Safari/iPhone y micrófono físico siguen pendientes; se solicitó al usuario una prueba manual de la demo, cuyo resultado no acredita VAD/DAM sobre Safari. Después siguen C/D (contrato/historial), E/cierre de F (Gemini/Aiven/backend) y G (recorrido conectado). Conserva la demo pública con acceso por nombre como punto de retorno; DAM/VAD aún no están conectados al journal. Preserva frontend, sesiones, privacidad y crecimiento. CPU y mínimos cero salvo decisión explícita posterior. No confundas pruebas sintéticas o formatos FFmpeg con evaluación clínica o captura real. Registra resultados y pendientes; comunica al usuario avance y consumo al cerrar bloques, usando lecturas reales de la cuenta y sin publicar su saldo en Git.

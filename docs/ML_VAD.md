@@ -102,21 +102,40 @@ filtro; pruebas con un sustituto de DAM verifican que un rechazo nunca lo invoca
 Las puntuaciones crudas van únicamente al informe ignorado en `.local/`.
 La salida de terminal usa una lista explícita de campos permitidos.
 
-## Capturas de navegador pendientes
+## Capturas de navegador y dispositivos
 
 Los casos WebM/Opus y MP4/AAC codificados con FFmpeg comprueban formatos, **no**
 constituyen grabaciones reales de Chrome o Safari. No se verificó micrófono físico.
-La ejecución del generador Chromium fue rechazada antes de abrir el navegador;
-no se reintentó ni se sustituyó por otra herramienta de captura.
+La primera ejecución del generador Chromium fue rechazada. Tras la nueva
+autorización para continuar, se ejecutó correctamente; el resultado está abajo.
 
-`scripts/make-vad-browser-fixture.cjs` queda preparado, **no ejecutado/verificado**,
-para pasar el fixture controlado por WebAudio y MediaRecorder en Edge/Chromium,
-sin micrófono ni conexión a la demo. Solo debe ejecutarse cuando se autorice esa
-comprobación. Guarda un WebM nuevo en `.local/ml-fixtures/` y rechaza sobrescrituras.
+`scripts/make-vad-browser-fixture.cjs` está **ejecutado/verificado en Edge 157**:
+pasa el fixture controlado por WebAudio y MediaRecorder en Edge/Chromium,
+sin micrófono ni conexión a la demo. Guarda un WebM nuevo en
+`.local/ml-fixtures/` y rechaza sobrescrituras.
 El comando Modal admite después
 `--browser-audio .local/ml-fixtures/chromium-synthetic.webm`.
-Safari real y capturas de dispositivos siguen pendientes para cerrar toda la
-aceptación de fase B.
+El usuario confirmó que en iPhone/Safari funcionan el micrófono, la grabación,
+reproducción y llegada a revisión en la demo. Es una comprobación comunicada por
+el usuario, no observada por el agente. Sigue pendiente VAD/DAM sobre un archivo
+real de Safari: la demo aún usa la ruta anterior. Conservar ese pendiente durante
+la integración; la aceptación completa de fase B sigue abierta.
+
+### Resultado adicional de Chromium — 14 de noviembre de 2026
+
+- `node scripts/make-vad-browser-fixture.cjs`: **PASS**, Edge **157.0.4341.57**,
+  MediaRecorder real WebM/Opus, **842.832 bytes**. Micrófono no usado.
+- SHA-256 del WebM:
+  `ad21026d44785ab1d49c1095410540d901ba0f1e19c02a8d18fae69a9cfaa646`.
+- [Ejecución Modal con el caso de navegador](https://modal.com/apps/rebollmartin/main/ap-Xscv7fKItnmWQRi9TTzbKK):
+  **19/19 casos correctos**, salida 0, **43,170 s** de batería. Se reutilizó la
+  imagen existente; fuente de la aplicación sin cambios.
+- Archivo Chromium: **57,060 s**, habla estimada **40,704 s**, clipping 0,
+  `eligible`, **1,055 s** de decodificación/filtro. No se solicitó DAM para ese
+  caso. El caso TTS de referencia sí completó DAM realmente, igual que antes.
+- Informe ignorado: `.local/ml-results/vad-browser-modal-20261114-01.json`.
+  Intervalos repetibles, CUDA false, sin importaciones de API. Consulta final:
+  ambas ejecuciones `numa-vad-validation` **stopped / 0 tareas**.
 
 ## Resultados ejecutados
 
@@ -166,7 +185,8 @@ avisos existentes. Incluyen 27 contratos nuevos: borde de 30 s a precisión de u
 muestra, rechazo antes del modelo, intervalos inválidos, fallo sin valores falsos,
 conservación íntegra del WAV, limpieza temporal y resumen sin puntuaciones.
 Esos contratos usan timestamps/salidas simuladas; la batería remota usa modelos
-reales. Sintaxis JavaScript correcta, pero la captura del navegador no fue ejecutada.
+reales. La captura Chromium se ejecutó posteriormente, como consta arriba; no se
+repitió pytest en ese seguimiento porque no cambió el código.
 
 La suite de API se bloqueó dentro del sandbox en el socket local de TestClient;
 se interrumpió y pasó fuera del sandbox con autorización. No se cambió la lógica
