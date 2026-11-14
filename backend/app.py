@@ -6,14 +6,15 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Literal
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks, Header
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-from .repository import Repository
-from .security import issue_token, verify_token
+from .repository import Repository, StorageUnavailable
+from .security import issue_token, verify_session
 from .seed import USERS, seed
 from .domain import utcnow, simulated_context, patterns, baseline_and_trend, clinical_projection, recommend, ACTIONS
-from .analysis import transcribe, semantics, analyse_voice, explain_recommendation
+from .analysis import transcribe, semantics, analyse_voice, explain_recommendation, ml_enabled
 from .growth import growth_projection, growth_settings, MODULES
 
 load_dotenv()
@@ -21,6 +22,11 @@ load_dotenv()
 class Login(BaseModel):
     email: str = Field(max_length=200)
     password: str = Field(max_length=200)
+
+class DemoLogin(BaseModel):
+    name: str = Field(min_length=1,max_length=80)
+    role: Literal['patient','psychologist']
+    sample: bool = False
 
 class EntryPatch(BaseModel):
     transcript: str | None = Field(default=None,max_length=16000)
@@ -64,7 +70,7 @@ def create_app(repo=None, demo=None, secret=None):
         raise RuntimeError('Set a unique NUMA_SESSION_SECRET of at least 32 characters.')
     secret = secret or secrets.token_hex(32)
     if not demo:
-        for name in ['NUMA_PATIENT_PASSWORD','NUMA_SAMPLE_PASSWORD','NUMA_CLINICIAN_PASSWORD','GEMINI_API_KEY']:
+        for name in ['NUMA_PATIENT_PASSWORD','NUMA_SAMPLE_PASSWORD','NUMA_CLINICIAN_PASSWORD','GEMINI_API_KEY','GEMINI_MODEL']:
             if not os.getenv(name) or os.environ[name].startswith('REPLACE_'): raise RuntimeError(f'{name} is required.')
         if any(os.getenv(name) in ('journal-demo','sample-demo','care-demo') for name in ['NUMA_PATIENT_PASSWORD','NUMA_SAMPLE_PASSWORD','NUMA_CLINICIAN_PASSWORD']):
             raise RuntimeError('Set unique account passwords before deploying connected mode.')
@@ -76,13 +82,21 @@ def create_app(repo=None, demo=None, secret=None):
     app = FastAPI(title='Numa API',version='0.1.0')
     app.state.repo = repo
     app.state.demo = demo
+    @app.exception_handler(StorageUnavailable)
+    async def storage_unavailable(request, exc):
+        return JSONResponse(status_code=503,content={'detail':'Storage is temporarily unavailable. Keep your words and retry.','persistence_status':'unavailable'},headers={'Retry-After':'5'})
+    # Optional presentation login can be enabled in connected mode without
+    # switching storage or Gemini back to the local demo implementation.
+    demo_name_login = os.getenv('NUMA_DEMO_NAME_LOGIN','false').lower()=='true'
     app.add_middleware(CORSMiddleware,allow_origins=[o.strip() for o in os.getenv('NUMA_ALLOWED_ORIGINS','http://127.0.0.1:5173,http://localhost:5173').split(',')],allow_methods=['GET','POST','PATCH','DELETE'],allow_headers=['Authorization','Content-Type'])
     bearer = HTTPBearer(auto_error=False)
 
     def current(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
         if not credentials: raise HTTPException(401,'Please sign in.')
-        user = repo.get('users',verify_token(credentials.credentials,secret))
+        session = verify_session(credentials.credentials,secret)
+        user = repo.get('users',session['sub'])
         if not user: raise HTTPException(401,'Unknown session.')
+        if session.get('display_name'): user={**user,'name':session['display_name']}
         return user
 
     def patient(user=Depends(current)):
@@ -138,7 +152,10 @@ def create_app(repo=None, demo=None, secret=None):
         transcript=None
         def words():
             content = text if text is not None else transcribe(data,mime)
-            return content,semantics(content,demo)
+            try:return content,semantics(content,demo)
+            except Exception:
+                errors.append('Journal summary unavailable. Your words are retained and the summary is editable.')
+                return content,None
         with ThreadPoolExecutor(max_workers=2) as pool:
             vf = pool.submit(analyse_voice,data,demo) if data else None
             sf = pool.submit(words) if not follow else None
@@ -161,6 +178,8 @@ def create_app(repo=None, demo=None, secret=None):
                 if voice is not None: entry['voice']=voice
                 if transcript is not None: entry['transcript']=transcript
                 if semantic: entry.update(semantic)
+                elif transcript is not None:
+                    entry.update(summary=entry.get('summary') or transcript[:1500],tags=[],explicit=[],semantic_source='unavailable')
             repo.put('entries',entry_id,entry,entry['patient_id'])
 
     def new_entry(user,key):
@@ -169,7 +188,17 @@ def create_app(repo=None, demo=None, secret=None):
 
     @app.get('/api/health')
     def health():
-        return {'ok':True,'mode':'local_preview' if demo else 'connected','storage':'postgresql' if repo.engine else 'ephemeral_memory','gemini_configured':bool(os.getenv('GEMINI_API_KEY')),'voice_model_enabled':not demo,'audio_retention':'temporary processing only'}
+        return {'ok':True,'mode':'local_preview' if demo else 'connected','storage':'postgresql' if repo.engine else 'ephemeral_memory','gemini_configured':bool(os.getenv('GEMINI_API_KEY')),'voice_model_enabled':not demo and ml_enabled(),'ml_enabled':not demo and ml_enabled(),'ml_status':'not_configured' if demo or not ml_enabled() else 'configured_not_verified','audio_retention':'temporary processing only','demo_name_login':demo_name_login}
+
+    @app.post('/api/auth/demo')
+    def demo_login(body:DemoLogin):
+        if not demo_name_login: raise HTTPException(404,'Demo access is not enabled.')
+        name=body.name.strip()
+        if not name or (body.sample and body.role!='patient'):
+            raise HTTPException(422,'Enter a name and choose a valid demo profile.')
+        key='psychologist' if body.role=='psychologist' else 'patient-sample' if body.sample else 'patient-live'
+        user={**repo.get('users',key),'name':name}
+        return {'token':issue_token(key,secret,display_name=name),'user':user}
 
     @app.post('/api/auth/login')
     def login(body:Login):
@@ -186,7 +215,8 @@ def create_app(repo=None, demo=None, secret=None):
     @app.patch('/api/patient/preferences')
     def preferences(body:Preferences,user=Depends(patient)):
         writable(user)
-        user['preferences']=list(dict.fromkeys(body.actions)); return repo.put('users',user['id'],user)
+        stored=repo.get('users',user['id'])
+        stored['preferences']=list(dict.fromkeys(body.actions)); return repo.put('users',user['id'],stored)
 
     @app.get('/api/patient/growth')
     def growth(user=Depends(patient)):
@@ -351,9 +381,7 @@ def create_app(repo=None, demo=None, secret=None):
     @app.get('/api/patient/recommendation')
     def recommendation(user=Depends(patient)):
         result=recommend(repo.all('entries',user['id']),user.get('preferences',list(ACTIONS)),simulated_context())
-        if not demo:
-            try: result['explanation']=explain_recommendation(result)
-            except Exception: result['explanation']=result['reason']
+        result['explanation']=result['reason']
         return result
 
     @app.get('/api/clinic/patients')

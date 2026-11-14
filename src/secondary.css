@@ -671,6 +671,11 @@
   max-width: 34rem;
   margin-top: 28px;
 }
+.lg-main .lg-status {
+  margin: 28px 0 0;
+  font-size: var(--n-text-16);
+  color: var(--n-ink-soft);
+}
 .lg-form .sc-label:first-child {
   margin-top: 0;
 }

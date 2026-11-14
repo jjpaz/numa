@@ -6,6 +6,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type FormEvent,
   type TextareaHTMLAttributes,
 } from "react";
 import {
@@ -82,11 +83,19 @@ const Auth = createContext<{
   user: User | null;
   health: Health | null;
   login: (email: string, password: string) => Promise<User>;
+  demoLogin: (
+    name: string,
+    role: "patient" | "psychologist",
+    sample: boolean,
+  ) => Promise<User>;
   logout: () => void;
 }>({
   user: null,
   health: null,
   login: async () => {
+    throw Error();
+  },
+  demoLogin: async () => {
     throw Error();
   },
   logout: () => {},
@@ -157,13 +166,26 @@ export function App() {
     setUser(result.user);
     return result.user;
   }
+  async function demoLogin(
+    name: string,
+    role: "patient" | "psychologist",
+    sample: boolean,
+  ) {
+    const result = await api<{ token: string; user: User }>("/auth/demo", {
+      method: "POST",
+      body: json({ name, role, sample }),
+    });
+    setToken(result.token);
+    setUser(result.user);
+    return result.user;
+  }
   function logout() {
     setToken(null);
     setUser(null);
   }
   if (!ready) return <Loading />;
   return (
-    <Auth.Provider value={{ user, health, login, logout }}>
+    <Auth.Provider value={{ user, health, login, demoLogin, logout }}>
       {/* No page-level fade: text is visible from the first frame on every page. */}
       <div>
         {backendError && (
@@ -234,7 +256,7 @@ function Login() {
     [params] = useSearchParams();
   const sample = params.has("sample");
   const clinic = role === "psychologist";
-  const { login, user, health } = useContext(Auth);
+  const { login, demoLogin, user, health } = useContext(Auth);
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from;
@@ -253,8 +275,51 @@ function Login() {
         : "patient@numa.demo",
   );
   const [password, setPassword] = useState("");
+  const [name, setName] = useState(
+    clinic ? "Dr. Emma" : sample ? "Robin" : "Alex",
+  );
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  // One way in, two kinds of demo access: a name only (the public demo, when
+  // the backend enables it) or the published demo email and password.
+  const nameOnly = !!health?.demo_name_login;
+  const previewPassword = clinic
+    ? "care-demo"
+    : sample
+      ? "sample-demo"
+      : "journal-demo";
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (nameOnly && !name.trim()) {
+      setError("Please write a name. Any name will do.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    signingIn.current = true;
+    try {
+      const u = nameOnly
+        ? await demoLogin(
+            name.trim(),
+            clinic ? "psychologist" : "patient",
+            sample,
+          )
+        : await login(email, password);
+      const portal = portalOf(u);
+      // Land where the person was going, if it belongs to this portal.
+      navigate(
+        from && (from === portal || from.startsWith(portal + "/"))
+          ? from
+          : portal,
+        { replace: true },
+      );
+    } catch (err) {
+      signingIn.current = false;
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   if (user && sameAccount && !signingIn.current)
     return <Navigate to={portalOf(user)} replace />;
   return (
@@ -288,90 +353,87 @@ function Login() {
               ? "Explore Robin’s fictional journal and discover how personal patterns take shape."
               : "Leave a voice note about your day. There is no questionnaire to complete."}
         </p>
-        <form
-          className="lg-form"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            setBusy(true);
-            setError("");
-            signingIn.current = true;
-            try {
-              const u = await login(email, password);
-              const portal = portalOf(u);
-              navigate(
-                from && (from === portal || from.startsWith(portal + "/"))
-                  ? from
-                  : portal,
-                { replace: true },
-              );
-            } catch (err) {
-              signingIn.current = false;
-              setError((err as Error).message);
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <label className="sc-label" htmlFor="lg-email">
-            Demo email
-          </label>
-          <input
-            id="lg-email"
-            className="sc-field"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="username"
-          />
-          <label className="sc-label" htmlFor="lg-password">
-            Password
-          </label>
-          <input
-            id="lg-password"
-            className="sc-field"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-          />
-          {health?.mode === "local_preview" && (
-            <p className="lg-help">
-              Local preview password:{" "}
-              <button
-                type="button"
-                className="sc-link"
-                onClick={() =>
-                  setPassword(
-                    clinic
-                      ? "care-demo"
-                      : sample
-                        ? "sample-demo"
-                        : "journal-demo",
-                  )
-                }
-              >
-                {clinic ? "care-demo" : sample ? "sample-demo" : "journal-demo"}
-              </button>
-            </p>
-          )}
-          {error && (
-            <p className="lg-error" role="alert">
-              <CircleAlert size={18} aria-hidden="true" />
-              <span>{error}</span>
-            </p>
-          )}
-          <button disabled={busy} className="lg-primary">
-            {busy
-              ? "Opening your space…"
-              : clinic
-                ? "Open practice dashboard"
-                : sample
-                  ? "Explore the sample"
-                  : "Open my journal"}
-          </button>
-        </form>
+        {!health ? (
+          <p className="lg-status" role="status" aria-live="polite">
+            Connecting to your space…
+          </p>
+        ) : (
+          <form className="lg-form" onSubmit={(e) => void submit(e)}>
+            {nameOnly ? (
+              <>
+                <label className="sc-label" htmlFor="lg-name">
+                  Your name
+                </label>
+                <input
+                  id="lg-name"
+                  className="sc-field"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  maxLength={80}
+                  autoComplete="name"
+                />
+                <p className="lg-help">
+                  Any name will do. It is only used to greet you in this demo.
+                </p>
+              </>
+            ) : (
+              <>
+                <label className="sc-label" htmlFor="lg-email">
+                  Demo email
+                </label>
+                <input
+                  id="lg-email"
+                  className="sc-field"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="username"
+                />
+                <label className="sc-label" htmlFor="lg-password">
+                  Password
+                </label>
+                <input
+                  id="lg-password"
+                  className="sc-field"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                />
+                {health.mode === "local_preview" && (
+                  <p className="lg-help">
+                    Local preview password:{" "}
+                    <button
+                      type="button"
+                      className="sc-link"
+                      onClick={() => setPassword(previewPassword)}
+                    >
+                      {previewPassword}
+                    </button>
+                  </p>
+                )}
+              </>
+            )}
+            {error && (
+              <p className="lg-error" role="alert">
+                <CircleAlert size={18} aria-hidden="true" />
+                <span>{error}</span>
+              </p>
+            )}
+            <button disabled={busy} className="lg-primary">
+              {busy
+                ? "Opening your space…"
+                : clinic
+                  ? "Open practice dashboard"
+                  : sample
+                    ? "Explore the sample"
+                    : "Open my journal"}
+            </button>
+          </form>
+        )}
         <p className="lg-small">
           Demonstration accounts only. Please use fictional experiences.
         </p>

@@ -313,6 +313,12 @@ redesigned creatively: they speak the vocabulary of the screens above. Styled in
   field with "Trends only. Journal entries stay private." in Young Serif 28
   ivory. One column at ≤900px. A session for another account is a sentence
   beside a 3px moss rule; errors are an icon and words in `--n-danger`.
+- **One form, two kinds of demo access.** When the backend enables name-only
+  access (`demo_name_login`, the public demo), the form asks only "Your name";
+  otherwise it asks for the published demo email and password. Both share the
+  same field style, the same apricot button, the same error line and the same
+  return to the page the person was heading for. While the backend is still
+  being reached, a quiet sentence says "Connecting to your space…".
 - **404** is an `h1`, one sentence and an underlined link home (or back to the
   person's own portal).
 
