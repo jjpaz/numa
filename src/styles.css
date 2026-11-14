@@ -422,6 +422,21 @@ button svg {
 .login-card > p {
   margin-bottom: 25px;
 }
+/* Signed in with another account: one quiet line, never a modal. */
+.login-card > .login-switch {
+  margin: -15px 0 22px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #efe3c8;
+  color: #4f4632;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.login-switch a {
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .login-card form {
   display: flex;
   flex-direction: column;

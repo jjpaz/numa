@@ -177,7 +177,7 @@ export function App() {
         )}
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route path="/login/:role" element={<Login />} />
+          <Route path="/login/:role" element={<LoginRoute />} />
           <Route element={<Guard role="patient" />}>
             <Route path="/patient" element={<PatientLayout />}>
               <Route index element={<Journal />} />
@@ -206,15 +206,33 @@ export function App() {
     </Auth.Provider>
   );
 }
+const SAMPLE_EMAIL = "sample@numa.demo";
+const portalOf = (user: User) =>
+  user.role === "patient" ? "/patient" : "/clinic";
+
 function Guard({ role }: { role: User["role"] }) {
   const { user } = useContext(Auth);
+  const location = useLocation();
   return !user ? (
     <Navigate to={"/login/" + role} replace />
   ) : user.role !== role ? (
-    <Navigate to={user.role === "patient" ? "/patient" : "/clinic"} replace />
+    // Signed in with the other role: offer this portal's sign-in, remember where we were going.
+    <Navigate
+      to={"/login/" + role}
+      replace
+      state={{ from: location.pathname + location.search }}
+    />
   ) : (
-    <Outlet />
+    // A different account remounts the whole portal, so no cached data carries over.
+    <Outlet key={user.id} />
   );
+}
+
+/** Remount the form per account page so ?sample=1 never keeps the other email. */
+function LoginRoute() {
+  const { role } = useParams(),
+    [params] = useSearchParams();
+  return <Login key={role + (params.has("sample") ? ":sample" : "")} />;
 }
 
 function Login() {
@@ -224,6 +242,15 @@ function Login() {
   const clinic = role === "psychologist";
   const { login, user, health } = useContext(Auth);
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from;
+  const signingIn = useRef(false);
+  // Does the current session belong to the account this page signs in?
+  const sameAccount =
+    !!user &&
+    (clinic
+      ? user.role === "psychologist"
+      : user.role === "patient" && (user.email === SAMPLE_EMAIL) === sample);
   const [email, setEmail] = useState(
     clinic
       ? "psychologist@numa.demo"
@@ -234,10 +261,8 @@ function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
-  if (user)
-    return (
-      <Navigate to={user.role === "patient" ? "/patient" : "/clinic"} replace />
-    );
+  if (user && sameAccount && !signingIn.current)
+    return <Navigate to={portalOf(user)} replace />;
   return (
     <div className="login-page">
       <Link to="/" className="back-link">
@@ -245,6 +270,16 @@ function Login() {
       </Link>
       <div className="login-card">
         <Wordmark />
+        {user && !sameAccount && (
+          <p className="login-switch" role="status">
+            You’re signed in as {user.name}. Signing in here will end that
+            session.{" "}
+            <Link to={portalOf(user)}>
+              Back to{" "}
+              {user.role === "patient" ? "My journal" : "Practice dashboard"}
+            </Link>
+          </p>
+        )}
         <span className="eyebrow">
           {clinic ? "A clearer view, with privacy" : "Your words. Your space."}
         </span>
@@ -267,10 +302,18 @@ function Login() {
             e.preventDefault();
             setBusy(true);
             setError("");
+            signingIn.current = true;
             try {
               const u = await login(email, password);
-              navigate(u.role === "patient" ? "/patient" : "/clinic");
+              const portal = portalOf(u);
+              navigate(
+                from && (from === portal || from.startsWith(portal + "/"))
+                  ? from
+                  : portal,
+                { replace: true },
+              );
             } catch (err) {
+              signingIn.current = false;
               setError((err as Error).message);
             } finally {
               setBusy(false);
