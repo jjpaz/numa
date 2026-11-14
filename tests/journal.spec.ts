@@ -64,12 +64,26 @@ async function signIn(page: Page, role = "patient", sample = false) {
     await page.reload();
   }
 }
+// The home has one main action; once today's entry exists it offers "Add another entry".
+async function startEntry(page: Page) {
+  await page
+    .getByRole("link", { name: /^(Add an entry|Add another entry)$/ })
+    .click();
+  await page.waitForURL((url) => url.pathname === "/patient/new");
+}
+async function openFromLeafMenu(page: Page, name: "Journal" | "My garden") {
+  await page.getByRole("button", { name: "Open menu" }).click();
+  await page
+    .getByRole("navigation", { name: "Garden menu" })
+    .getByRole("link", { name, exact: true })
+    .click();
+}
 test("patient creates a private entry, adds feedback, and psychologist receives trends only", async ({
   page,
   browser,
 }) => {
   await signIn(page);
-  await page.getByRole("link", { name: "Add a journal entry" }).click();
+  await startEntry(page);
   await page.getByRole("button", { name: "I’d rather write today" }).click();
   const privateText =
     "E2E private canary: I made a cup of tea and watched the rain.";
@@ -112,23 +126,29 @@ test("fictional profile shows trends, connections are clearly future integration
   page,
 }) => {
   await signIn(page, "patient", true);
-  await expect(page.getByText("Fictional sample · read only")).toBeVisible();
-  await expect(page.locator(".entry-card")).toHaveCount(3);
+  // Sample history includes today, so the home shows a calm completed state.
+  await expect(page.getByText("Today’s entry is planted.")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "See today’s entry" }),
+  ).toBeVisible();
   await expect(page.locator(".context-card")).toHaveCount(0);
   await page.screenshot({
     path: "test-results/numa-journal-desktop.png",
     fullPage: true,
   });
+  await openFromLeafMenu(page, "My garden");
   await page.getByRole("button", { name: "Explore this pattern" }).click();
   await expect(
     page.getByRole("heading", { name: "What you’ve found helpful" }),
   ).toBeVisible();
+  await page.getByRole("link", { name: "My garden", exact: true }).click();
   await page.getByRole("link", { name: "Your space", exact: true }).click();
   await page
     .locator(".space-module")
     .filter({ hasText: "Your voice over time" })
     .getByRole("button")
     .click();
+  await page.getByRole("link", { name: "My garden", exact: true }).click();
   await page.getByRole("link", { name: "What helps", exact: true }).click();
   await expect(
     page.locator(".badge").filter({ hasText: "Personal baseline" }),
@@ -137,6 +157,7 @@ test("fictional profile shows trends, connections are clearly future integration
     path: "test-results/numa-insights-desktop.png",
     fullPage: true,
   });
+  await page.getByRole("link", { name: "My garden", exact: true }).click();
   await page.getByRole("link", { name: "Your space", exact: true }).click();
   await page.getByRole("link", { name: /Possible future connections/ }).click();
   await expect(
@@ -182,9 +203,24 @@ test("landing and patient journal fit a small screen", async ({ page }) => {
     ),
   ).toBeTruthy();
   await signIn(page, "patient", true);
-  await expect(page.getByText("Fictional sample · read only")).toBeVisible();
-  await expect(page.locator(".entry-card")).toHaveCount(3);
+  await expect(
+    page.getByRole("heading", { name: /So good to see you/ }),
+  ).toBeVisible();
   await expect(page.locator(".context-card")).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBeTruthy();
+  await openFromLeafMenu(page, "Journal");
+  await expect(page.locator(".log-entry")).toHaveCount(12);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBeTruthy();
+  await openFromLeafMenu(page, "My garden");
+  await expect(page.getByRole("heading", { name: "My garden" })).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -203,7 +239,7 @@ test("browser microphone path records real media frames and permits manual recov
   const context = await browser.newContext({ permissions: ["microphone"] });
   const page = await context.newPage();
   await signIn(page);
-  await page.getByRole("link", { name: "Add a journal entry" }).click();
+  await startEntry(page);
   await page
     .getByRole("button", { name: "Record a voice note", exact: true })
     .click();
@@ -244,10 +280,13 @@ test("space grows only by choice; simple view keeps every module and journal pag
   page,
 }) => {
   await signIn(page, "patient", true);
-  await expect(page.locator(".daily-page")).toBeVisible();
+  await expect(page.locator(".garden-hero")).toBeVisible();
+  // Softened Everforest cream (--cream #f4eedb).
   expect(
     await page.evaluate(() => getComputedStyle(document.body).backgroundColor),
-  ).toBe("rgb(245, 230, 197)");
+  ).toBe("rgb(244, 238, 219)");
+  await expect(page.locator(".context-card")).toHaveCount(0);
+  await openFromLeafMenu(page, "My garden");
   await expect(page.locator(".context-card")).toHaveCount(0);
   await expect(
     page.getByRole("link", { name: "What helps", exact: true }),
@@ -267,13 +306,20 @@ test("space grows only by choice; simple view keeps every module and journal pag
     path: "test-results/numa-your-space.png",
     fullPage: true,
   });
-  await page.getByRole("link", { name: "My journal", exact: true }).click();
+  await page.getByRole("link", { name: "My garden", exact: true }).click();
   await expect(page.locator(".context-card")).toHaveCount(2);
+  // The home stays minimal: chosen context lives in My garden, not on the home.
+  await page.getByRole("link", { name: "Your garden home" }).click();
+  await expect(page.locator(".garden-hero")).toBeVisible();
+  await expect(page.locator(".context-card")).toHaveCount(0);
+  await openFromLeafMenu(page, "My garden");
   await page.screenshot({
     path: "test-results/numa-chosen-modules.png",
     fullPage: true,
   });
   await page.getByRole("button", { name: "Today, something simple" }).click();
+  await page.waitForURL((url) => url.pathname === "/patient");
+  await openFromLeafMenu(page, "My garden");
   await expect(
     page.getByRole("button", { name: "Back to my space" }),
   ).toHaveAttribute("aria-pressed", "true");
@@ -284,15 +330,18 @@ test("space grows only by choice; simple view keeps every module and journal pag
     page.getByRole("button", { name: "Back to my space" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Back to my space" }).click();
+  await page.waitForURL((url) => url.pathname === "/patient");
+  await openFromLeafMenu(page, "My garden");
   await expect(page.locator(".context-card")).toHaveCount(2);
-  await page.getByRole("button", { name: "Show all pages" }).click();
-  await expect(page.locator(".entry-card")).toHaveCount(12);
+  await openFromLeafMenu(page, "Journal");
+  await expect(page.locator(".log-entry")).toHaveCount(12);
 });
 
 test("a personal intention and experiment can be chosen, paused and reflected on", async ({
   page,
 }) => {
   await signIn(page);
+  await openFromLeafMenu(page, "My garden");
   await page.getByRole("link", { name: "Your space", exact: true }).click();
   await page
     .locator(".space-module")
@@ -322,7 +371,7 @@ test("a personal intention and experiment can be chosen, paused and reflected on
     .fill("I liked making room for something small.");
   await page.getByRole("button", { name: "Keep my reflection" }).click();
   await expect(page.getByText("A question you explored")).toBeVisible();
-  await page.getByRole("link", { name: "My journal", exact: true }).click();
+  await page.getByRole("link", { name: "My garden", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Tea away from my screen" }),
   ).toBeVisible();
