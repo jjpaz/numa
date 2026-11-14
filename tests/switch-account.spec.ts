@@ -61,7 +61,7 @@ test("a signed-in patient can open the clinic portal and sign in there", async (
   await submitLogin(page, "psychologist");
   await page.waitForURL((url) => url.pathname === "/clinic");
   await expect(
-    page.getByRole("heading", { name: "Your patients, thoughtfully." }),
+    page.getByRole("heading", { name: "Your patients", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".patient-row")).toHaveCount(4);
 });

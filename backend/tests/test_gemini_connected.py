@@ -79,7 +79,7 @@ def test_provider_failure_still_allows_save_and_summary_edits(monkeypatch,config
         return httpx.Response(200,json={'candidates':[{'content':{'parts':[{'text':'not JSON PRIVATE'}]}}]})
     mock_http(monkeypatch,handler)
     client,headers=patient_client()
-    result=client.post('/api/patient/entries/audio',headers=headers,data={'request_id':'provider-failure-'+mode},
+    result=client.post('/api/patient/entries/audio',headers=headers,data={'request_id':'provider-failure-'+mode.replace('_','-')},
         files={'audio':('test.wav',wav_bytes(.08*np.sin(np.arange(64000)/8)),'audio/wav')})
     assert result.status_code==200
     path='/api/patient/entries/'+result.json()['id']

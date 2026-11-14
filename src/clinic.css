@@ -1,0 +1,997 @@
+/* Clinic — the psychologist's portal. Built on src/design/tokens.css.
+   See DESIGN.md → "Clinic". A professional tool: sober, dense, legible.
+   No garden, no plants, no decorative voice line, no earth band.
+   --n-attention is used here only, and only for the "review" state. */
+
+.cl-app {
+  min-height: 100vh;
+  background: var(--n-paper);
+  color: var(--n-moss-deep);
+  font-family: var(--n-font-ui);
+  font-size: var(--n-text-16);
+  line-height: var(--n-leading-text);
+}
+.cl-app p {
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+.cl-num,
+.cl-app time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ───────── Sidebar: the portal's own identity ───────── */
+.cl-side {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  width: 240px;
+  padding: 28px 20px 24px;
+  background: var(--n-moss);
+  color: var(--n-ivory);
+}
+.cl-side .wordmark {
+  margin-left: 12px;
+  font-family: var(--n-font-ui);
+  font-weight: 600;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  color: var(--n-ivory);
+}
+.cl-side .wordmark svg {
+  width: 26px;
+  height: 26px;
+  stroke: var(--n-ivory);
+}
+.cl-side .wordmark-dot {
+  color: inherit;
+}
+.cl-nav {
+  margin-top: 40px;
+}
+.cl-nav a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px 0 13px;
+  border-left: 3px solid transparent;
+  border-radius: 0 6px 6px 0;
+  font-size: var(--n-text-16);
+  font-weight: 500;
+  color: var(--n-ivory);
+}
+.cl-nav a:hover {
+  background: rgb(245 230 197 / 0.06);
+}
+.cl-nav a.active {
+  border-left-color: var(--n-ivory);
+  background: rgb(245 230 197 / 0.1);
+  font-weight: 600;
+}
+.cl-side-foot {
+  margin-top: auto;
+}
+.cl-app .cl-side-note {
+  margin: 0 12px 24px;
+  font-size: var(--n-text-14);
+  line-height: 1.5;
+  color: rgb(245 230 197 / 0.75); /* 5.5:1 on moss */
+}
+.cl-side-note strong {
+  display: block;
+  font-weight: 600;
+  color: var(--n-ivory);
+}
+.cl-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 0 0 12px;
+  border-top: 1px solid rgb(245 230 197 / 0.2);
+}
+.cl-user-initials {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgb(245 230 197 / 0.6);
+  border-radius: 50%;
+  font-size: var(--n-text-14);
+  font-weight: 600;
+}
+.cl-user-text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+.cl-user-name {
+  font-size: var(--n-text-16);
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.cl-user-role {
+  font-size: var(--n-text-14);
+  color: rgb(245 230 197 / 0.75);
+}
+.cl-signout {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--n-ivory);
+}
+.cl-signout:hover {
+  background: rgb(245 230 197 / 0.1);
+}
+.cl-app .cl-side a:focus-visible,
+.cl-app .cl-side button:focus-visible {
+  outline: 2px solid var(--n-ivory);
+  outline-offset: 3px;
+}
+
+/* ───────── Content ───────── */
+.cl-content {
+  margin-left: 240px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.cl-app.is-report .cl-content {
+  margin-left: 0;
+}
+.cl-top,
+.cl-main,
+.cl-foot {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: clamp(24px, 4vw, 56px);
+}
+.cl-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+  padding-block: 24px 0;
+  font-size: var(--n-text-14);
+  color: var(--n-ink-soft);
+}
+.cl-top span {
+  color: var(--n-moss-deep);
+  font-weight: 500;
+}
+.cl-top-right {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+}
+.cl-top .cl-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+  color: var(--n-ink-soft);
+}
+.cl-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--n-moss);
+}
+.cl-main {
+  flex: 1;
+  padding-block: clamp(28px, 4vw, 48px) clamp(40px, 5vw, 64px);
+}
+.cl-foot {
+  padding-block: 0 32px;
+  font-size: var(--n-text-14);
+  color: var(--n-ink-soft);
+}
+.cl-app a:focus-visible,
+.cl-app button:focus-visible,
+.cl-app summary:focus-visible {
+  outline: 2px solid var(--n-focus);
+  outline-offset: 3px;
+}
+
+/* ───────── Headings ───────── */
+.cl-head h1,
+.cl-detail-head h1 {
+  margin: 0;
+  font-family: var(--n-font-display);
+  font-weight: 400;
+  font-size: clamp(36px, 4vw, 56px);
+  line-height: 1.06;
+  letter-spacing: var(--n-tracking-display);
+  color: var(--n-moss-deep);
+}
+.cl-detail-head h1 {
+  font-size: clamp(36px, 4vw, 48px);
+}
+.cl-app .cl-head p,
+.cl-app .cl-lede {
+  margin: 12px 0 0;
+  font-size: var(--n-text-18);
+  color: var(--n-ink-soft);
+}
+
+/* One sentence instead of three stat cards. */
+.cl-app .cl-summary {
+  max-width: 80ch;
+  margin: 28px 0 0;
+  font-size: var(--n-text-18);
+  line-height: 1.7;
+  color: var(--n-moss-deep);
+}
+.cl-summary b {
+  font-family: var(--n-font-display);
+  font-weight: 400;
+  font-size: var(--n-text-28);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A pattern to review: a rule, never a coloured box. */
+.cl-review {
+  display: grid;
+  gap: 4px;
+  max-width: 70ch;
+  margin-top: 28px;
+  padding: 4px 0 4px 20px;
+  border-left: 3px solid var(--n-attention);
+  color: var(--n-moss-deep);
+}
+.cl-review-name {
+  margin-right: 8px;
+  font-family: var(--n-font-display);
+  font-size: var(--n-text-21);
+  line-height: 1.3;
+}
+.cl-review-what {
+  font-size: var(--n-text-16);
+  font-weight: 600;
+  color: var(--n-attention);
+}
+.cl-review-text {
+  font-size: var(--n-text-16);
+  color: var(--n-ink-soft);
+}
+.cl-review-open {
+  width: fit-content;
+  margin-top: 4px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: var(--n-natural);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
+}
+.cl-review:hover .cl-review-open {
+  text-decoration-color: currentColor;
+}
+
+/* Filters and search */
+.cl-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  margin-top: 40px;
+}
+.cl-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+}
+.cl-filters button {
+  min-height: 44px;
+  padding: 0;
+  font-size: var(--n-text-16);
+  font-weight: 500;
+  color: var(--n-ink-soft);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 8px;
+}
+.cl-filters button:hover {
+  color: var(--n-moss-deep);
+}
+.cl-filters button[aria-pressed="true"] {
+  font-weight: 600;
+  color: var(--n-moss-deep);
+  text-decoration-color: var(--n-moss);
+}
+.cl-app .cl-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 280px);
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgb(46 49 34 / 0.35);
+  border-radius: var(--n-radius-field);
+  background: transparent;
+  color: var(--n-ink-soft);
+}
+.cl-search:focus-within {
+  outline: 2px solid var(--n-focus);
+  outline-offset: 2px;
+}
+.cl-app .cl-search input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  outline: none;
+  font-size: var(--n-text-16);
+  color: var(--n-moss-deep);
+}
+.cl-app .cl-search input::placeholder {
+  color: var(--n-ink-soft);
+}
+
+/* ───────── The table of people: the dashboard's protagonist ───────── */
+.cl-table {
+  width: 100%;
+  margin-top: 16px;
+  border-collapse: collapse;
+  text-align: left;
+}
+.cl-table thead th {
+  padding: 12px 16px 12px 0;
+  border-bottom: 1px solid var(--n-sheet-border);
+  font-size: var(--n-text-14);
+  font-weight: 600;
+  color: var(--n-ink-soft);
+  white-space: nowrap;
+}
+/* (.patient-row is the hook the tests count; older rules are reset here.) */
+.cl-app tr.patient-row {
+  display: table-row;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--n-sheet-border);
+  transition: none;
+  cursor: pointer;
+}
+.cl-app tr.patient-row:hover {
+  background: rgb(245 230 197 / 0.5);
+}
+.cl-app tr.patient-row:has(a:focus-visible) {
+  outline: 2px solid var(--n-focus);
+  outline-offset: -2px;
+}
+.cl-app tr.patient-row a:focus-visible {
+  outline: none;
+}
+.cl-table tbody th,
+.cl-table tbody td {
+  height: 72px;
+  padding: 12px 16px 12px 0;
+  vertical-align: middle;
+  font-weight: 400;
+}
+.cl-table tbody tr > :first-child,
+.cl-table thead tr > :first-child {
+  padding-left: 8px;
+}
+.cl-person > * {
+  vertical-align: middle;
+}
+.cl-initials {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-right: 14px;
+  border: 1px solid var(--n-moss);
+  border-radius: 50%;
+  font-size: var(--n-text-14);
+  font-weight: 600;
+  color: var(--n-moss);
+}
+.cl-person-text {
+  display: inline-grid;
+}
+.cl-person a {
+  font-family: var(--n-font-display);
+  font-size: var(--n-text-21);
+  line-height: 1.25;
+  color: var(--n-moss-deep);
+}
+.cl-sub {
+  display: block;
+  font-size: var(--n-text-14);
+  line-height: 1.4;
+  color: var(--n-ink-soft);
+}
+.cl-table .cl-num {
+  display: block;
+  font-size: var(--n-text-16);
+  line-height: 1.4;
+}
+
+/* State: words with a symbol. Colour only supports it. */
+.cl-status {
+  font-size: var(--n-text-16);
+  white-space: nowrap;
+}
+.cl-status.is-review {
+  font-weight: 600;
+  color: var(--n-attention);
+}
+.cl-status.is-learning {
+  color: var(--n-ink-soft);
+}
+.cl-status.is-steady {
+  color: var(--n-moss);
+}
+
+/* Sparkline */
+.cl-spark {
+  display: block;
+  overflow: visible;
+}
+.cl-spark-band,
+.cl-chart-band {
+  fill: var(--n-ivory);
+}
+.cl-spark-line {
+  fill: none;
+  stroke: var(--n-moss);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.cl-spark-out {
+  fill: var(--n-attention);
+  stroke: var(--n-paper);
+  stroke-width: 1;
+}
+.cl-spark-empty {
+  font-size: var(--n-text-14);
+  color: var(--n-ink-soft);
+}
+.cl-app .cl-none {
+  margin: 24px 0 0;
+  color: var(--n-ink-soft);
+}
+.cl-app .cl-privacy {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 80ch;
+  margin: 32px 0 0;
+  font-size: var(--n-text-16);
+  color: var(--n-ink-soft);
+}
+.cl-privacy svg {
+  flex: none;
+  margin-top: 3px;
+}
+
+/* ───────── A person's page ───────── */
+.cl-back a,
+.cl-pebble {
+  font-size: var(--n-text-16);
+  font-weight: 500;
+  color: var(--n-moss-deep);
+}
+.cl-back a {
+  text-decoration: underline;
+  text-decoration-color: var(--n-natural);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
+}
+.cl-back a:hover {
+  text-decoration-color: currentColor;
+}
+.cl-app .cl-report-kicker {
+  margin: 20px 0 0;
+  font-size: var(--n-text-14);
+  color: var(--n-ink-soft);
+}
+.cl-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 20px 32px;
+  margin-top: 24px;
+}
+.cl-report-kicker + .cl-detail-head {
+  margin-top: 8px;
+}
+.cl-app .cl-detail-state {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin: 14px 0 0;
+}
+.cl-private {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--n-text-14);
+  color: var(--n-ink-soft);
+}
+.cl-pebble {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 22px;
+  border: 1px solid var(--n-moss);
+  border-radius: var(--n-radius-pebble);
+  background: transparent;
+  cursor: pointer;
+}
+.cl-pebble:hover {
+  background: rgb(63 66 46 / 0.07);
+}
+.cl-section {
+  margin-top: clamp(36px, 4vw, 52px);
+}
+.cl-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--n-sheet-border);
+}
+.cl-section-head h2 {
+  margin: 0;
+  font-family: var(--n-font-display);
+  font-weight: 400;
+  font-size: var(--n-text-28);
+  line-height: 1.2;
+  letter-spacing: var(--n-tracking-display);
+  color: var(--n-moss-deep);
+}
+.cl-app .cl-section-head p {
+  font-size: var(--n-text-14);
+  color: var(--n-ink-soft);
+}
+.cl-app .cl-small {
+  max-width: 80ch;
+  margin: 12px 0 0;
+  font-size: var(--n-text-14);
+  color: var(--n-ink-soft);
+}
+.cl-app .cl-empty,
+.cl-app .cl-chart-empty {
+  max-width: 70ch;
+  margin: 20px 0 0;
+  font-size: var(--n-text-16);
+  color: var(--n-ink-soft);
+}
+/* The persistence note: text beside a rule, not an amber box. */
+.cl-app .cl-flag {
+  max-width: 70ch;
+  margin: 8px 0 0;
+  padding-left: 20px;
+  border-left: 3px solid var(--n-attention);
+  font-size: var(--n-text-16);
+  color: var(--n-moss-deep);
+}
+
+/* The observation chart: this page's protagonist. No card. */
+.cl-chart {
+  width: 100%;
+  margin-top: 16px;
+}
+.cl-chart svg {
+  display: block;
+  overflow: visible;
+}
+.cl-chart-label,
+.cl-chart-date {
+  font-family: var(--n-font-ui);
+  font-size: 14px;
+  fill: var(--n-ink-soft);
+}
+.cl-chart-date {
+  font-variant-numeric: tabular-nums;
+}
+.cl-chart-axis {
+  stroke: rgb(46 49 34 / 0.35);
+  stroke-width: 1;
+}
+.cl-chart-line {
+  fill: none;
+  stroke: var(--n-moss);
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.cl-chart-dot {
+  fill: var(--n-moss);
+  stroke: var(--n-paper);
+  stroke-width: 1.5;
+}
+.cl-chart-dot.is-outside {
+  fill: var(--n-attention);
+}
+.cl-chart-ring {
+  fill: none;
+  stroke: var(--n-attention);
+  stroke-width: 1.5;
+}
+.cl-chart-bracket {
+  fill: none;
+  stroke: var(--n-ink-soft);
+  stroke-width: 1;
+}
+
+/* Everyday context: a definition list in one row. No cards, no icons. */
+.cl-context {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 20px 24px;
+  margin: 20px 0 0;
+}
+.cl-context > div {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+}
+.cl-context dt {
+  font-size: var(--n-text-14);
+  color: var(--n-ink-soft);
+}
+.cl-context dd {
+  margin: 0;
+  font-family: var(--n-font-display);
+  font-size: var(--n-text-28);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--n-moss-deep);
+}
+
+/* Actions and feedback: rows with 1px lines and a thin bar. */
+.cl-actions {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cl-actions li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 200px;
+  align-items: center;
+  gap: 8px 24px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--n-sheet-border);
+}
+.cl-action-name {
+  font-size: var(--n-text-18);
+  font-weight: 600;
+}
+.cl-action-count {
+  font-size: var(--n-text-16);
+  color: var(--n-ink-soft);
+}
+.cl-bar {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--n-ivory);
+  box-shadow: inset 0 0 0 1px rgb(46 49 34 / 0.08);
+  overflow: hidden;
+}
+.cl-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--n-moss);
+}
+
+/* Notes */
+.cl-app .cl-notes label {
+  display: block;
+  margin: 20px 0 8px;
+  font-size: var(--n-text-16);
+  font-weight: 600;
+  color: var(--n-moss-deep);
+}
+.cl-app .cl-notes textarea {
+  display: block;
+  width: 100%;
+  max-width: 80ch;
+  min-height: 112px;
+  padding: 14px 16px;
+  overflow: hidden;
+  resize: none;
+  border: 1px solid rgb(46 49 34 / 0.35);
+  border-radius: var(--n-radius-field);
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--n-text-16);
+  line-height: var(--n-leading-text);
+  color: var(--n-moss-deep);
+}
+.cl-app .cl-notes textarea::placeholder {
+  color: var(--n-ink-soft);
+}
+.cl-app .cl-notes textarea:focus-visible {
+  outline: 2px solid var(--n-focus);
+  outline-offset: 2px;
+}
+.cl-notes-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-top: 16px;
+}
+.cl-primary {
+  min-height: 48px;
+  padding: 0 28px;
+  border-radius: var(--n-radius-pebble);
+  background: var(--n-apricot);
+  font-size: var(--n-text-16);
+  font-weight: 600;
+  color: var(--n-moss-deep);
+}
+.cl-primary:hover {
+  background: #c97e25;
+}
+.cl-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--n-text-16);
+  color: var(--n-moss);
+}
+.cl-app .cl-coverage {
+  margin-top: clamp(36px, 4vw, 52px);
+}
+
+/* ───────── ≤ 900px: the sidebar becomes a 56px moss bar ───────── */
+@media (max-width: 900px) {
+  .cl-side {
+    position: static;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    width: auto;
+    height: 56px;
+    padding: 0 8px 0 16px;
+  }
+  .cl-side .wordmark {
+    margin-left: 0;
+    font-size: 22px;
+  }
+  .cl-side .wordmark svg {
+    width: 22px;
+    height: 22px;
+  }
+  .cl-nav {
+    margin: 0 0 0 auto;
+  }
+  .cl-nav a {
+    min-height: 40px;
+    padding: 0 12px;
+    border-left: 0;
+    border-radius: 6px;
+  }
+  .cl-side-foot {
+    margin: 0;
+  }
+  .cl-app .cl-side-note,
+  .cl-user-initials,
+  .cl-user-text {
+    display: none;
+  }
+  .cl-user {
+    padding: 0;
+    border: 0;
+  }
+  .cl-content {
+    margin-left: 0;
+    min-height: calc(100vh - 56px);
+  }
+  .cl-top,
+  .cl-main,
+  .cl-foot {
+    padding-inline: 16px;
+  }
+  .cl-top {
+    padding-top: 16px;
+  }
+  /* Each person is a stacked block: name, state, sparkline, last entry. */
+  .cl-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .cl-table,
+  .cl-table tbody {
+    display: block;
+  }
+  .cl-app tr.patient-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 16px;
+    align-items: center;
+    padding: 18px 0;
+  }
+  .cl-table tbody th,
+  .cl-table tbody td {
+    display: block;
+    height: auto;
+    padding: 0;
+  }
+  .cl-table tbody tr > :first-child {
+    padding-left: 0;
+  }
+  .cl-table tbody th.cl-person,
+  .cl-cell-status {
+    grid-column: 1 / -1;
+  }
+  .cl-cell-voice {
+    grid-column: 1;
+  }
+  .cl-cell-last {
+    grid-column: 2;
+    text-align: right;
+  }
+  .cl-table tbody td.cl-cell-activity {
+    display: none;
+  }
+  .cl-context {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cl-actions li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+}
+
+/* ───────── Print: the one-page observation report ───────── */
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm;
+  }
+  /* The app's outer wrappers keep a screen-height ivory fill: not on paper. */
+  html,
+  #root,
+  #root > * {
+    min-height: 0 !important;
+    background: #fff !important;
+  }
+  /* The A4 page is narrower than 900px: keep the desktop arrangement. */
+  .cl-context {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .cl-actions li {
+    grid-template-columns: minmax(0, 1fr) auto 160px;
+    gap: 4px 20px;
+  }
+  body,
+  .cl-app {
+    background: #fff !important;
+    color: var(--n-moss-deep);
+  }
+  .cl-app {
+    min-height: 0;
+    font-size: 10.5pt;
+  }
+  .cl-chart svg {
+    width: 100%;
+    height: auto;
+  }
+  .cl-app .cl-lede {
+    font-size: 12pt;
+    margin-top: 6px;
+  }
+  .cl-app .cl-detail-state {
+    margin-top: 8px;
+  }
+  .cl-detail-head {
+    margin-top: 4px;
+  }
+  .cl-section-head {
+    padding-bottom: 6px;
+  }
+  .cl-chart {
+    margin-top: 8px;
+  }
+  .cl-app .cl-small,
+  .cl-app .cl-flag {
+    margin-top: 6px;
+  }
+  .cl-content {
+    margin: 0;
+    min-height: 0;
+  }
+  .cl-main,
+  .cl-foot {
+    max-width: none;
+    padding: 0;
+  }
+  .cl-foot {
+    margin-top: 16px;
+  }
+  .cl-app .cl-report-kicker {
+    margin-top: 0;
+  }
+  .cl-detail-head h1 {
+    font-size: 26pt;
+  }
+  .cl-section,
+  .cl-app .cl-coverage {
+    margin-top: 14px;
+  }
+  .cl-section {
+    break-inside: avoid;
+  }
+  .cl-section-head h2 {
+    font-size: 15pt;
+  }
+  .cl-context dd {
+    font-size: 15pt;
+  }
+  .cl-context {
+    margin-top: 10px;
+  }
+  .cl-actions li {
+    padding: 6px 0;
+  }
+  .cl-action-name {
+    font-size: 11pt;
+  }
+  /* Greyscale that survives any printer: shape and solid black, not hue. */
+  .cl-status.is-review {
+    color: #000;
+  }
+  .cl-chart-band {
+    fill: #ededed;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .cl-chart-line {
+    stroke: #333;
+  }
+  .cl-chart-dot {
+    fill: #555;
+    stroke: #fff;
+  }
+  .cl-chart-dot.is-outside {
+    fill: #000;
+  }
+  .cl-chart-ring {
+    stroke: #000;
+  }
+  .cl-chart-label,
+  .cl-chart-date {
+    fill: #333;
+  }
+  .cl-app .cl-flag {
+    border-left-color: #000;
+  }
+  .cl-bar {
+    background: #e5e5e5;
+    box-shadow: none;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .cl-bar > span {
+    background: #333;
+  }
+}

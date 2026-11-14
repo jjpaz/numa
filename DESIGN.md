@@ -17,29 +17,30 @@ memorable element; everything around it stays quiet and disciplined.
 
 ## Colour
 
-| Token | Value | Role |
-|---|---|---|
-| `--n-paper` | `#F8F0DF` | Page background |
-| `--n-ivory` | `#F5E6C5` | Paper sheets, halos, text on the dark earth surface |
-| `--n-moss` | `#3F422E` | Main ink; the dark "earth" surface |
-| `--n-moss-deep` | `#2E3122` | Strong ink: headings, primary text, button text |
-| `--n-ink-soft` | `#5F5643` | Secondary text (6.4:1 on paper, 5.9:1 on ivory) |
-| `--n-apricot` | `#D78B30` | **Only** the flower (today's, in the patient garden), the primary action and the tip of a live recording |
-| `--n-danger` | `#9A3B26` | Only the confirm button of a destructive action, with ivory text (5.6:1). Never decoration |
+| Token            | Value     | Role                                                                                                                        |
+| ---------------- | --------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `--n-paper`      | `#F8F0DF` | Page background                                                                                                             |
+| `--n-ivory`      | `#F5E6C5` | Paper sheets, halos, text on the dark earth surface                                                                         |
+| `--n-moss`       | `#3F422E` | Main ink; the dark "earth" surface                                                                                          |
+| `--n-moss-deep`  | `#2E3122` | Strong ink: headings, primary text, button text                                                                             |
+| `--n-ink-soft`   | `#5F5643` | Secondary text (6.4:1 on paper, 5.9:1 on ivory)                                                                             |
+| `--n-apricot`    | `#D78B30` | **Only** the flower (today's, in the patient garden), the primary action and the tip of a live recording                    |
+| `--n-attention`  | `#9A5B13` | Clinic only, and only the "review" state (status text, 3px rules, points outside a range). 4.8:1 on paper                   |
+| `--n-danger`     | `#9A3B26` | Only the confirm button of a destructive action, with ivory text (5.6:1). Never decoration                                  |
 | `--n-past-bloom` | `#D9B98A` | "Past bloom": flowers of earlier days, with an ivory centre. Desaturated so today stays the only apricot flower. Never text |
-| `--n-natural` | `#9F886F` | Decorative only (leaves, underlines, rules). Never text |
-| `--n-sage` | `#A3AC84` | Leaves. Never text |
-| `--n-focus` | `#8A5A22` | Focus ring: 2px outline, 3px offset |
+| `--n-natural`    | `#9F886F` | Decorative only (leaves, underlines, rules). Never text                                                                     |
+| `--n-sage`       | `#A3AC84` | Leaves. Never text                                                                                                          |
+| `--n-focus`      | `#8A5A22` | Focus ring: 2px outline, 3px offset                                                                                         |
 
 All text meets WCAG AA. Ivory at 75% opacity on moss (5.5:1) is the lowest
 contrast allowed for small text on the earth surface.
 
 ## Type
 
-| Token | Value | Use |
-|---|---|---|
-| `--n-font-display` | Young Serif, weight 400 only | Headings and quoted words |
-| `--n-font-ui` | Hanken Grotesk Variable, 400 / 500 / 600 | Text and interface |
+| Token              | Value                                    | Use                       |
+| ------------------ | ---------------------------------------- | ------------------------- |
+| `--n-font-display` | Young Serif, weight 400 only             | Headings and quoted words |
+| `--n-font-ui`      | Hanken Grotesk Variable, 400 / 500 / 600 | Text and interface        |
 
 Both fonts are self-hosted through `@fontsource` packages, so nothing depends on
 Google Fonts or a CDN.
@@ -53,18 +54,18 @@ Google Fonts or a CDN.
 
 Radius follows hierarchy; it is never one value for everything.
 
-| Token | Value | Use |
-|---|---|---|
-| `--n-radius-sheet` | 6px | Paper sheets |
-| `--n-radius-field` | 12px | Inputs and fields |
+| Token               | Value | Use                    |
+| ------------------- | ----- | ---------------------- |
+| `--n-radius-sheet`  | 6px   | Paper sheets           |
+| `--n-radius-field`  | 12px  | Inputs and fields      |
 | `--n-radius-pebble` | 999px | Buttons (pebble shape) |
 
 ## Lines and paper
 
-| Token | Value | Use |
-|---|---|---|
-| `--n-stroke` | 1.75px | The voice line and the stem, at every width |
-| `--n-sheet-border` | `rgb(46 49 34 / .12)` | 1px border on paper sheets |
+| Token              | Value                           | Use                                              |
+| ------------------ | ------------------------------- | ------------------------------------------------ |
+| `--n-stroke`       | 1.75px                          | The voice line and the stem, at every width      |
+| `--n-sheet-border` | `rgb(46 49 34 / .12)`           | 1px border on paper sheets                       |
 | `--n-sheet-shadow` | `0 1px 0 …, 0 8px 20px -14px …` | The only shadow a sheet may have: short and warm |
 
 Paper sheets sit top-aligned in their row. Growth is told by their content (the
@@ -94,14 +95,14 @@ generic grey drop shadow is never allowed.
 Every voice line is drawn with the same pure helpers, so the public page and the
 patient's garden are the same line:
 
-| Export | What it does |
-|---|---|
-| `mulberry32(seed)` | Seeded PRNG |
-| `hashString(text)` | Stable 32-bit hash (FNV-1a), e.g. from an entry id |
-| `voiceWave(options)` | Points of a smooth waveform: drifting carrier, a fresh amplitude per half cycle, any envelope, and an optional `limitLift` to keep crests clear of text |
-| `gaussianEnvelope(bursts, at)` | Sum of Gaussian bursts, capped at 1 |
-| `catmullRom(points)` | Points to cubic béziers, with no corners |
-| `cubicAt`, `sampleCubic`, `lengthOf`, `cubicD` | Curves for stems, and lengths for the drawing animation |
+| Export                                         | What it does                                                                                                                                            |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mulberry32(seed)`                             | Seeded PRNG                                                                                                                                             |
+| `hashString(text)`                             | Stable 32-bit hash (FNV-1a), e.g. from an entry id                                                                                                      |
+| `voiceWave(options)`                           | Points of a smooth waveform: drifting carrier, a fresh amplitude per half cycle, any envelope, and an optional `limitLift` to keep crests clear of text |
+| `gaussianEnvelope(bursts, at)`                 | Sum of Gaussian bursts, capped at 1                                                                                                                     |
+| `catmullRom(points)`                           | Points to cubic béziers, with no corners                                                                                                                |
+| `cubicAt`, `sampleCubic`, `lengthOf`, `cubicD` | Curves for stems, and lengths for the drawing animation                                                                                                 |
 
 ## Patient garden (`/patient`)
 
@@ -125,6 +126,7 @@ voice.**
 
   For a new person, the first entry should feel like a reward: one tall
   flowering plant, not a small sprout at the edge.
+
 - **Earlier days are secondary.** Each day with a saved entry is a soft burst
   (Gaussian envelope, 35–70% of the day's width, ±16–22px at 1440), and that
   entry's small plant (50–120px) grows from the centre of its burst. Flowers of
@@ -140,6 +142,7 @@ voice.**
   Several entries on one day gather with a slight overlap. Duration, energy,
   pauses and any acoustic or mood data are never used: a plant remembers that
   there was a page, it does not measure how the person is.
+
 - **Nothing withers.** Days without an entry are near-flat pauses. Plants never
   shrink, fade or disappear for absences.
 - **The drawing is as tall as what grows in it.** The SVG height follows its
@@ -266,6 +269,72 @@ Styled in [`src/journal.css`](src/journal.css).
 - **≤720px.** The 44px plant on the left with the date (14px) on its base line;
   under the date, the title (24px), reflection (16px), words (15px, two lines)
   and meta.
+
+## Clinic (`/clinic`, `/clinic/patients/:id`, `…/report`)
+
+The psychologist's portal is a professional tool. It shares the tokens, type
+and tone of the patient's space, but has its own identity: **no garden, no
+plants, no decorative voice line, no earth band**. Sober, dense and legible;
+data always in tabular figures. One protagonist per screen: the table of people
+on the dashboard, the observation chart on a person's page. Styled in
+[`src/clinic.css`](src/clinic.css) (imported last); charts in
+[`src/clinicCharts.tsx`](src/clinicCharts.tsx).
+
+- **A moss sidebar is the portal's identity.** 240px, fixed, `--n-moss` with
+  ivory text (8.4:1): the wordmark, "Overview" (active: ivory at 10% and a 3px
+  ivory bar on the left), and at the bottom the boundary note in 14px ivory at
+  75% (5.5:1) and the user with a 44px sign-out button. Focus on the moss is a
+  2px ivory ring. At ≤900px it becomes a 56px moss top bar (wordmark, Overview,
+  sign out).
+- **Content** sits on `--n-paper`, max 1200px, padding `clamp(24px,4vw,56px)`.
+  A 14px top line holds the route ("Your practice / Patient wellbeing"), the date
+  and "Live, updates every 5 seconds" with a static moss dot (never blinking).
+  The preview mode is a 14px sentence in the footer.
+- **State is words with a symbol, never a pill.** "● Review suggested" (600,
+  `--n-attention`), "○ Learning baseline" (ink-soft), "— Within typical range"
+  (moss). The symbol and the words carry the meaning; colour only supports it.
+- **`--n-attention` `#9A5B13`** (dark ochre) is used **only** for the "review"
+  state: its status text, the 3px rule beside a review notice and the
+  persistence note, and the points outside a person's range. 4.8:1 on paper;
+  never as text on plain ivory (4.4:1). Apricot stays reserved for the one
+  primary action ("Save notes").
+- **Dashboard.** `h1` "Your patients"; one sentence replaces stat cards ("4
+  people in your care. 1 pattern to review. 36 private journal pages, never shown
+  here.", numbers in Young Serif 28 from the data). A review is a link row beside
+  a 3px `--n-attention` rule, never a coloured box. Filters are 16px text with a
+  2px underline on the active one (`aria-pressed`); search is a 12px-radius field
+  with a magnifier and an `aria-label`.
+- **The table of people** is a semantic `<table>`: 72px rows separated by 1px
+  lines, the whole row clickable with a real link on the name (its accessible
+  name also carries the state and activities), hover in ivory at 50%, keyboard
+  focus as a 2px `--n-focus` outline around the row. Initials sit in a 36px
+  moss-outlined circle with no fill. At ≤900px each row stacks: name, state,
+  sparkline, last entry.
+- **Sparkline** (140×32): the person's recent `trend.points` against their own
+  range (an ivory band), a 1.5px moss line, points outside the range in
+  `--n-attention`. With no points it says so in words ("No voice entries yet",
+  or "Learning, N of 5 days"). Nothing is ever invented.
+- **The observation chart** is a person page's protagonist, full width with no
+  card, about 280px tall: the "Personal range" ivory band (0–3 robust
+  deviations), a "Baseline days" bracket under the first five days, a smooth
+  moss line with 6px points, points outside the range in `--n-attention` with a
+  ring (shape as well as colour), tabular dates (first, last and every ~5 days)
+  and the label "Difference from personal range" instead of a numeric axis.
+  Each point has a `<title>`, the SVG's label states the last observation, and a
+  visually hidden table holds the same data.
+- **Honesty is kept in words:** the heuristic is a prompt for review, not a
+  diagnosis (beside a 3px attention rule); the median/MAD note; "Simulated data"
+  beside Everyday context; helpfulness and vocal changes never establish
+  causality; the observation coverage. Journal text, audio and summaries never
+  appear.
+- **Everyday context** is a definition list in one row (values in Young Serif
+  28, labels 14px). **Actions and feedback** are rows with 1px lines: the
+  activity (18px 600), "6 helpful of 6 responses" in tabular figures and a 4px
+  bar (ivory track, moss fill).
+- **Report.** The same page without the sidebar, notes or controls. Printed: white
+  paper, moss-deep ink, the chart in greys that survive any printer (outside
+  points solid black with a ring), A4 on one page with 16mm margins, headed
+  "Numa, one-page observation report" and the generation date.
 
 ## Recording (`/patient/new`, and the voice comparison)
 
