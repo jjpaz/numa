@@ -10,10 +10,10 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from .repository import Repository
-from .security import issue_token, verify_token
+from .security import issue_token, verify_session
 from .seed import USERS, seed
 from .domain import utcnow, simulated_context, patterns, baseline_and_trend, clinical_projection, recommend, ACTIONS
-from .analysis import transcribe, semantics, analyse_voice, explain_recommendation
+from .analysis import transcribe, semantics, analyse_voice, explain_recommendation, ml_enabled
 from .growth import growth_projection, growth_settings, MODULES
 
 load_dotenv()
@@ -21,6 +21,11 @@ load_dotenv()
 class Login(BaseModel):
     email: str = Field(max_length=200)
     password: str = Field(max_length=200)
+
+class DemoLogin(BaseModel):
+    name: str = Field(min_length=1,max_length=80)
+    role: Literal['patient','psychologist']
+    sample: bool = False
 
 class EntryPatch(BaseModel):
     transcript: str | None = Field(default=None,max_length=16000)
@@ -76,13 +81,16 @@ def create_app(repo=None, demo=None, secret=None):
     app = FastAPI(title='Numa API',version='0.1.0')
     app.state.repo = repo
     app.state.demo = demo
+    demo_name_login = demo and os.getenv('NUMA_DEMO_NAME_LOGIN','false').lower()=='true'
     app.add_middleware(CORSMiddleware,allow_origins=[o.strip() for o in os.getenv('NUMA_ALLOWED_ORIGINS','http://127.0.0.1:5173,http://localhost:5173').split(',')],allow_methods=['GET','POST','PATCH','DELETE'],allow_headers=['Authorization','Content-Type'])
     bearer = HTTPBearer(auto_error=False)
 
     def current(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
         if not credentials: raise HTTPException(401,'Please sign in.')
-        user = repo.get('users',verify_token(credentials.credentials,secret))
+        session = verify_session(credentials.credentials,secret)
+        user = repo.get('users',session['sub'])
         if not user: raise HTTPException(401,'Unknown session.')
+        if session.get('display_name'): user={**user,'name':session['display_name']}
         return user
 
     def patient(user=Depends(current)):
@@ -169,7 +177,17 @@ def create_app(repo=None, demo=None, secret=None):
 
     @app.get('/api/health')
     def health():
-        return {'ok':True,'mode':'local_preview' if demo else 'connected','storage':'postgresql' if repo.engine else 'ephemeral_memory','gemini_configured':bool(os.getenv('GEMINI_API_KEY')),'voice_model_enabled':not demo,'audio_retention':'temporary processing only'}
+        return {'ok':True,'mode':'local_preview' if demo else 'connected','storage':'postgresql' if repo.engine else 'ephemeral_memory','gemini_configured':bool(os.getenv('GEMINI_API_KEY')),'voice_model_enabled':not demo and ml_enabled(),'ml_enabled':not demo and ml_enabled(),'ml_status':'not_configured' if demo or not ml_enabled() else 'configured_not_verified','audio_retention':'temporary processing only','demo_name_login':demo_name_login}
+
+    @app.post('/api/auth/demo')
+    def demo_login(body:DemoLogin):
+        if not demo_name_login: raise HTTPException(404,'Demo access is not enabled.')
+        name=body.name.strip()
+        if not name or (body.sample and body.role!='patient'):
+            raise HTTPException(422,'Enter a name and choose a valid demo profile.')
+        key='psychologist' if body.role=='psychologist' else 'patient-sample' if body.sample else 'patient-live'
+        user={**repo.get('users',key),'name':name}
+        return {'token':issue_token(key,secret,display_name=name),'user':user}
 
     @app.post('/api/auth/login')
     def login(body:Login):
@@ -186,7 +204,8 @@ def create_app(repo=None, demo=None, secret=None):
     @app.patch('/api/patient/preferences')
     def preferences(body:Preferences,user=Depends(patient)):
         writable(user)
-        user['preferences']=list(dict.fromkeys(body.actions)); return repo.put('users',user['id'],user)
+        stored=repo.get('users',user['id'])
+        stored['preferences']=list(dict.fromkeys(body.actions)); return repo.put('users',user['id'],stored)
 
     @app.get('/api/patient/growth')
     def growth(user=Depends(patient)):

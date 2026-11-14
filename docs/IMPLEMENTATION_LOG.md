@@ -1,5 +1,38 @@
 # Implementation and verification record
 
+## Minimal connected backend: phase 1, ML deliberately disabled — 14 November 2026
+
+- Starting branch `ml/vad-browser-check`, commit `8e3cd21`, clean tree. Created
+  `backend/min-connected` directly from `main` at `d9fce5a`, as requested. Main was
+  not modified and no experimental branch was merged. Isolated DAM/VAD work remains
+  preserved on `ml/modal-dam-check`, `ml/vad-quality` and `ml/vad-browser-check`.
+- Phase C cancelled. ML is future work: **evaluado, desactivado a propósito hasta
+  validarlo**. API defaults to `NUMA_ML_ENABLED=false`; acoustic results keep
+  `ml_status=not_configured`. No DAM/VAD pipeline is imported into the diary.
+- Restored only the already-deployed additive backend name-login/session changes
+  from `deploy/modal-demo` to preserve public demo compatibility; frontend untouched.
+- Current public demo health: external `Invoke-RestMethod` returned ok, ephemeral
+  demo memory, vocal model false and name-only login true. Modal 1.6.4, authenticated
+  workspace `rebollmartin`. No deployment has occurred in this phase yet.
+- Compared public source at `8e3cd21` with demo `d198df5`: API requirements identical;
+  Modal image definition differs only by the later name-login flag, not ML packages.
+  Main still had the old SpeechBrain/PyTorch/T4 definition; replaced it on this new
+  branch with the demo CPU image, zero minimum/reserve, max one, idle 30 seconds,
+  no GPU/model Volume/ML installs. Keep FFmpeg/libsndfile for audio decoding.
+  Removed image overrides that emptied database/Gemini settings so secrets can
+  configure connected mode. Image defaults preserve the current demo until then.
+- Baseline from main: `.\.venv\Scripts\python.exe -m pytest backend/tests -q
+  --basetemp=.local/pytest-min-connected-baseline`: **26 passed, 1 skipped**,
+  existing Starlette warning. The omitted test needs a dedicated PostgreSQL URL.
+- Credential presence checked without values in process environment and known local
+  dotenv/credential files: DATABASE_URL, TEST_DATABASE_URL and GEMINI_API_KEY absent.
+  Real Aiven and Gemini verification: **BLOQUEADA**. No values requested from user.
+  Connected deployment/model listing/Safari-file transcription: **no verificado**.
+- Phase-1 validation: `.\.venv\Scripts\python.exe -m pytest backend/tests -q
+  --basetemp=.local/pytest-min-connected-ml-off`: **37 passed, 1 skipped** in 2.11 s,
+  existing Starlette warning. Includes disabled-ML import/load boundary and
+  CPU-image dependency checks, plus deployed name-login/session compatibility.
+
 Date: 14 November 2026. All Numa source was created in a new project directory during this task. No earlier MVP source or brand assets were copied.
 
 ## Delivered

@@ -11,6 +11,9 @@ import numpy as np
 
 MODEL_ID = 'speechbrain/emotion-recognition-wav2vec2-IEMOCAP'
 
+def ml_enabled():
+    return os.getenv('NUMA_ML_ENABLED','false').lower() == 'true'
+
 def decode_audio(data):
     try:
         with wave.open(io.BytesIO(data)) as wav:
@@ -46,12 +49,12 @@ def load_voice_model():
 def analyse_voice(data, demo):
     samples = decode_audio(data)
     result = acoustic_features(samples)
-    result.update(source='measured', model=None, probabilities={}, observation='These are acoustic measurements, not a statement about how you feel.')
+    result.update(source='measured', model=None, probabilities={}, ml_status='not_configured', observation='These are acoustic measurements, not a statement about how you feel.')
     if result['quality'] != 'valid':
         result['observation'] = result['reason']
         return result
-    if demo:
-        result['observation'] = 'Audio measured locally by the backend. The emotional voice model is not enabled in this local preview.'
+    if demo or not ml_enabled():
+        result['observation'] = 'Audio measured by the backend. Vocal ML is intentionally disabled.'
         result['ml_status'] = 'not_configured'
         return result
     classifier,revision = load_voice_model()
