@@ -1,0 +1,45 @@
+/* Numa design tokens. Prefixed --n- so they never collide with older variables
+   (--paper, --muted…). See DESIGN.md for roles and rules. */
+:root {
+  /* Colour */
+  --n-paper: #f8f0df; /* page background */
+  --n-ivory: #f5e6c5; /* paper sheets, halos */
+  --n-moss: #3f422e; /* main ink and the dark "earth" surface */
+  --n-moss-deep: #2e3122; /* strong ink */
+  --n-ink-soft: #5f5643; /* secondary text — 6.4:1 on paper, 5.9:1 on ivory */
+  --n-apricot: #d78b30; /* only the flower and the primary action */
+  --n-natural: #9f886f; /* decorative only, never text */
+  --n-sage: #a3ac84; /* leaves, never text */
+  --n-focus: #8a5a22; /* focus ring */
+
+  /* Type */
+  --n-font-display: "Young Serif", Georgia, serif; /* 400 only, headings */
+  --n-font-ui:
+    "Hanken Grotesk Variable", system-ui, sans-serif; /* 400/500/600 */
+  --n-text-14: 14px;
+  --n-text-16: 16px;
+  --n-text-18: 18px;
+  --n-text-21: 21px;
+  --n-text-28: 28px;
+  --n-text-36: 36px;
+  --n-text-48: 48px;
+  --n-text-72: 72px;
+  --n-text-96: 96px;
+  --n-leading-text: 1.55;
+  --n-leading-display: 1.04;
+  --n-tracking-display: -0.02em;
+
+  /* Shape — radius follows hierarchy */
+  --n-radius-sheet: 6px;
+  --n-radius-field: 12px;
+  --n-radius-pebble: 999px;
+
+  /* Lines and paper */
+  --n-stroke: 1.75px; /* the voice line and the stem */
+  --n-sheet-border: rgb(46 49 34 / 0.12);
+  --n-sheet-shadow:
+    0 1px 0 rgb(46 49 34 / 0.06), 0 8px 20px -14px rgb(43 33 14 / 0.45);
+
+  /* Motion */
+  --n-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}

@@ -235,58 +235,7 @@ summary:focus-visible {
 .loading {
   color: #77684a;
 }
-.landing-copy h1 {
-  color: var(--organic);
-}
-.landing-copy h1 em {
-  color: #9b6b30;
-}
-.landing-tag,
-.landing-footer,
-.landing-trust {
-  color: #786b51;
-}
-.landing-features svg {
-  color: #8c683b;
-}
-.landing-features {
-  border-color: var(--line);
-}
-.botanical > svg > circle:first-child {
-  fill: #e7d6ae;
-}
-.botanical > svg > circle:nth-child(2) {
-  stroke: #bc9e70;
-}
-.botanical > svg > ellipse {
-  fill: var(--organic);
-  opacity: 0.65;
-}
-.botanical > svg > ellipse:nth-of-type(even) {
-  fill: var(--natural);
-  opacity: 0.8;
-}
-.botanical > svg > circle:nth-last-child(2) {
-  fill: var(--apricot);
-}
-.botanical > svg > circle:last-child {
-  fill: var(--ivory);
-}
-.orbit-note {
-  background: #fff7e7;
-  border-color: #dac29a;
-  color: #705e40;
-}
-.orbit-note > span {
-  background: var(--apricot);
-}
-.landing-copy .badge {
-  background: #ecdcba;
-  color: #6e5e40;
-}
-.landing-copy > .button-row .primary {
-  color: #27291d;
-}
+
 .login-page {
   background:
     radial-gradient(ellipse at 50% 50%, #ebd8b1, transparent 70%), var(--ivory);

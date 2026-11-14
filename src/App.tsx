@@ -13,6 +13,7 @@ import {
   Outlet,
   Route,
   Routes,
+  useLocation,
   useNavigate,
   useParams,
   useSearchParams,
@@ -27,6 +28,7 @@ import {
   TodayNotice,
 } from "./garden";
 import { reflectionFor } from "./today";
+import { Landing } from "./landing";
 import {
   ArrowLeft,
   ArrowRight,
@@ -37,7 +39,6 @@ import {
   ChevronRight,
   CloudSun,
   Flower2,
-  Heart,
   Leaf,
   Link2,
   LockKeyhole,
@@ -48,7 +49,6 @@ import {
   Search,
   Settings2,
   ShieldCheck,
-  Sprout,
   Trash2,
   Users,
   Wind,
@@ -125,6 +125,8 @@ function useResource<T>(path: string, interval = 0) {
 
 export function App() {
   const reducedMotion = useReducedMotion();
+  // The home page has one orchestrated animation (the voice line); its text must not fade in.
+  const isHome = useLocation().pathname === "/";
   const [user, setUser] = useState<User | null>(null),
     [health, setHealth] = useState<Health | null>(null),
     [ready, setReady] = useState(false);
@@ -166,7 +168,7 @@ export function App() {
   return (
     <Auth.Provider value={{ user, health, login, logout }}>
       <motion.div
-        initial={reducedMotion ? false : { opacity: 0 }}
+        initial={reducedMotion || isHome ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.25 }}
       >
@@ -212,111 +214,6 @@ function Guard({ role }: { role: User["role"] }) {
     <Navigate to={user.role === "patient" ? "/patient" : "/clinic"} replace />
   ) : (
     <Outlet />
-  );
-}
-
-function Botanical({ small = false }: { small?: boolean }) {
-  return (
-    <div className={"botanical " + (small ? "small" : "")} aria-hidden="true">
-      <svg viewBox="0 0 400 400">
-        <circle cx="200" cy="200" r="172" fill="#e9eddf" />
-        <circle
-          cx="200"
-          cy="200"
-          r="144"
-          fill="none"
-          stroke="#d0dac6"
-          strokeDasharray="2 9"
-        />
-        {Array.from({ length: 8 }, (_, i) => (
-          <ellipse
-            key={i}
-            cx="200"
-            cy="144"
-            rx="38"
-            ry="70"
-            fill={i % 2 ? "#b5c7a6" : "#92af8b"}
-            opacity=".78"
-            transform={`rotate(${i * 45} 200 200)`}
-          />
-        ))}
-        <circle cx="200" cy="200" r="33" fill="#f1e7c8" />
-        <circle cx="200" cy="200" r="19" fill="#f7f3e7" />
-      </svg>
-      <span className="orbit-note note-one">
-        <span />a little more understood
-      </span>
-      <span className="orbit-note note-two">
-        <Leaf size={15} />
-        one day at a time
-      </span>
-    </div>
-  );
-}
-function Landing() {
-  return (
-    <div className="landing">
-      <header className="landing-header">
-        <Wordmark />
-        <span className="landing-tag">A little space for you</span>
-        <Link to="/login/psychologist" className="quiet-button">
-          For psychologists <ArrowUpRight size={16} />
-        </Link>
-      </header>
-      <main className="landing-main">
-        <div className="landing-copy">
-          <Badge tone="green">
-            <Sprout size={13} /> A journal that grows with you
-          </Badge>
-          <h1>
-            Some days,
-            <br />
-            the words
-            <br />
-            come <em>later.</em>
-          </h1>
-          <p>
-            Start with a voice note. Numa brings together what you share and the
-            patterns in your voice, learning the little things that help you
-            along the way.
-          </p>
-          <div className="button-row">
-            <Link to="/login/patient" className="button primary">
-              Make a little space <ArrowRight size={18} />
-            </Link>
-            <Link to="/login/patient?sample=1" className="button outline">
-              Explore a sample journal
-            </Link>
-          </div>
-          <div className="landing-trust">
-            <LockKeyhole size={15} />
-            Your journal is yours. Share trends, keep your words.
-          </div>
-        </div>
-        <Botanical />
-      </main>
-      <div className="landing-features">
-        <div>
-          <Mic />
-          <h3>Talk, just as you are</h3>
-          <p>No scores to fill in. No right way to start.</p>
-        </div>
-        <div>
-          <Leaf />
-          <h3>Notice your own patterns</h3>
-          <p>A gentle picture, built one day at a time.</p>
-        </div>
-        <div>
-          <Heart />
-          <h3>Find your small next step</h3>
-          <p>Discover what you personally find helpful.</p>
-        </div>
-      </div>
-      <footer className="landing-footer">
-        <span>Made with care, for the days between appointments.</span>
-        <span>Junction prototype · Illustrative examples</span>
-      </footer>
-    </div>
   );
 }
 

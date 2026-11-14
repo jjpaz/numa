@@ -1,0 +1,317 @@
+/* Public home page ("/"). Everything is scoped under .landing.
+   Tokens come from src/design/tokens.css; principles in DESIGN.md. */
+
+.landing {
+  min-height: 100vh;
+  overflow-x: clip;
+  background: var(--n-paper);
+  color: var(--n-moss-deep);
+  font-family: var(--n-font-ui);
+  font-size: var(--n-text-16);
+  line-height: var(--n-leading-text);
+}
+.landing p {
+  color: var(--n-ink-soft);
+  font-size: inherit;
+  line-height: var(--n-leading-text);
+  margin: 0;
+}
+.landing-wrap {
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: clamp(16px, 5vw, 72px);
+}
+.landing a:focus-visible {
+  outline: 2px solid var(--n-focus);
+  outline-offset: 3px;
+}
+
+/* Header */
+.landing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 28px;
+}
+.landing .wordmark {
+  font-family: var(--n-font-ui);
+  font-weight: 600;
+  font-size: var(--n-text-28);
+  letter-spacing: -0.02em;
+  color: var(--n-moss-deep);
+}
+.landing .wordmark svg {
+  stroke: var(--n-moss-deep);
+  width: 28px;
+  height: 28px;
+}
+.landing .wordmark-dot {
+  color: inherit;
+}
+.landing-pro {
+  font-size: var(--n-text-16);
+  font-weight: 500;
+  color: var(--n-moss-deep);
+  text-decoration: underline;
+  text-decoration-color: var(--n-natural);
+  text-underline-offset: 5px;
+}
+.landing-pro:hover {
+  text-decoration-color: currentColor;
+}
+
+/* Hero: the headline rests on the voice line; actions sit below it.
+   The SVG is absolutely positioned and drawn in CSS pixels from the measured
+   baseline of the headline (see useHeroGeometry in landing.tsx). */
+.landing-stage {
+  position: relative;
+  margin-top: clamp(16px, 3.4vw, 48px);
+}
+.landing-title {
+  position: relative;
+  z-index: 1;
+  margin-block: 0; /* keep margin-inline: auto from .landing-wrap */
+  font-family: var(--n-font-display);
+  font-weight: 400;
+  font-size: clamp(56px, 8vw, 104px);
+  line-height: var(--n-leading-display);
+  letter-spacing: var(--n-tracking-display);
+  color: var(--n-moss-deep);
+}
+.landing-baseline {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  vertical-align: baseline;
+}
+.landing-voice {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  overflow: visible;
+  pointer-events: none;
+}
+.voice-line {
+  fill: none;
+  stroke: var(--n-moss);
+  stroke-width: var(--n-stroke); /* 1 SVG unit = 1px here */
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.landing-below {
+  /* the stage already ends ~32px under the wave */
+  padding-bottom: clamp(64px, 9vw, 120px);
+}
+.landing .landing-lede {
+  max-width: 34ch;
+  margin: 0 0 28px;
+  font-size: var(--n-text-21);
+}
+.landing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 32px;
+}
+.landing-cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 30px;
+  border-radius: var(--n-radius-pebble);
+  background: var(--n-apricot);
+  color: var(--n-moss-deep);
+  font-size: var(--n-text-18);
+  font-weight: 600;
+}
+.landing-cta:hover {
+  background: #c97e25;
+}
+.landing-sample {
+  font-size: var(--n-text-18);
+  font-weight: 500;
+  color: var(--n-moss-deep);
+  text-decoration: underline;
+  text-decoration-color: var(--n-natural);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
+}
+.landing-sample:hover {
+  text-decoration-color: currentColor;
+}
+
+/* The earth: a moss band holding three pages. */
+.landing-earth {
+  background: var(--n-moss);
+  color: var(--n-ivory);
+  padding-block: clamp(64px, 9vw, 120px);
+}
+.landing-earth h2 {
+  margin: 0 0 clamp(36px, 4.5vw, 64px);
+  font-family: var(--n-font-display);
+  font-weight: 400;
+  font-size: clamp(var(--n-text-36), 4.4vw, var(--n-text-48));
+  line-height: 1.08;
+  letter-spacing: var(--n-tracking-display);
+  color: var(--n-ivory);
+}
+.landing-sheets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: clamp(16px, 2.4vw, 32px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* Growth is told by the glyphs (sprout → leaves → flower), not by offsets. */
+.landing-sheet {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px 12px;
+  padding: 24px 24px 26px;
+  border-radius: var(--n-radius-sheet);
+  border: 1px solid var(--n-sheet-border);
+  background: var(--n-ivory);
+  color: var(--n-moss-deep);
+  box-shadow: var(--n-sheet-shadow);
+}
+.landing-sheet time {
+  align-self: center;
+  font-size: var(--n-text-14);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--n-ink-soft);
+}
+.landing-sheet blockquote,
+.landing-noticed {
+  grid-column: 1 / -1;
+}
+.landing-sheet blockquote {
+  margin: 0;
+  font-family: var(--n-font-display);
+  font-size: var(--n-text-21);
+  line-height: 1.32;
+  letter-spacing: -0.01em;
+}
+.landing .landing-noticed {
+  font-size: var(--n-text-16);
+}
+.landing-noticed span {
+  display: block;
+  font-size: var(--n-text-14);
+  font-weight: 600;
+  color: var(--n-moss);
+}
+.page-glyph {
+  grid-row: 1;
+  grid-column: 2;
+  /* the drawn plant inside is ~40px tall */
+  width: 48px;
+  height: 56px;
+  margin-block: -6px -4px;
+}
+.landing .landing-fiction {
+  margin-top: 40px;
+  font-size: var(--n-text-14);
+  color: rgb(245 230 197 / 0.75);
+}
+
+/* Privacy: real product boundaries, not decoration. */
+.landing-privacy {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 40px clamp(32px, 6vw, 96px);
+  padding-block: clamp(64px, 9vw, 120px);
+}
+.landing-privacy h2 {
+  margin: 0 0 12px;
+  font-family: var(--n-font-display);
+  font-weight: 400;
+  font-size: var(--n-text-28);
+  line-height: 1.15;
+  letter-spacing: var(--n-tracking-display);
+  color: var(--n-moss-deep);
+}
+.landing-privacy p {
+  max-width: 38ch;
+  font-size: var(--n-text-18);
+}
+
+.landing-footer {
+  padding-block: 28px 40px;
+  border-top: 1px solid rgb(159 136 111 / 0.35);
+}
+.landing .landing-footer p {
+  font-size: var(--n-text-14);
+}
+
+/* One orchestrated moment: voice → stem → leaves → flower. */
+@keyframes n-draw {
+  0% {
+    stroke-dashoffset: 1;
+    animation-timing-function: var(--n-ease);
+  }
+  72.7% {
+    stroke-dashoffset: var(--stem-share);
+    animation-timing-function: cubic-bezier(0.33, 0, 0.2, 1);
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes n-unfurl {
+  from {
+    transform: scale(0);
+  }
+}
+@keyframes n-bloom {
+  from {
+    transform: scale(0) rotate(-40deg);
+  }
+}
+.voice-line {
+  animation: n-draw 2.2s both;
+}
+.voice-leaf {
+  animation: n-unfurl 0.6s var(--n-ease) both;
+  animation-delay: calc(2.1s + var(--i) * 100ms);
+}
+.voice-flower {
+  animation: n-bloom 0.8s var(--n-ease) both;
+  animation-delay: 2.75s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .voice-line,
+  .voice-leaf,
+  .voice-flower {
+    animation: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .landing .wordmark {
+    font-size: 22px;
+  }
+  .landing .wordmark svg {
+    width: 22px;
+    height: 22px;
+  }
+  .landing-title {
+    font-size: clamp(44px, 13.4vw, 56px);
+  }
+  .landing .landing-lede {
+    font-size: var(--n-text-18);
+  }
+  .landing-sheets {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .landing-privacy {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
