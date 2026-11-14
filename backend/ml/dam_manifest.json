@@ -1,0 +1,21 @@
+{
+  "pipeline_version": "numa-dam-standalone-v1",
+  "model": "KintsugiHealth/dam",
+  "revision": "df83a1e00101d9c06a5042b96b921eb94d5a2528",
+  "license": "Apache-2.0 (declared in the upstream model card)",
+  "files": {
+    "config.py": "d37308b4dfae58bab3d6a1e3d97d661d7ae773961d355230ee44a39ce64c9bc3",
+    "featex.py": "fdd90bc3ec85061bda29771f77fca990cfce1a28e62314ae9eb5d54ff00f11d0",
+    "model.py": "2a1613666ce930594b397e9ae00c2c3363fa7db87b5a3ec14f1796194361d89d",
+    "pipeline.py": "5cb2d55ba306506fa5a51ed3dea5478ee4cfbc44a786f86ff1044ca8f512b852",
+    "requirements.txt": "f0b0035a2c71268117ac070cef03a7d4b664d76618c48b5eb802de7830784def",
+    "README.md": "28692be4c038b2c520bdfc42d6c0639578925f795a067cd13ccdcd498178d805",
+    "dam3.1.ckpt": "cfa897e1b990de9377b2fb805b526a36fe6f31de01bbc8c3d288d317df2c4b0c"
+  },
+  "checkpoint_bytes": 736180146,
+  "backbone": {
+    "model": "openai/whisper-small.en",
+    "revision": "e8727524f962ee844a7319d92be39ac1bd25655a",
+    "files": ["README.md", "config.json", "preprocessor_config.json", "model.safetensors"]
+  }
+}

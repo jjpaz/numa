@@ -12,14 +12,14 @@ Este documento permite retomar el trabajo con Codex sin reconstruir el contexto 
 | Producto e interfaz | Dos portales, journal privado, grabación y texto, acciones, feedback, preferencias, hábitos y experimentos | QA manual final en dispositivos reales e informe impreso |
 | Experiencia progresiva | Inicio sencillo, módulos elegidos, invitaciones y modo sencillo reversible; nueva paleta | Conservar el diseño y comportamiento durante las integraciones |
 | Audio | Micrófono, waveform, normalización y medición de duración, energía RMS, pausas y clipping | Detección de habla efectiva y evaluación de calidad más completa |
-| ML vocal | Adaptador de **SpeechBrain** y configuración de imagen Modal preparados | **DAM no está integrado, descargado, ejecutado ni evaluado** |
+| ML vocal | SpeechBrain preparado en la aplicación; **DAM ejecutado de forma independiente en CPU**, con revisiones fijadas, CLI y pruebas reales | Integrar VAD y DAM en la aplicación; evaluar robustez y validez para el uso previsto |
 | Historial personal | Baseline acústico con mediana/MAD y heurísticas de cambios | Incorporar resultados versionados del modelo y evaluar su estabilidad |
 | Recomendaciones | Reglas sobre preferencias, contexto y feedback | Evaluación con datos reales; no hay un recomendador entrenado |
 | Gemini | Código para transcribir, resumir y extraer menciones explícitas | Credenciales y pruebas reales de las llamadas |
 | Persistencia | Repositorio PostgreSQL y comprobación de propiedad/rol | Conexión real a Aiven y prueba de persistencia |
 | Despliegue | Definiciones de Modal y Vercel | Adaptar imagen a DAM, desplegar y probar el recorrido público |
 
-Última verificación registrada: compilación del frontend correcta, **26 pruebas de backend y 7 escenarios de navegador aprobados**. Una prueba de PostgreSQL se omitió por falta de conexión. Estos resultados prueban el software local y sus simulaciones; no prueban rendimiento de DAM ni eficacia clínica.
+Última verificación de backend/contratos: **44 pruebas aprobadas, 2 omitidas** (PostgreSQL sin conexión y prueba DAM desactivada en la suite normal). En el entorno ML separado, **19 pruebas aprobadas**, incluida una prueba con pesos reales y dos inferencias repetidas. La comprobación técnica usó una voz sintética inglesa de 57,095 segundos; no evalúa precisión clínica. La última compilación y los 7 escenarios de navegador aprobados son de la revisión de frontend anterior; no se han repetido al añadir la CLI aislada. Ver `docs/ML_DAM.md` y `docs/IMPLEMENTATION_LOG.md`.
 
 El modo local utiliza memoria temporal. Existe una utilidad de copia/restauración para reinicios controlados, pero no sustituye la persistencia conectada. Las cuentas del evento, sus créditos y los despliegues públicos no se han activado desde este proyecto.
 
@@ -35,11 +35,11 @@ El modo local utiliza memoria temporal. Existe una utilidad de copia/restauraci�
 - Sueño, actividad, meteorología y música siguen simulados y etiquetados. Apple Health, Last.fm, calendario y wearables no son requisitos de esta entrega.
 - Ninguna salida nueva debe presentarse como diagnóstico, medida de sinceridad o recaída confirmada tras TMS.
 
-La documentación anterior sigue siendo contexto útil. **Esta guía actualiza la dirección futura del ML de SpeechBrain hacia la evaluación de DAM**; no atribuir esa migración al código existente.
+La documentación anterior sigue siendo contexto útil. **DAM ya funciona como experimento independiente; la aplicación continúa con su adaptador SpeechBrain/acústico anterior.** No confundir la CLI verificada con una migración del backend conectado.
 
 ## 3. Primer paso al retomar
 
-1. Leer `README.md`, `NUMA_BUILD_BRIEF.md`, `docs/ARCHITECTURE.md`, `docs/GROWTH.md` y `docs/IMPLEMENTATION_LOG.md`.
+1. Leer `README.md`, `NUMA_BUILD_BRIEF.md`, `docs/ARCHITECTURE.md`, `docs/GROWTH.md`, `docs/ML_DAM.md` y `docs/IMPLEMENTATION_LOG.md`.
 2. Inspeccionar el código y las modificaciones del usuario antes de editar. No sobrescribir cambios ajenos ni copiar otro MVP.
 3. Comprobar versiones de Python/Node y presencia de credenciales **sin imprimir sus valores**. Hay plantillas `.env.example` y `.env.production.example`; una plantilla no implica una cuenta configurada.
 4. Revisar los puntos de entrada: `backend/analysis.py`, `backend/app.py`, `backend/domain.py`, `backend/modal_app.py` y `backend/smoke.py`.
@@ -49,9 +49,11 @@ Si hay una vista previa activa con datos que conservar, no reiniciarla sin copia
 
 ## 4. Orden de implementación
 
-### Fase A — ejecutar DAM de forma independiente
+### Fase A — ejecutar DAM de forma independiente (completada técnicamente)
 
 **Objetivo:** obtener una inferencia real reproducible, sin necesitar Gemini, Aiven o el servidor web.
+
+**Estado al 14 de noviembre:** entorno `.venv-ml` con Python 3.11.14, PyTorch/torchaudio 2.7.0 CPU, lock de dependencias y manifiesto con revisiones completas. CLI `python -m backend.ml.check`, caché ignorada e informes privados explícitos. Inferencia real sin red: carga 6,796 s, inferencia 5,340 s en un proceso nuevo con pesos ya descargados. Prueba separada con pesos reales y repetición aprobada. El audio fue generado con TTS inglesa de Windows; no se usaron grabaciones privadas. **La fase B es el siguiente trabajo pendiente.** Los pasos conservados a continuación documentan lo realizado y cómo reproducirlo; las instrucciones exactas están en `docs/ML_DAM.md`.
 
 1. Crear un entorno ML separado con Python 3.11. No alterar la `.venv` que mantiene funcionando el prototipo hasta verificar compatibilidad.
 2. Consultar la ficha, código, dependencias y licencia actuales de [KintsugiHealth/DAM](https://huggingface.co/KintsugiHealth/dam). Fijar un commit completo, no una rama móvil como `main`, para la ejecución reproducible.
@@ -201,8 +203,8 @@ npm run test:e2e
 
 Añadir comandos ML independientes y documentarlos cuando existan. No ejecutar una ruta de ejemplo inexistente y registrar su fallo como un resultado del modelo.
 
-- [ ] Entorno DAM reproducible y revisión fijada.
-- [ ] Inferencia real ejecutada; pruebas con mocks identificadas por separado.
+- [x] Entorno DAM CPU/Windows reproducible y revisiones fijadas; Modal/Linux pendiente en fase F.
+- [x] Inferencia real ejecutada con voz sintética; pruebas con mocks identificadas por separado.
 - [ ] VAD y duración hablada verificados.
 - [ ] Calidad acústica y estado ML separados.
 - [ ] Salidas crudas guardadas sin fingir probabilidades o escalas clínicas.
@@ -247,4 +249,4 @@ Procesar una grabación no implica permiso para reutilizarla en entrenamiento. M
 
 ## 9. Texto listo para iniciar otro chat con Codex
 
-> Trabaja en `C:\JUNCTION\numa`. Lee `NUMA_NEXT_STEPS.md` y verifica el estado del repositorio antes de editar. Retoma las fases pendientes por orden, empezando por ejecutar DAM preentrenado de forma aislada. Conserva el frontend y las decisiones de privacidad y crecimiento. Usa Aiven como única base persistente, Gemini como único LLM y Modal para ML. No confundas código preparado con integraciones ejecutadas. No entrenes desde cero ni inventes resultados clínicos. Mantén el journal utilizable si una rama falla. No imprimas secretos ni contenido privado; conserva cambios y datos locales del usuario antes de reiniciar servicios. Ejecuta las verificaciones correspondientes y deja un registro honesto de lo completado y lo bloqueado por acceso externo.
+> Trabaja en `C:\JUNCTION\numa`. Lee `NUMA_NEXT_STEPS.md` y verifica el estado del repositorio antes de editar. La fase A está completada como prueba técnica independiente de DAM en CPU; consulta `docs/ML_DAM.md`. Retoma por la fase B: VAD y calidad de audio antes de integrar DAM en la aplicación. Trabaja en secciones acotadas y no empieces una si no hay margen para terminarla, verificarla y documentarla. Conserva el frontend y las decisiones de privacidad y crecimiento. Usa Aiven como única base persistente, Gemini como único LLM y Modal para ML. No confundas código preparado con integraciones ejecutadas ni una prueba TTS con validación clínica. No entrenes desde cero ni inventes resultados clínicos. Mantén el journal utilizable si una rama falla. No imprimas secretos ni contenido privado; conserva cambios y datos locales del usuario antes de reiniciar servicios. Ejecuta las verificaciones correspondientes y deja un registro honesto de lo completado y lo bloqueado por acceso externo.
