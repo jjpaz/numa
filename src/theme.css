@@ -12,19 +12,16 @@
   --line: #d8c8a8;
   --muted: #716550;
   --amber: #85531e;
-  --plant-halo: #eadab7;
   background: var(--ivory);
   color: var(--organic);
 }
 body,
-.patient-app,
 .clinic-app,
 .login-page {
   background: var(--ivory);
   color: var(--organic);
 }
 p,
-.muted,
 small,
 label {
   color: var(--muted);
@@ -40,37 +37,6 @@ h3 {
 }
 .wordmark svg {
   stroke: var(--organic);
-}
-.button.primary {
-  background: var(--apricot);
-  color: #27291d;
-  border-color: var(--apricot);
-  font-weight: 650;
-  box-shadow: 0 2px 0 #a76a2530;
-}
-.button.primary:hover:not(:disabled) {
-  background: #c78029;
-  border-color: #c78029;
-}
-.text-link,
-.quiet-button {
-  color: var(--organic);
-}
-.badge,
-.tag {
-  background: #eadfc8;
-  border-color: #d9c7a7;
-  color: #6d5e45;
-}
-.badge.green,
-.tag.green {
-  background: #e5e2c7;
-  border-color: #d0d0ae;
-  color: #52563a;
-}
-.eyebrow,
-.source-label {
-  color: #776547;
 }
 input,
 textarea,
@@ -103,90 +69,8 @@ summary:focus-visible {
   background: #ecc17e;
   color: var(--organic);
 }
-.context-card small,
-.pattern-card small,
-.field-help,
-.privacy-note,
-.back-link {
-  color: #77684f;
-}
-.section-heading .eyebrow {
-  color: #826b46;
-}
-.voice-chart svg rect {
-  fill: #e8ddbb;
-}
-.voice-chart svg line {
-  stroke: #c1b38d;
-}
-.voice-chart svg path {
-  stroke: var(--organic);
-}
-.voice-chart svg circle {
-  fill: var(--organic);
-  stroke: #fff7e7;
-}
-.voice-chart svg circle[fill="#be805d"] {
-  fill: var(--apricot);
-}
-.chart-label,
-.chart-dates {
-  fill: #796b4e;
-  color: #796b4e;
-}
-.empty {
-  border-color: #c8b791;
-  color: #7d6c4c;
-}
-.empty h3 {
-  color: #655c3e;
-}
 .loading {
   color: #77684a;
-}
-.growing-plant {
-  width: 240px;
-  max-width: 100%;
-  height: auto;
-  overflow: visible;
-}
-.plant-bloom {
-  transform-origin: 128px 84px;
-  animation: gentle-bloom 15s ease-in-out infinite;
-}
-@keyframes gentle-bloom {
-  0%,
-  100% {
-    transform: rotate(-3deg);
-  }
-  50% {
-    transform: rotate(3deg);
-  }
-}
-.signal-card p,
-.voice-facts,
-.quiet-info,
-.explicit-signal q {
-  color: #77684c;
-}
-.action-content .evidence-reason,
-.action-content > .text-link,
-.follow-result {
-  color: #6f6549;
-}
-.follow-up {
-  background: #f8edd4;
-}
-.recorder-copy,
-.recorder-controls > span,
-.recorder > small {
-  color: #7f6c4b;
-}
-.recorder canvas {
-  background: linear-gradient(transparent 49%, #cfbc96 50%, transparent 51%);
-}
-.recorder canvas.live {
-  background: transparent;
 }
 select {
   display: block;
@@ -199,21 +83,6 @@ select {
   font-size: 14px;
   min-height: 45px;
 }
-.baseline-building h3 {
-  color: #675f3e;
-}
-.seed-circles > span {
-  border-color: #c2ad80;
-  color: #8c7951;
-}
-.seed-circles > span.filled {
-  background: #e4d5ac;
-  border-color: #aa976d;
-  color: #635b39;
-}
-.chart-dates {
-  font-size: 9px;
-}
 .patient-row {
   border-color: #ddc9a4;
 }
@@ -224,23 +93,10 @@ select {
 .patient-row > svg {
   color: #7d6b4c;
 }
-@media (max-width: 1000px) {
-  .growing-plant {
-    width: 215px;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .plant-bloom {
-    animation: none;
-  }
-}
-@media print {
-  body,
-  .clinic-app,
-  .clinic-content {
+@media print {body,
+.clinic-app,
+.clinic-content {
     background: white;
   }
-  .button {
-    box-shadow: none;
-  }
+
 }

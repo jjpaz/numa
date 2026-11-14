@@ -1,12 +1,4 @@
-import {
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type FormEvent,
-  type TextareaHTMLAttributes,
-} from "react";
+import { useContext, useEffect, useRef, useState, type FormEvent } from "react";
 import {
   Link,
   NavLink,
@@ -28,43 +20,16 @@ import { MyGardenPage } from "./patient/Garden";
 import { LoginMotif } from "./loginMotif";
 import { Landing } from "./landing";
 import {
-  ArrowLeft,
-  ArrowRight,
-  ArrowUpRight,
-  BookOpen,
   Check,
   CircleAlert,
-  CloudSun,
-  Flower2,
-  Leaf,
-  Link2,
   LockKeyhole,
   LogOut,
-  Mic,
-  Plus,
   Search,
-  Settings2,
   ShieldCheck,
-  Users,
 } from "lucide-react";
 import { api, dateLabel, json, setToken, getToken } from "./api";
-import type {
-  Clinical,
-  Entry,
-  Health,
-  Insights,
-  Recommendation,
-  User,
-} from "./types";
-import {
-  ContextCards,
-  ErrorNotice,
-  GrowingTextarea,
-  Loading,
-  Recorder,
-  Wordmark,
-  ACTION_KINDS,
-} from "./components";
+import type { Clinical, Entry, Health, User } from "./types";
+import { ErrorNotice, GrowingTextarea, Loading, Wordmark } from "./components";
 import { ObservationChart, Sparkline } from "./clinicCharts";
 
 export function App() {

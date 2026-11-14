@@ -27,3 +27,5 @@ recordings/
 model-cache/
 .DS_Store
 Thumbs.db
+design-review/*
+!design-review/REPORT.md

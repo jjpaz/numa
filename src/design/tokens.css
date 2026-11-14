@@ -4,17 +4,17 @@
   /* ── Patient portal: a softened Everforest (see DESIGN.md → "Tokens") ── */
   --n-cream: #f6efdd; /* page background */
   --n-oat: #efe5cc; /* the mailbox and fields */
-  --n-forest: #2f3a2e; /* main text: 11.4:1 on cream, 10.4:1 on oat */
+  --n-forest: #2f3a2e; /* main text: 10.4:1 on cream, 9.5:1 on oat */
   --n-forest-soft: #56604c; /* secondary text: 5.8:1 on cream, 5.3:1 on oat */
   --n-line: rgb(47 58 46 / 0.14); /* 1px lines */
-  --n-peach: #e9a06b; /* only the primary action and the flowers */
+  --n-peach: #e9a06b; /* only the primary action and the flowers; forest on peach 5.5:1 */
   --n-peach-hover: #df8f55;
   --n-grass-1: #a7b88a; /* light blades, at the back */
   --n-grass-2: #7f9a68; /* middle blades */
   --n-grass-3: #5f7f52; /* dark blades, at the front */
   --n-ground: #4e6b45; /* My garden's soil, below the grass */
   --n-on-ground: #f6efdd; /* text on the ground: 5.2:1 */
-  --n-on-ground-soft: rgb(246 239 221 / 0.92); /* secondary on the ground: 4.6:1 (80% would be 4.0:1) */
+  --n-on-ground-soft: rgb(246 239 221 / 0.92); /* secondary on the ground: 4.7:1 (80% would be 4.0:1, below AA) */
   --n-butter: #ebcb7a; /* flower centres, tiny details */
   --n-danger: #9a3b26; /* errors and delete, always with an icon and words: 6.0:1 on cream */
 
@@ -41,8 +41,6 @@
   --n-text-28: 28px;
   --n-text-36: 36px;
   --n-text-48: 48px;
-  --n-text-72: 72px;
-  --n-text-96: 96px;
   --n-leading-text: 1.55;
   --n-leading-display: 1.04;
   --n-tracking-display: -0.02em;
@@ -50,7 +48,8 @@
   /* Shape: like stones and seeds */
   --n-radius-mailbox: 32px;
   --n-radius-sheet: 6px;
-  --n-radius-field: 14px;
+  --n-radius-field: 12px; /* login and clinic fields */
+  --n-radius-input: 14px; /* the patient portal fields */
   --n-radius-pebble: 999px;
 
   /* Lines and paper (login, landing and clinic) */

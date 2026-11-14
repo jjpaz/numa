@@ -84,11 +84,11 @@ test("a signed-in psychologist can open the journal and returns to the page they
   // state.from belongs to the new role, so we land where we were going.
   await page.waitForURL((url) => url.pathname === "/patient/journal");
   await expect(
-    page.getByRole("heading", { name: "Journal", exact: true }),
+    page.getByRole("heading", { name: "My journal", exact: true }),
   ).toBeVisible();
   await page.goto("/patient");
   await expect(
-    page.getByRole("heading", { name: /So good to see you, Alex/ }),
+    page.getByRole("heading", { name: "Welcome, Alex." }),
   ).toBeVisible();
 });
 
@@ -111,7 +111,7 @@ test("the fresh patient can switch to the sample journal without a redirect", as
   await submitLogin(page, "sample");
   await page.waitForURL((url) => url.pathname === "/patient");
   await expect(
-    page.getByRole("heading", { name: /So good to see you, Robin/ }),
+    page.getByRole("heading", { name: "Welcome, Robin." }),
   ).toBeVisible();
   await expect(page.getByText("Today’s entry is planted.")).toBeVisible();
   expect(await page.locator("body").innerText()).not.toContain("Alex");

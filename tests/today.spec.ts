@@ -7,6 +7,7 @@ import {
   todayTarget,
   type DayEntry,
 } from "../src/today";
+import { LINES_AFTER } from "../src/dailyLine";
 
 // Fixed local-time "now"; Date(y, m, d, h) is interpreted in the runner's own time zone,
 // exactly as the browser interprets created_at for the person.
@@ -93,7 +94,7 @@ test.describe("today's state (pure logic)", () => {
   });
 });
 
-/* ───────────── Browser: the home's main action ───────────── */
+/* ───────────── Browser: the home's mailbox ───────────── */
 
 async function signInFresh(page: Page) {
   await page.goto("/");
@@ -139,29 +140,69 @@ async function mockEntries(page: Page, entries: unknown[]) {
   );
 }
 
-/** Reach the main action with Tab, as a keyboard user would. */
-async function tabTo(page: Page, name: string | RegExp) {
-  const target = page.getByRole("link", { name });
-  for (let i = 0; i < 12; i++) {
+/** Reach a control with Tab, as a keyboard user would. */
+async function tabTo(
+  page: Page,
+  role: "link" | "button",
+  name: string | RegExp,
+) {
+  const target = page.getByRole(role, { name });
+  for (let i = 0; i < 16; i++) {
     await page.keyboard.press("Tab");
     if (await target.evaluate((el) => el === document.activeElement))
       return target;
   }
-  throw Error("Main action is not reachable with the keyboard");
+  throw Error(`${name} is not reachable with the keyboard`);
 }
 
-test("pending: the main action opens a new entry, by keyboard, with a visible focus ring", async ({
+/** The mailbox ready for new words: after today's entry, "Add another entry";
+ *  with a draft from an earlier test open, "Record again" discards it. */
+async function openComposer(page: Page) {
+  const mic = page.getByRole("button", { name: "Record a voice note" });
+  const another = page.getByRole("button", { name: "Add another entry" });
+  const discard = page.getByRole("button", { name: "Record again" });
+  await expect(mic.or(another).or(discard)).toBeVisible();
+  if (await another.isVisible()) await another.click();
+  else if (await discard.isVisible()) await discard.click();
+  await expect(mic).toBeVisible();
+}
+
+async function writeAndKeep(page: Page, words: string) {
+  await openComposer(page);
+  await page.getByRole("button", { name: "I’d rather write today" }).click();
+  await page.getByRole("textbox", { name: "Your note" }).fill(words);
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Keep these words" }).click();
+  const review = page.getByRole("dialog", { name: "Here’s what I heard" });
+  await expect(review).toBeVisible({ timeout: 20000 });
+  await expect(
+    review.getByRole("textbox", { name: "Transcript", exact: true }),
+  ).toHaveValue(words);
+  return review;
+}
+
+test("pending: the microphone is the one action, by keyboard, with a visible focus ring", async ({
   page,
 }) => {
   await mockEntries(page, []);
   await signInFresh(page);
-  const cta = await tabTo(page, "Add an entry");
-  await expect(cta).toHaveAttribute("href", "/patient/new");
-  const outline = await cta.evaluate((el) => getComputedStyle(el).outlineStyle);
+  await expect(
+    page.getByRole("heading", { name: "Welcome, Alex." }),
+  ).toBeVisible();
+  const mic = await tabTo(page, "button", "Record a voice note");
+  const outline = await mic.evaluate((el) => getComputedStyle(el).outlineStyle);
   expect(outline).not.toBe("none");
-  await page.keyboard.press("Enter");
-  await page.waitForURL((url) => url.pathname === "/patient/new");
-  await expect(page.locator(".today-notice")).toHaveCount(0);
+  await expect(page.getByText("Tap to talk. Up to 2 minutes.")).toBeVisible();
+  // Nothing else competes: no planted state, no review window, no stats.
+  await expect(page.getByText("Today’s entry is planted.")).toHaveCount(0);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  // Without consent the microphone asks for the box first.
+  await mic.click();
+  await expect(page.getByText("Tick the box to continue.")).toBeVisible();
+  await expect(page.getByRole("checkbox")).toBeFocused();
+  await expect(
+    page.getByRole("button", { name: "Stop recording" }),
+  ).toHaveCount(0);
 });
 
 test("previous date: yesterday's saved entry and draft do not count as today", async ({
@@ -174,96 +215,131 @@ test("previous date: yesterday's saved entry and draft do not count as today", a
     apiEntry("yesterday-draft", yesterday, false, "failed"),
   ]);
   await signInFresh(page);
-  const cta = page.getByRole("link", { name: "Add an entry" });
-  await expect(cta).toHaveAttribute("href", "/patient/new");
+  await expect(
+    page.getByRole("button", { name: "Record a voice note" }),
+  ).toBeVisible();
   await expect(page.getByText("Today’s entry is planted.")).toHaveCount(0);
-  await cta.click();
-  await page.waitForURL((url) => url.pathname === "/patient/new");
-  // The old draft is not silently resumed or announced as today's.
-  await expect(page.locator(".today-notice")).toHaveCount(0);
+  // The old draft is not silently resumed as today's.
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
-test("in progress: today's unsaved entry is continued instead of restarted", async ({
+test("in progress: today's unsaved entry reopens its review window", async ({
   page,
 }) => {
-  await mockEntries(page, [
-    apiEntry("today-draft", new Date(), false, "processing"),
-  ]);
+  const draft = apiEntry("today-draft", new Date(), false, "processing");
+  await mockEntries(page, [draft]);
+  await page.route("**/api/patient/entries/today-draft", (route) =>
+    route.fulfill({ json: draft }),
+  );
   await signInFresh(page);
-  const cta = page.getByRole("link", { name: "Continue today’s entry" });
-  await expect(cta).toHaveAttribute("href", "/patient/entries/today-draft");
-  await expect(page.getByRole("link", { name: "Add an entry" })).toHaveCount(0);
+  await expect(
+    page.getByRole("dialog", { name: "Listening to your day…" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Record a voice note" }),
+  ).toHaveCount(0);
 });
 
-test("completed: after saving today's entry the main action opens that entry", async ({
+test("completed: write from Home, review, plant, then the calm state opens that entry", async ({
   page,
 }) => {
   await signInFresh(page);
-  await page
-    .getByRole("link", { name: /^(Add an entry|Add another entry)$/ })
-    .click();
-  await page.getByRole("button", { name: "I’d rather write today" }).click();
-  await page
-    .getByRole("textbox", { name: "Your note" })
-    .fill("A fictional quiet morning with tea.");
-  await page.getByRole("checkbox").check();
-  await page
-    .getByRole("button", { name: "Make a little sense of today" })
-    .click();
-  await page.getByRole("button", { name: "Save this page" }).click();
-  // Saved state is a sentence now, not a disabled "Saved" button.
-  await expect(page.getByText("Saved in your journal")).toBeVisible();
-  const entryPath = new URL(page.url()).pathname;
-  await expect(page.locator(".entry-reflection")).toContainText(/today/i);
-
-  await page.getByRole("link", { name: "Your garden", exact: true }).click();
+  const review = await writeAndKeep(
+    page,
+    "A fictional quiet morning with tea.",
+  );
+  await expect(review.locator(".pt-reflection")).toContainText(/today/i);
+  await review.getByRole("button", { name: "Plant this entry" }).click();
   await expect(page.getByText("Today’s entry is planted.")).toBeVisible();
-  const cta = await tabTo(page, "See today’s entry");
-  await expect(cta).toHaveAttribute("href", entryPath);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  // The subtitle now comes from the "with an entry" sentences.
+  const sentence = await page.locator(".pt-daily").innerText();
+  expect(LINES_AFTER).toContain(sentence);
+  const cta = await tabTo(page, "link", "See today’s entry");
+  const entryPath = await cta.getAttribute("href");
+  expect(entryPath).toMatch(/^\/patient\/entries\//);
   await page.keyboard.press("Enter");
   await page.waitForURL((url) => url.pathname === entryPath);
-
-  // A direct visit to the session route says that today already has an entry.
+  await expect(page.getByText("Saved in your journal")).toBeVisible();
+  await expect(page.locator(".entry-reflection")).toContainText(/today/i);
+  // Back Home: the calm state, still pointing at the same entry.
+  await page
+    .getByRole("navigation", { name: "Your journal" })
+    .getByRole("link", { name: "Home" })
+    .click();
+  await expect(page.getByText("Today’s entry is planted.")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "See today’s entry" }),
+  ).toHaveAttribute("href", entryPath!);
+  // The old session route is gone: it returns Home.
   await page.goto("/patient/new");
-  await expect(page.locator(".today-notice")).toContainText("already planted");
-  await expect(page.locator(".today-notice a")).toHaveAttribute(
-    "href",
-    entryPath,
-  );
+  await page.waitForURL((url) => url.pathname === "/patient");
+  await expect(page.getByText("Today’s entry is planted.")).toBeVisible();
 });
 
-test("leaf menu opens Journal and My garden and closes with Escape", async ({
+test("Record again discards the draft and returns to the mailbox", async ({
   page,
 }) => {
   await signInFresh(page);
+  const words = "A fictional draft that will be discarded.";
+  const review = await writeAndKeep(page, words);
+  await review.getByRole("button", { name: "Record again" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  // Written words are kept on the page, but the draft is gone from the journal.
+  await expect(page.getByRole("textbox", { name: "Your note" })).toHaveValue(
+    words,
+  );
+  const stored = await page.evaluate(async () => {
+    const token = sessionStorage.getItem("numa-session");
+    const r = await fetch("/api/patient/entries", {
+      headers: { Authorization: "Bearer " + token },
+    });
+    return (await r.json()) as { transcript: string }[];
+  });
+  expect(stored.some((e) => e.transcript === words)).toBeFalsy();
+});
+
+test("the header shows the three places; the leaf only signs out and closes with Escape", async ({
+  page,
+}) => {
+  await signInFresh(page);
+  const nav = page.getByRole("navigation", { name: "Your journal" });
+  await expect(nav.getByRole("link")).toHaveText([
+    "Home",
+    "My journal",
+    "My garden",
+  ]);
+  await expect(nav.getByRole("link", { name: "Home" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
   const leaf = page.getByRole("button", { name: "Open menu" });
   await leaf.click();
   await expect(
     page.getByRole("button", { name: "Close menu" }),
   ).toHaveAttribute("aria-expanded", "true");
-  const menu = page.getByRole("navigation", { name: "Garden menu" });
-  await expect(menu.getByRole("link")).toHaveText(["Journal", "My garden"]);
+  const signOut = page.getByRole("button", { name: "Sign out" });
+  await expect(signOut).toBeFocused();
   await page.keyboard.press("Escape");
-  await expect(menu).toHaveCount(0);
+  await expect(signOut).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Open menu" })).toBeFocused();
+  await nav.getByRole("link", { name: "My journal" }).click();
+  await expect(nav.getByRole("link", { name: "My journal" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
 });
 
 test("entry page reads like a page, and edits in place without boxes", async ({
   page,
 }) => {
   await signInFresh(page);
-  await page
-    .getByRole("link", { name: /^(Add an entry|Add another entry)$/ })
-    .click();
-  await page.getByRole("button", { name: "I’d rather write today" }).click();
-  await page
-    .getByRole("textbox", { name: "Your note" })
-    .fill("A fictional evening: soup, a book, an early night.");
-  await page.getByRole("checkbox").check();
-  await page
-    .getByRole("button", { name: "Make a little sense of today" })
-    .click();
-  // Draft: editable fields, one primary action and a way to discard.
+  const review = await writeAndKeep(
+    page,
+    "A fictional evening: soup, a book, an early night.",
+  );
+  // The full entry, still a draft: editable fields, one primary action, a way to discard.
+  await review.getByRole("link", { name: "Open the full entry" }).click();
   const words = page.getByRole("textbox", { name: "Transcript", exact: true });
   await expect(words).toBeVisible();
   await expect(page.getByRole("button", { name: "Discard draft" })).toHaveCount(

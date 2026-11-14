@@ -62,13 +62,7 @@ const PROBABILITY_LABELS: Record<string, string> = {
 };
 
 /** What Numa noticed: voice and words, always as separate perspectives. */
-function EntrySignals({
-  entry,
-  modules,
-}: {
-  entry: Entry;
-  modules: string[];
-}) {
+function EntrySignals({ entry, modules }: { entry: Entry; modules: string[] }) {
   const features = entry.voice?.features;
   const context = entry.context;
   const contextModules = modules.filter((m) =>
@@ -225,8 +219,11 @@ export function EntryPage() {
   const { growth } = useGrowth();
   const { id } = useParams();
   const resource = useResource<Entry>("/patient/entries/" + id, 1800);
-  const { data: entry } = resource;
   const patient = usePatientEntries();
+  // The journal already holds this entry: draw it at once (so the plant and
+  // the sheet can move into place), then the page's own answer takes over.
+  const entry =
+    resource.data ?? patient.entries?.find((e) => e.id === id) ?? null;
   const go = useFlowNavigate();
   // The page and the rest of the journal (Home, My journal, the grass) stay in step.
   const refreshAll = async () => {
@@ -320,10 +317,7 @@ export function EntryPage() {
     </div>
   );
   const signals = (
-    <EntrySignals
-      entry={entry}
-      modules={growth?.modules ?? []}
-    />
+    <EntrySignals entry={entry} modules={growth?.modules ?? []} />
   );
   return (
     <div className="entry-page-v2">
@@ -670,10 +664,7 @@ function ActionPanel({
                   Say anything you like. A difference in voice does not prove
                   that an activity helped.
                 </p>
-                <Recorder
-                  onReady={setBlob}
-                  onClear={() => setBlob(null)}
-                />
+                <Recorder onReady={setBlob} onClear={() => setBlob(null)} />
                 <button
                   type="button"
                   className="ep-primary"
@@ -721,4 +712,3 @@ function summaryAddsSomething(
   const s = normaliseForCompare(summary ?? "");
   return s !== "" && s !== normaliseForCompare(transcript ?? "");
 }
-

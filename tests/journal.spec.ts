@@ -45,6 +45,7 @@ async function signIn(page: Page, role = "patient", sample = false) {
       url.pathname === (role === "psychologist" ? "/clinic" : "/patient"),
   );
   if (role !== "psychologist") {
+    // Every test starts with no optional modules in the space.
     await page.evaluate(async () => {
       const token = sessionStorage.getItem("numa-session");
       if (!token) throw Error("Login completed without a session token");
@@ -54,7 +55,7 @@ async function signIn(page: Page, role = "patient", sample = false) {
           "Content-Type": "application/json",
           Authorization: "Bearer " + token,
         },
-        body: JSON.stringify({ modules: [], simple_mode: false }),
+        body: JSON.stringify({ modules: [] }),
       });
       if (!response.ok)
         throw Error(
@@ -64,26 +65,32 @@ async function signIn(page: Page, role = "patient", sample = false) {
     await page.reload();
   }
 }
-// The home has one main action; once today's entry exists it offers "Add another entry".
-async function startEntry(page: Page) {
-  await page
-    .getByRole("link", { name: /^(Add an entry|Add another entry)$/ })
-    .click();
-  await page.waitForURL((url) => url.pathname === "/patient/new");
+/** The mailbox ready for new words, whatever an earlier test left today. */
+async function openComposer(page: Page) {
+  const mic = page.getByRole("button", { name: "Record a voice note" });
+  const another = page.getByRole("button", { name: "Add another entry" });
+  const discard = page.getByRole("button", { name: "Record again" });
+  await expect(mic.or(another).or(discard)).toBeVisible();
+  if (await another.isVisible()) await another.click();
+  else if (await discard.isVisible()) await discard.click();
+  await expect(mic).toBeVisible();
 }
-async function openFromLeafMenu(page: Page, name: "Journal" | "My garden") {
-  await page.getByRole("button", { name: "Open menu" }).click();
+/** One of the three places, from the header that is always visible. */
+async function go(page: Page, name: "Home" | "My journal" | "My garden") {
   await page
-    .getByRole("navigation", { name: "Garden menu" })
+    .getByRole("navigation", { name: "Your journal" })
     .getByRole("link", { name, exact: true })
     .click();
 }
+const noOverflow = (page: Page) =>
+  page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
+
 test("patient creates a private entry, adds feedback, and psychologist receives trends only", async ({
   page,
   browser,
 }) => {
   await signIn(page);
-  await startEntry(page);
+  await openComposer(page);
   await page.getByRole("button", { name: "I’d rather write today" }).click();
   const privateText =
     "E2E private canary: I made a cup of tea and watched the rain.";
@@ -93,23 +100,28 @@ test("patient creates a private entry, adds feedback, and psychologist receives 
   await expect(clinician.locator(".patient-row")).toHaveCount(4);
   await page.getByRole("textbox", { name: "Your note" }).fill(privateText);
   await page.getByRole("checkbox").check();
-  await page
-    .getByRole("button", { name: "Make a little sense of today" })
-    .click();
+  await page.getByRole("button", { name: "Keep these words" }).click();
+  const review = page.getByRole("dialog", { name: "Here’s what I heard" });
   await expect(
-    page.getByRole("textbox", { name: "Transcript", exact: true }),
+    review.getByRole("textbox", { name: "Transcript", exact: true }),
   ).toHaveValue(privateText);
-  // "What Numa noticed" is always visible now: nothing to unfold.
+  await review.getByRole("button", { name: "Plant this entry" }).click();
+  await expect(page.getByText("Today’s entry is planted.")).toBeVisible();
+  await page.getByRole("link", { name: "See today’s entry" }).click();
+  // "What Numa noticed" is always visible: nothing to unfold.
   await expect(
     page.getByText("No explicit feeling was recorded."),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Save this page" }).click();
   await expect(page.getByText("Saved in your journal")).toBeVisible();
   await page.getByRole("button", { name: "I tried this" }).click();
   await page.getByRole("button", { name: "Helpful", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Helpful", exact: true }),
   ).toHaveClass(/selected/);
+  // Something helped: the entry's plant flowers.
+  await expect(
+    page.getByRole("img", { name: /in flower: something helped/ }),
+  ).toBeVisible();
   await expect(
     clinician.getByRole("link").filter({ hasText: "Alex Morgan" }),
   ).toContainText("1 activities", { timeout: 9000 });
@@ -123,7 +135,8 @@ test("patient creates a private entry, adds feedback, and psychologist receives 
   );
   await context.close();
 });
-test("fictional profile shows trends, connections are clearly future integrations", async ({
+
+test("fictional profile: What helps, Connections and Your space live in My garden", async ({
   page,
 }) => {
   await signIn(page, "patient", true);
@@ -132,37 +145,36 @@ test("fictional profile shows trends, connections are clearly future integration
   await expect(
     page.getByRole("link", { name: "See today’s entry" }),
   ).toBeVisible();
+  await expect(page.getByText(/read only/)).toBeVisible();
   await expect(page.locator(".context-card")).toHaveCount(0);
   await page.screenshot({
     path: "test-results/numa-journal-desktop.png",
     fullPage: true,
   });
-  await openFromLeafMenu(page, "My garden");
+  await go(page, "My garden");
+  // What helps is always there, most helpful first, counted in words.
+  const helps = page.locator(".mg-helps li");
+  await expect(helps.first()).toContainText(/helpful \d+ of \d+ times?/);
+  // The growth invitation turns a module on, in Your space.
   await page.getByRole("button", { name: "Explore this pattern" }).click();
   await expect(
-    page.getByRole("heading", { name: "What you’ve found helpful" }),
+    page.getByRole("switch", { name: "What seems to help" }),
+  ).toHaveAttribute("aria-checked", "true");
+  await expect(
+    page.getByText("Which small activities would you like Numa to suggest?"),
   ).toBeVisible();
-  await page.getByRole("link", { name: "My garden", exact: true }).click();
-  await page.getByRole("link", { name: "Your space", exact: true }).click();
-  await page
-    .locator(".space-module")
-    .filter({ hasText: "Your voice over time" })
-    .getByRole("switch")
-    .click();
-  await page.getByRole("link", { name: "My garden", exact: true }).click();
-  await page.getByRole("link", { name: "What helps", exact: true }).click();
+  await page.getByRole("switch", { name: "Your voice over time" }).click();
   await expect(page.getByText(/Personal baseline/)).toBeVisible();
   await page.screenshot({
     path: "test-results/numa-insights-desktop.png",
     fullPage: true,
   });
-  await page.getByRole("link", { name: "My garden", exact: true }).click();
-  await page.getByRole("link", { name: "Your space", exact: true }).click();
-  await page.getByRole("link", { name: /Possible future connections/ }).click();
   await expect(
     page.getByText("Not connected, a future integration"),
   ).toHaveCount(4);
+  await expect(page.locator(".context-card")).toHaveCount(5);
 });
+
 test("mobile navigation and psychologist report fit the viewport", async ({
   page,
 }) => {
@@ -188,7 +200,7 @@ test("mobile navigation and psychologist report fit the viewport", async ({
   ).toBeTruthy();
 });
 
-test("landing and patient journal fit a small screen", async ({ page }) => {
+test("landing and the three places fit a small screen", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /Some days/ })).toBeVisible();
   await page.screenshot({
@@ -196,49 +208,42 @@ test("landing and patient journal fit a small screen", async ({ page }) => {
     fullPage: true,
   });
   await page.setViewportSize({ width: 375, height: 812 });
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-  ).toBeTruthy();
+  expect(await noOverflow(page)).toBeTruthy();
   await signIn(page, "patient", true);
   await expect(
-    page.getByRole("heading", { name: /So good to see you/ }),
+    page.getByRole("heading", { name: "Welcome, Robin." }),
   ).toBeVisible();
   await expect(page.locator(".context-card")).toHaveCount(0);
+  expect(await noOverflow(page)).toBeTruthy();
+  // The home is one screen: no scroll.
   expect(
     await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
+      () => document.documentElement.scrollHeight <= innerHeight,
     ),
   ).toBeTruthy();
-  await openFromLeafMenu(page, "Journal");
+  await go(page, "My journal");
   await expect(page.locator(".log-entry")).toHaveCount(12);
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-  ).toBeTruthy();
-  await openFromLeafMenu(page, "My garden");
-  await expect(page.getByRole("heading", { name: "My garden" })).toBeVisible();
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-  ).toBeTruthy();
+  expect(await noOverflow(page)).toBeTruthy();
+  await go(page, "My garden");
+  await expect(
+    page.getByRole("heading", { name: "My garden", level: 1 }),
+  ).toBeVisible();
+  expect(await noOverflow(page)).toBeTruthy();
   await page.screenshot({
     path: "test-results/numa-journal-mobile.png",
     fullPage: true,
   });
 });
 
-test("browser microphone path records real media frames and permits manual recovery", async ({
+test("record from Home with the browser microphone, review, plant, and find it in My journal", async ({
   browser,
 }) => {
   // A generated browser media device, never the host user's real microphone.
   const context = await browser.newContext({ permissions: ["microphone"] });
   const page = await context.newPage();
   await signIn(page);
-  await startEntry(page);
+  await openComposer(page);
+  await page.getByRole("checkbox").check();
   await page
     .getByRole("button", { name: "Record a voice note", exact: true })
     .click();
@@ -247,116 +252,158 @@ test("browser microphone path records real media frames and permits manual recov
   ).toBeVisible();
   await page.waitForTimeout(3800);
   await page.getByRole("button", { name: "Stop recording" }).click();
-  await expect(
-    page.getByRole("button", { name: "Record again" }),
-  ).toBeVisible();
-  await page.getByRole("checkbox").check();
+  // Sent automatically: the mailbox opens in place.
+  await expect(page.getByRole("dialog")).toBeVisible();
+  const review = page.getByRole("dialog", { name: "Here’s what I heard" });
+  await expect(review).toBeVisible({ timeout: 30000 });
+  const words = review.getByRole("textbox", {
+    name: "Transcript",
+    exact: true,
+  });
+  await expect(words).toBeVisible();
+  await words.fill("A fictional walk in the park.");
+  await review.getByRole("button", { name: "Plant this entry" }).click();
+  await expect(page.getByText("Today’s entry is planted.")).toBeVisible();
+  // It is in My journal, today, and opens from there.
+  await go(page, "My journal");
+  const row = page
+    .locator(".log-entry")
+    .filter({ hasText: "A fictional walk in the park." });
+  await expect(row).toHaveCount(1);
+  await expect(row).toContainText("Today");
+  await row.click();
+  await expect(page.getByText("Saved in your journal")).toBeVisible();
+  await page.getByRole("button", { name: "Edit words" }).click();
   await page
-    .getByRole("button", { name: "Make a little sense of today" })
-    .click();
+    .getByRole("textbox", { name: "In short" })
+    .fill("An afternoon walk.");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText("Saved in your journal")).toBeVisible();
   await expect(
-    page.getByRole("textbox", { name: "Transcript", exact: true }),
+    page.getByRole("button", { name: "I tried this" }),
   ).toBeVisible();
-  // One source line: the backend's own description, which says no ML is active.
+  // Voice measurements need ffmpeg on the API host. One source line: the
+  // backend's own, which says no ML is active.
   await expect(
     page
       .locator(".ep-source")
       .filter({ hasText: /voice model is not enabled|ML not active/ }),
   ).toHaveCount(1);
   await expect(page.locator(".voice-facts")).toContainText("seconds recorded");
-  await page
-    .getByRole("textbox", { name: "Transcript", exact: true })
-    .fill("A fictional walk in the park.");
-  await page
-    .getByRole("textbox", { name: "In short" })
-    .fill("An afternoon walk.");
-  await page.getByRole("button", { name: "Save this page" }).click();
-  await expect(
-    page.getByRole("button", { name: "I tried this" }),
-  ).toBeVisible();
   await context.close();
 });
 
-test("space grows only by choice; simple view keeps every module and journal page", async ({
+test("My garden shows its three sections with no modules, and never a list of entries", async ({
   page,
 }) => {
   await signIn(page, "patient", true);
-  await expect(page.locator(".garden-hero")).toBeVisible();
-  // The patient's space sits on --n-paper (#F8F0DF), as on the public page.
-  expect(
-    await page.evaluate(
-      () =>
-        getComputedStyle(document.querySelector(".garden-app")!)
-          .backgroundColor,
-    ),
-  ).toBe("rgb(248, 240, 223)");
+  // The patient's space sits on --n-cream (#F6EFDD).
+  await expect(page.locator(".pt-app")).toHaveCSS(
+    "background-color",
+    "rgb(246, 239, 221)",
+  );
   await expect(page.locator(".context-card")).toHaveCount(0);
-  await openFromLeafMenu(page, "My garden");
-  await expect(page.locator(".context-card")).toHaveCount(0);
+  await go(page, "My garden");
+  for (const name of ["What helps", "Connections", "Your space"])
+    await expect(page.getByRole("heading", { name, level: 2 })).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "What helps", exact: true }),
-  ).toHaveCount(0);
-  await page.getByRole("link", { name: "Your space", exact: true }).click();
+    page.getByRole("img", { name: /^Your garden: 12 small plants/ }),
+  ).toBeVisible();
+  await expect(page.locator(".log-entry")).toHaveCount(0);
+  await expect(page.getByText("Recent entries")).toHaveCount(0);
+  await expect(page.locator(".context-card")).toHaveCount(5);
+  // No module is on, and every switch says so in words.
+  const switches = page.getByRole("switch");
+  await expect(switches).toHaveCount(6);
+  await expect(page.getByText("In your space")).toHaveCount(0);
+  // The ground below the meadow is green, down to the footer.
+  await expect(page.locator(".mg-ground")).toHaveCSS(
+    "background-color",
+    "rgb(78, 107, 69)",
+  );
+  // The anchor links reach each section.
   await page
-    .locator(".space-module")
-    .filter({ hasText: "Rest & recovery" })
-    .getByRole("switch")
+    .getByRole("navigation", { name: "On this page" })
+    .getByRole("link", { name: "Your space" })
     .click();
-  await page
-    .locator(".space-module")
-    .filter({ hasText: "Music & moments" })
-    .getByRole("switch")
-    .click();
+  await expect(page).toHaveURL(/#your-space$/);
+  // Choices are kept: two modules on, after a reload too.
+  await page.getByRole("switch", { name: "Rest & recovery" }).click();
+  await expect(
+    page.getByRole("switch", { name: "Rest & recovery" }),
+  ).toHaveAttribute("aria-checked", "true");
+  await page.getByRole("switch", { name: "Music & moments" }).click();
+  await expect(page.getByText("In your space")).toHaveCount(2);
   await page.screenshot({
     path: "test-results/numa-your-space.png",
     fullPage: true,
   });
-  await page.getByRole("link", { name: "My garden", exact: true }).click();
-  await expect(page.locator(".context-card")).toHaveCount(2);
-  // The home stays minimal: chosen context lives in My garden, not on the home.
-  await page.getByRole("link", { name: "Your garden home" }).click();
-  await expect(page.locator(".garden-hero")).toBeVisible();
-  await expect(page.locator(".context-card")).toHaveCount(0);
-  await openFromLeafMenu(page, "My garden");
-  await page.screenshot({
-    path: "test-results/numa-chosen-modules.png",
-    fullPage: true,
-  });
-  await page.getByRole("button", { name: "Today, something simple" }).click();
-  await page.waitForURL((url) => url.pathname === "/patient");
-  await openFromLeafMenu(page, "My garden");
-  await expect(
-    page.getByRole("button", { name: "Back to my space" }),
-  ).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".context-card")).toHaveCount(0);
-  await expect(page.locator(".growth-invitation")).toHaveCount(0);
   await page.reload();
   await expect(
-    page.getByRole("button", { name: "Back to my space" }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Back to my space" }).click();
-  await page.waitForURL((url) => url.pathname === "/patient");
-  await openFromLeafMenu(page, "My garden");
-  await expect(page.locator(".context-card")).toHaveCount(2);
-  await openFromLeafMenu(page, "Journal");
+    page.getByRole("switch", { name: "Music & moments" }),
+  ).toHaveAttribute("aria-checked", "true");
+  // The home stays minimal: chosen context never reaches it.
+  await go(page, "Home");
+  await expect(page.locator(".context-card")).toHaveCount(0);
+  await go(page, "My journal");
   await expect(page.locator(".log-entry")).toHaveCount(12);
+});
+
+test("the old routes lead to their new places", async ({ page }) => {
+  await signIn(page, "patient", true);
+  for (const [from, to] of [
+    ["/patient/insights", "/patient/garden#what-helps"],
+    ["/patient/connections", "/patient/garden#connections"],
+    ["/patient/space", "/patient/garden#your-space"],
+  ]) {
+    await page.goto(from);
+    await page.waitForURL((url) => url.pathname + url.hash === to);
+    await expect(
+      page.getByRole("heading", { name: "My garden", level: 1 }),
+    ).toBeVisible();
+  }
+  await page.goto("/patient/new");
+  await page.waitForURL((url) => url.pathname === "/patient");
+});
+
+test('there is no "Today, something simple" anywhere', async ({ page }) => {
+  await signIn(page, "patient", true);
+  const none = async () => {
+    await expect(page.locator(".pt-main")).toBeVisible();
+    await expect(page.getByText(/something simple/i)).toHaveCount(0);
+    await expect(page.getByText("Back to my space")).toHaveCount(0);
+  };
+  await none();
+  await go(page, "My journal");
+  await expect(page.locator(".log-entry")).toHaveCount(12);
+  await none();
+  await page.locator(".log-entry").first().click();
+  await expect(page.locator(".ep-sheet")).toBeVisible();
+  await none();
+  await go(page, "My garden");
+  await expect(page.getByRole("heading", { name: "Your space" })).toBeVisible();
+  await none();
 });
 
 test("a personal intention and experiment can be chosen, paused and reflected on", async ({
   page,
 }) => {
   await signIn(page);
-  await openFromLeafMenu(page, "My garden");
-  await page.getByRole("link", { name: "Your space", exact: true }).click();
-  await page
-    .locator(".space-module")
-    .filter({ hasText: "One small intention" })
-    .getByRole("switch")
-    .click();
+  await go(page, "My garden");
+  await page.getByRole("switch", { name: "One small intention" }).click();
   await page
     .getByRole("textbox", { name: "A habit you would like to make room for" })
     .fill("Tea away from my screen");
   await page.getByRole("button", { name: "Keep this intention" }).click();
+  await expect(
+    page
+      .locator(".mg-habit-name")
+      .filter({ hasText: "Tea away from my screen" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "I made room for this" }).click();
+  await expect(
+    page.getByRole("button", { name: "Noted for today" }),
+  ).toHaveAttribute("aria-pressed", "true");
   await page
     .getByRole("button", { name: "Explore personal experiments" })
     .click();
@@ -376,12 +423,4 @@ test("a personal intention and experiment can be chosen, paused and reflected on
     .fill("I liked making room for something small.");
   await page.getByRole("button", { name: "Keep my reflection" }).click();
   await expect(page.getByText("A question you explored")).toBeVisible();
-  await page.getByRole("link", { name: "My garden", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "Tea away from my screen" }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "I made room for this" }).click();
-  await expect(
-    page.getByRole("button", { name: "Noted for today" }),
-  ).toHaveAttribute("aria-pressed", "true");
 });

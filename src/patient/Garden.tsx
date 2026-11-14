@@ -48,7 +48,13 @@ function goTo(id: string, smooth: boolean) {
   target.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
 }
 
-function WhatHelps({ insights, sample }: { insights: Insights | null; sample: boolean }) {
+function WhatHelps({
+  insights,
+  sample,
+}: {
+  insights: Insights | null;
+  sample: boolean;
+}) {
   if (!insights) return <Loading />;
   const patterns = insights.patterns
     .filter((p) => p.observations > 0)
@@ -138,12 +144,16 @@ export function MyGardenPage() {
       <div className="mg-land" ref={land}>
         <Meadow
           entries={entries ?? []}
-          height={W < 720 ? 230 : 300}
+          height={saved ? (W < 720 ? 230 : 300) : W < 720 ? 110 : 140}
           className="mg-meadow"
         />
         <div className="mg-ground">
           <div className="pt-wrap">
-            <section id="what-helps" className="mg-section" aria-labelledby="mg-helps">
+            <section
+              id="what-helps"
+              className="mg-section"
+              aria-labelledby="mg-helps"
+            >
               <h2 id="mg-helps" tabIndex={-1}>
                 What helps
               </h2>
@@ -153,19 +163,26 @@ export function MyGardenPage() {
               </p>
               <WhatHelps insights={insights.data} sample={sample} />
             </section>
-            <section id="connections" className="mg-section" aria-labelledby="mg-connections">
+            <section
+              id="connections"
+              className="mg-section"
+              aria-labelledby="mg-connections"
+            >
               <h2 id="mg-connections" tabIndex={-1}>
                 Connections
               </h2>
               <p className="mg-intro">
-                The context of your days. <span className="mg-note">Simulated data</span>
+                The context of your days.{" "}
+                <span className="mg-note">Simulated data</span>
               </p>
               {insights.data ? (
                 <ContextCards context={insights.data.context} />
               ) : (
                 <Loading />
               )}
-              <h3 className="mg-h3 mg-future-title">Possible future connections</h3>
+              <h3 className="mg-h3 mg-future-title">
+                Possible future connections
+              </h3>
               <ul className="cx-list">
                 {FUTURE_CONNECTIONS.map((c) => (
                   <li key={c.title}>
@@ -182,7 +199,11 @@ export function MyGardenPage() {
                 data in this prototype. No external accounts are connected.
               </p>
             </section>
-            <section id="your-space" className="mg-section" aria-labelledby="mg-space">
+            <section
+              id="your-space"
+              className="mg-section"
+              aria-labelledby="mg-space"
+            >
               <h2 id="mg-space" tabIndex={-1}>
                 Your space
               </h2>

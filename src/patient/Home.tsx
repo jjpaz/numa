@@ -62,15 +62,17 @@ function LiveLine({
   status: CaptureStatus;
 }) {
   const [box, W] = useBoxWidth<HTMLDivElement>();
-  const H = 64,
-    axis = 34;
-  const end = status === "recording" ? Math.min(1, elapsed / LIMIT_SECONDS) * W : 0;
+  // Shorter on a phone, so the home stays one screen.
+  const H = W > 0 && W < 480 ? 38 : 56,
+    axis = H / 2 + 2;
+  const end =
+    status === "recording" ? Math.min(1, elapsed / LIMIT_SECONDS) * W : 0;
   let path = "";
   if (W > 0 && end > 1) {
     const wave = voiceWave({
       to: end,
       axis,
-      amp: 24,
+      amp: H * 0.4,
       wavelength: 11,
       envelope: (x) => levelAt(levels, (x / W) * LIMIT_SECONDS),
       rand: () => 1, // no invented variation: height is the measured loudness only
@@ -111,17 +113,26 @@ function LiveLine({
 }
 
 /** While Numa listens: the recording, still. A written note gets a quiet line. */
-function StillLine({ levels, seconds, seed }: { levels: Level[] | null; seconds: number; seed: string }) {
+function StillLine({
+  levels,
+  seconds,
+  seed,
+}: {
+  levels: Level[] | null;
+  seconds: number;
+  seed: string;
+}) {
   const [box, W] = useBoxWidth<HTMLDivElement>();
-  const H = 64,
-    axis = 34;
+  // Shorter on a phone, so the home stays one screen.
+  const H = W > 0 && W < 480 ? 38 : 56,
+    axis = H / 2 + 2;
   let path = "";
   if (W > 0) {
     const recorded = levels && levels.length > 2 && seconds > 0.5;
     const wave = voiceWave({
       to: W,
       axis,
-      amp: 22,
+      amp: H * 0.38,
       wavelength: recorded ? Math.max(8, Math.min(14, W / (seconds * 3))) : 12,
       rand: recorded ? () => 1 : mulberry32(hashString(seed)),
       envelope: recorded
@@ -243,7 +254,12 @@ function ReviewWindow({
   }
   return (
     <>
-      <h2 id="pt-review-title" className="pt-review-title" tabIndex={-1} ref={title}>
+      <h2
+        id="pt-review-title"
+        className="pt-review-title"
+        tabIndex={-1}
+        ref={title}
+      >
         {ready ? "Here’s what I heard" : "Listening to your day…"}
       </h2>
       <p className="visually-hidden" role="status">
@@ -251,8 +267,14 @@ function ReviewWindow({
       </p>
       {!ready ? (
         <>
-          <StillLine levels={levels} seconds={seconds} seed={id ?? "listening"} />
-          <p className="pt-hint">Finding the threads. Your voice and your words are read separately.</p>
+          <StillLine
+            levels={levels}
+            seconds={seconds}
+            seed={id ?? "listening"}
+          />
+          <p className="pt-hint">
+            Finding the threads. Your voice and your words are read separately.
+          </p>
         </>
       ) : (
         <>
@@ -294,7 +316,11 @@ function ReviewWindow({
           <span>
             {error}{" "}
             {!ready && (
-              <button type="button" className="pt-link" onClick={() => void discard()}>
+              <button
+                type="button"
+                className="pt-link"
+                onClick={() => void discard()}
+              >
                 Start again
               </button>
             )}
@@ -336,10 +362,17 @@ function MailboxShell({
       className={"pt-mailbox" + (open ? " is-open" : "")}
       style={{ borderRadius: 32 }}
       {...(open
-        ? { role: "dialog", "aria-modal": false, "aria-labelledby": "pt-review-title" }
+        ? {
+            role: "dialog",
+            "aria-modal": false,
+            "aria-labelledby": "pt-review-title",
+          }
         : { "aria-label": label })}
     >
-      <motion.div layout={reduced ? false : "position"} className="pt-mailbox-inner">
+      <motion.div
+        layout={reduced ? false : "position"}
+        className="pt-mailbox-inner"
+      >
         {children}
       </motion.div>
     </motion.section>
@@ -394,17 +427,29 @@ function Mailbox({ entries }: { entries: Entry[] }) {
     consentBox.current?.focus();
     return false;
   }
-  async function send(what: { blob?: Blob; levels: Level[] | null; seconds: number }) {
+  async function send(what: {
+    blob?: Blob;
+    levels: Level[] | null;
+    seconds: number;
+  }) {
     opened.current = true;
     setSendError("");
-    setView({ k: "review", id: null, levels: what.levels, seconds: what.seconds });
+    setView({
+      k: "review",
+      id: null,
+      levels: what.levels,
+      seconds: what.seconds,
+    });
     try {
       let entry: Entry;
       if (what.blob) {
         const form = new FormData();
         form.append("audio", what.blob, "journal.webm");
         form.append("request_id", requestId.current);
-        entry = await api<Entry>("/patient/entries/audio", { method: "POST", body: form });
+        entry = await api<Entry>("/patient/entries/audio", {
+          method: "POST",
+          body: form,
+        });
       } else {
         entry = await api<Entry>("/patient/entries/text", {
           method: "POST",
@@ -412,7 +457,12 @@ function Mailbox({ entries }: { entries: Entry[] }) {
         });
       }
       requestId.current = crypto.randomUUID();
-      setView({ k: "review", id: entry.id, levels: what.levels, seconds: what.seconds });
+      setView({
+        k: "review",
+        id: entry.id,
+        levels: what.levels,
+        seconds: what.seconds,
+      });
     } catch (e) {
       setSendError((e as Error).message);
       voice.reset();
@@ -467,16 +517,28 @@ function Mailbox({ entries }: { entries: Entry[] }) {
     const today = todayState(entries);
     body = (
       <div className="pt-planted">
-        <p className="pt-planted-status" role="status" tabIndex={-1} ref={planted}>
+        <p
+          className="pt-planted-status"
+          role="status"
+          tabIndex={-1}
+          ref={planted}
+        >
           <Check size={20} aria-hidden="true" /> Today’s entry is planted.
         </p>
         <div className="pt-planted-links">
           {today.kind !== "pending" && (
-            <FlowLink className="pt-primary" to={"/patient/entries/" + today.entry.id}>
+            <FlowLink
+              className="pt-primary"
+              to={"/patient/entries/" + today.entry.id}
+            >
               See today’s entry
             </FlowLink>
           )}
-          <button type="button" className="pt-link" onClick={() => toCompose("mic")}>
+          <button
+            type="button"
+            className="pt-link"
+            onClick={() => toCompose("mic")}
+          >
             Add another entry
           </button>
         </div>
@@ -508,7 +570,11 @@ function Mailbox({ entries }: { entries: Entry[] }) {
           <button type="button" className="pt-primary" onClick={keepWords}>
             Keep these words
           </button>
-          <button type="button" className="pt-link" onClick={() => switchMode(false)}>
+          <button
+            type="button"
+            className="pt-link"
+            onClick={() => switchMode(false)}
+          >
             I’d rather leave a voice note
           </button>
         </div>
@@ -517,7 +583,11 @@ function Mailbox({ entries }: { entries: Entry[] }) {
   } else {
     body = (
       <div className="pt-voice">
-        <LiveLine levels={voice.levels} elapsed={voice.elapsed} status={voice.status} />
+        <LiveLine
+          levels={voice.levels}
+          elapsed={voice.elapsed}
+          status={voice.status}
+        />
         {recording ? (
           <button
             ref={micButton}
@@ -554,7 +624,11 @@ function Mailbox({ entries }: { entries: Entry[] }) {
           {recording ? "Recording." : ""}
         </p>
         {!recording && (
-          <button type="button" className="pt-link pt-switch" onClick={() => switchMode(true)}>
+          <button
+            type="button"
+            className="pt-link pt-switch"
+            onClick={() => switchMode(true)}
+          >
             I’d rather write today
           </button>
         )}
@@ -576,7 +650,11 @@ function Mailbox({ entries }: { entries: Entry[] }) {
               {!write && (
                 <>
                   {" "}
-                  <button type="button" className="pt-link" onClick={() => switchMode(true)}>
+                  <button
+                    type="button"
+                    className="pt-link"
+                    onClick={() => switchMode(true)}
+                  >
                     Write a note instead
                   </button>
                 </>
@@ -604,7 +682,9 @@ function Mailbox({ entries }: { entries: Entry[] }) {
                     writeConsent(e.target.checked);
                     if (e.target.checked) setNeedConsent(false);
                   }}
-                  aria-describedby={"pt-audio-terms" + (needConsent ? " pt-need-consent" : "")}
+                  aria-describedby={
+                    "pt-audio-terms" + (needConsent ? " pt-need-consent" : "")
+                  }
                 />
                 <span>
                   {local
@@ -652,11 +732,15 @@ function SampleMailbox({ entries }: { entries: Entry[] }) {
           </p>
         )}
         <p className="pt-hint">
-          This sample journal is read only. Use the fresh profile to add your own entries.
+          This sample journal is read only. Use the fresh profile to add your
+          own entries.
         </p>
         {today.kind !== "pending" && (
           <div className="pt-planted-links">
-            <FlowLink className="pt-primary" to={"/patient/entries/" + today.entry.id}>
+            <FlowLink
+              className="pt-primary"
+              to={"/patient/entries/" + today.entry.id}
+            >
               See today’s entry
             </FlowLink>
           </div>

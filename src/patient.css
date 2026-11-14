@@ -193,6 +193,7 @@
 }
 .pt-app.is-home .pt-footer,
 .pt-app.is-journal .pt-footer {
+  padding-bottom: 18px;
   text-align: center;
 }
 
@@ -393,15 +394,15 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding-block: clamp(20px, 4vh, 48px);
+  padding-block: clamp(16px, 3vh, 40px);
   text-align: center;
 }
 .pt-daily {
   max-width: 36ch;
-  margin-top: 12px !important;
+  margin-top: 12px;
   font-size: clamp(18px, 1.5vw, 21px);
   line-height: 1.45;
-  color: var(--n-forest-soft) !important;
+  color: var(--n-forest-soft);
 }
 .pt-home > .pt-error {
   margin-top: 16px;
@@ -438,7 +439,7 @@
 }
 .pt-hint {
   font-size: var(--n-text-16);
-  color: var(--n-forest-soft) !important;
+  color: var(--n-forest-soft);
 }
 .pt-voice {
   display: flex;
@@ -448,7 +449,7 @@
 }
 .pt-line {
   width: 100%;
-  height: 64px;
+  height: 56px;
 }
 .pt-line svg {
   display: block;
@@ -502,7 +503,7 @@
 .pt-clock {
   font-size: var(--n-text-18);
   font-variant-numeric: tabular-nums;
-  color: var(--n-forest-soft) !important;
+  color: var(--n-forest-soft);
 }
 .pt-clock span {
   font-weight: 600;
@@ -536,7 +537,7 @@
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  font-family: var(--n-font-display) !important;
+  font-family: var(--n-font-display);
   font-size: 24px;
   line-height: 1.45;
   color: var(--n-forest);
@@ -556,6 +557,7 @@
   outline: none;
   padding-bottom: 9px;
   border-bottom: 2px solid var(--n-forest);
+  box-shadow: none;
 }
 .pt-write .pt-hint {
   margin-top: 8px;
@@ -583,11 +585,11 @@
   margin-top: 4px;
 }
 .pt-reflection {
-  margin-top: 14px !important;
+  margin-top: 14px;
   font-family: var(--n-font-display);
   font-size: var(--n-text-18);
   line-height: 1.4;
-  color: var(--n-forest-soft) !important;
+  color: var(--n-forest-soft);
 }
 .pt-mailbox .pt-error {
   margin: 18px auto 0;
@@ -659,10 +661,10 @@
   color: var(--n-forest);
 }
 .pt-need {
-  margin: 6px 0 0 34px !important;
+  margin: 6px 0 0 34px;
   font-size: var(--n-text-16);
   font-weight: 600;
-  color: var(--n-danger) !important;
+  color: var(--n-danger);
 }
 .pt-terms {
   margin: 4px 0 0 34px;
@@ -698,23 +700,29 @@
 @media (max-width: 720px) {
   .pt-home {
     justify-content: flex-start;
-    padding-block: 18px 8px;
+    padding-block: 10px 4px;
+  }
+  .pt-mailbox-inner {
+    padding: 18px 16px 20px;
   }
   .pt-daily {
-    margin-top: 8px !important;
+    margin-top: 8px;
   }
   .pt-mailbox {
-    margin-top: 20px;
+    margin-top: 14px;
     border-radius: 28px;
   }
   .pt-line {
-    height: 52px;
+    height: 38px;
   }
   .pt-voice {
     gap: 8px;
   }
   .pt-consent {
-    margin-top: 14px;
+    margin-top: 10px;
+  }
+  .pt-terms summary {
+    min-height: 32px;
   }
   .pt-check span {
     font-size: 15px;
@@ -1469,10 +1477,7 @@
   margin-top: 2px;
   font-size: var(--n-text-14);
   font-weight: 600;
-  color: var(--n-grass-3);
-}
-.jl-row .jl-meta {
-  color: #4a6640;
+  color: var(--n-ground); /* 5.2:1 on cream */
 }
 /* Empty: a sentence, and the one action. */
 .jl-empty {
@@ -1579,7 +1584,9 @@
 .mg-ground :where(p, h2, h3, h4, label, li, dt, dd, span) {
   color: inherit;
 }
-.pt-app .mg-ground :where(a, button, summary, input, textarea, select):focus-visible {
+.pt-app
+  .mg-ground
+  :where(a, button, summary, input, textarea, select):focus-visible {
   outline: 2px solid var(--n-on-ground);
   outline-offset: 3px;
 }
@@ -1721,7 +1728,7 @@
 }
 .mg-helps-count {
   font-variant-numeric: tabular-nums;
-  color: var(--n-on-ground-soft) !important;
+  color: var(--n-on-ground-soft);
 }
 .mg-bar {
   display: block;
@@ -1758,7 +1765,7 @@
 }
 .ctx-list dt {
   font-size: var(--n-text-14);
-  color: var(--n-on-ground-soft) !important;
+  color: var(--n-on-ground-soft);
 }
 .ctx-list dd {
   margin: 0;
@@ -1789,11 +1796,11 @@
   font-size: var(--n-text-21);
 }
 .cx-text {
-  color: var(--n-on-ground-soft) !important;
+  color: var(--n-on-ground-soft);
 }
 .cx-state {
   font-size: var(--n-text-14);
-  color: var(--n-on-ground-soft) !important;
+  color: var(--n-on-ground-soft);
 }
 
 /* Your space: modules as rows with a switch; their controls open below. */
@@ -1899,7 +1906,7 @@
   margin: 0;
   padding: 11px 14px;
   border: 0;
-  border-radius: var(--n-radius-field);
+  border-radius: var(--n-radius-input);
   background: var(--n-oat);
   box-shadow: none;
   font-size: var(--n-text-16);
@@ -2056,5 +2063,55 @@ textarea.mg-field {
 @media (prefers-reduced-motion: reduce) {
   .mg-knob {
     transition: none;
+  }
+}
+
+/* ───────── Transitions between pages (document.startViewTransition) ─────────
+   Shared elements: the grass (ground), the mailbox and the words' sheet
+   (mailbox), an entry's plant (plant-<id>). 520ms, no bounce, no blur.
+   Everything else fades briefly, moving 8px at most. */
+::view-transition-group(*) {
+  animation-duration: 520ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+::view-transition-old(root) {
+  animation: pt-page-out 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+::view-transition-new(root) {
+  animation: pt-page-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes pt-page-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes pt-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+/* The header never moves between the three places. */
+::view-transition-group(patient-header) {
+  animation-duration: 0s;
+}
+/* The grass keeps its size and rises (or sinks) with its horizon: each
+   picture is anchored at its top and the growing box reveals it. */
+::view-transition-image-pair(ground) {
+  clip-path: inset(0);
+}
+::view-transition-old(ground),
+::view-transition-new(ground) {
+  width: 100%;
+  height: 100%;
+  object-fit: none;
+  object-position: top center;
+  animation-duration: 520ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }

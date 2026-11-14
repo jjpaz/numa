@@ -8,13 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { api, json } from "./api";
-import type {
-  Experiment,
-  Growth,
-  GrowthModule,
-  Insights,
-  User,
-} from "./types";
+import type { Experiment, Growth, GrowthModule, Insights, User } from "./types";
 import { ACTION_KINDS, Loading, Problem } from "./components";
 import { ObservationChart } from "./clinicCharts";
 

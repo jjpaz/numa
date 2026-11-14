@@ -1,5 +1,12 @@
 // The signed-in session and the small data hook every portal uses.
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { api, getToken } from "./api";
 import type { Health, User } from "./types";
 

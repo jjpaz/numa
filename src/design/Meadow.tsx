@@ -123,10 +123,38 @@ export function PlantArt({
       return (
         <>
           {bloom && <Stem h={40} sway={sway * 0.6} />}
-          <Leaf at={0} angle={-58} side={-1} size={0.78} fill={tone(1)} d={BROAD} />
-          <Leaf at={0} angle={-34} side={-1} size={0.92} fill={tone(0)} d={BROAD} />
-          <Leaf at={0} angle={-62} side={1} size={0.86} fill={tone(0)} d={BROAD} />
-          <Leaf at={0} angle={-30} side={1} size={0.74} fill={tone(1)} d={BROAD} />
+          <Leaf
+            at={0}
+            angle={-58}
+            side={-1}
+            size={0.78}
+            fill={tone(1)}
+            d={BROAD}
+          />
+          <Leaf
+            at={0}
+            angle={-34}
+            side={-1}
+            size={0.92}
+            fill={tone(0)}
+            d={BROAD}
+          />
+          <Leaf
+            at={0}
+            angle={-62}
+            side={1}
+            size={0.86}
+            fill={tone(0)}
+            d={BROAD}
+          />
+          <Leaf
+            at={0}
+            angle={-30}
+            side={1}
+            size={0.74}
+            fill={tone(1)}
+            d={BROAD}
+          />
           {top(40)}
         </>
       );
@@ -135,8 +163,20 @@ export function PlantArt({
       return (
         <>
           <Stem h={bloom ? 46 : 34} sway={sway * 0.5} />
-          <Leaf at={bloom ? 26 : 32} angle={-26} side={-1} size={1} fill={tone(0)} />
-          <Leaf at={bloom ? 30 : 34} angle={-32} side={1} size={0.92} fill={tone(1)} />
+          <Leaf
+            at={bloom ? 26 : 32}
+            angle={-26}
+            side={-1}
+            size={1}
+            fill={tone(0)}
+          />
+          <Leaf
+            at={bloom ? 30 : 34}
+            angle={-32}
+            side={1}
+            size={0.92}
+            fill={tone(1)}
+          />
           {top(46)}
         </>
       );
@@ -146,7 +186,14 @@ export function PlantArt({
       return (
         <>
           <Stem h={bloom ? 74 : 80} sway={sway} />
-          <Leaf at={10} angle={-48} side={1} size={1.1} fill={tone(1)} d={BROAD} />
+          <Leaf
+            at={10}
+            angle={-48}
+            side={1}
+            size={1.1}
+            fill={tone(1)}
+            d={BROAD}
+          />
           <Leaf at={22} angle={-30} side={-1} size={0.8} fill={tone(0)} />
           {grains.map((y, i) => (
             <ellipse
@@ -159,7 +206,9 @@ export function PlantArt({
               transform={`rotate(${i % 2 ? 26 : -26} ${i % 2 ? 3 : -3} ${-y})`}
             />
           ))}
-          {!bloom && <ellipse cy={-82} rx="2.6" ry="5.2" fill="var(--n-grass-1)" />}
+          {!bloom && (
+            <ellipse cy={-82} rx="2.6" ry="5.2" fill="var(--n-grass-1)" />
+          )}
           {top(74)}
         </>
       );
@@ -173,12 +222,22 @@ export function PlantArt({
           <Leaf at={h * 0.3} angle={-24} side={1} size={1.05} fill={tone(0)} />
           <Leaf at={h * 0.5} angle={-28} side={-1} size={0.95} fill={tone(1)} />
           {kind === "flower" && (
-            <Leaf at={h * 0.68} angle={-30} side={1} size={0.75} fill={tone(2)} />
+            <Leaf
+              at={h * 0.68}
+              angle={-30}
+              side={1}
+              size={0.75}
+              fill={tone(2)}
+            />
           )}
           {bloom ? (
             top(h)
           ) : (
-            <path d={BUD} fill="var(--n-grass-1)" transform={`translate(0 ${-h + 2})`} />
+            <path
+              d={BUD}
+              fill="var(--n-grass-1)"
+              transform={`translate(0 ${-h + 2})`}
+            />
           )}
         </>
       );
@@ -253,9 +312,13 @@ export function Meadow({
       seed,
       x: pad + p.x * Math.max(0, W - 2 * pad),
       base: height - soil * 0.5 - (2 - p.row) * (compact ? 2 : mobile ? 7 : 12),
-      scale: Math.max(
-        p.scale * ROW_DEPTH[p.row] * unit,
-        minTop / KIND_HEIGHT[p.kind],
+      scale: Math.min(
+        Math.max(
+          p.scale * ROW_DEPTH[p.row] * unit,
+          minTop / KIND_HEIGHT[p.kind],
+        ),
+        // In the low strip, never taller than the strip itself (flower included).
+        compact ? (height - 6) / (KIND_HEIGHT[p.kind] + 10) : Infinity,
       ),
       tilt: ((seed >>> 7) % 13) - 6,
     };
@@ -296,13 +359,41 @@ export function Meadow({
           aria-hidden="true"
           focusable="false"
         >
-          <GrassLayers width={W} base={height} height={grassHeight} soil={soil} seed={seed} only={0} />
+          <GrassLayers
+            width={W}
+            base={height}
+            height={grassHeight}
+            soil={soil}
+            seed={seed}
+            only={0}
+          />
           {row(0)}
-          <GrassLayers width={W} base={height} height={grassHeight} soil={soil} seed={seed} only={1} />
+          <GrassLayers
+            width={W}
+            base={height}
+            height={grassHeight}
+            soil={soil}
+            seed={seed}
+            only={1}
+          />
           {row(1)}
-          <GrassLayers width={W} base={height} height={grassHeight} soil={soil} seed={seed} only={2} />
+          <GrassLayers
+            width={W}
+            base={height}
+            height={grassHeight}
+            soil={soil}
+            seed={seed}
+            only={2}
+          />
           {row(2)}
-          <GrassLayers width={W} base={height} height={grassHeight} soil={soil} seed={seed} only="soil" />
+          <GrassLayers
+            width={W}
+            base={height}
+            height={grassHeight}
+            soil={soil}
+            seed={seed}
+            only="soil"
+          />
         </svg>
       )}
     </div>
