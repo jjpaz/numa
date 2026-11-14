@@ -1,0 +1,797 @@
+/* Secondary screens: My garden, Your space, What helps, Connections, Login
+   and the 404 page. Built on src/design/tokens.css and the vocabulary the
+   home, entry, New entry and Journal already use. See DESIGN.md →
+   "Secondary screens". Scoped to .sc-*, .mg-*, .sp-*, .in-*, .cx-*, .lg-*, .nf-*. */
+
+/* ───────── Page frame: the same 1280px column ───────── */
+.garden-app:has(.sc-page) .garden-header,
+.garden-app:has(.sc-page) .garden-footer {
+  max-width: 1280px;
+  padding-inline: clamp(16px, 5vw, 72px);
+}
+.garden-app:has(.sc-page) .garden-header {
+  padding-block: 28px 0;
+}
+.garden-app:has(.sc-page) .garden-footer {
+  border-top: 0;
+  padding-block: 8px 36px;
+}
+.garden-main:has(> .sc-page) {
+  max-width: none;
+  padding: 0;
+}
+.sc-wrap {
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding: 0 clamp(16px, 5vw, 72px) clamp(40px, 6vw, 80px);
+}
+
+/* Quiet links: the back link, text actions, the "Not now" kind */
+.sc-back {
+  padding-top: 18px;
+}
+.sc-back a,
+.sc-link,
+.lg-back a {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--n-font-ui);
+  font-size: var(--n-text-16);
+  font-weight: 500;
+  color: var(--n-moss-deep);
+  text-decoration: underline;
+  text-decoration-color: var(--n-natural);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
+  cursor: pointer;
+}
+.sc-back a:hover,
+.sc-link:hover,
+.lg-back a:hover {
+  text-decoration-color: currentColor;
+}
+.sc-quiet-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--n-font-ui);
+  font-size: var(--n-text-16);
+  color: var(--n-ink-soft);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 6px;
+  cursor: pointer;
+}
+.sc-quiet-link:hover {
+  text-decoration-color: currentColor;
+}
+.sc-link:disabled,
+.sc-quiet-link:disabled {
+  cursor: progress;
+}
+
+/* One h1 per page; the subtitle in Hanken 18 ink-soft. */
+.sc-head {
+  padding-top: clamp(24px, 4vw, 44px);
+}
+.sc-head h1,
+.nf-wrap h1,
+.lg-main h1 {
+  margin: 0;
+  font-family: var(--n-font-display);
+  font-weight: 400;
+  font-size: clamp(40px, 5vw, 64px);
+  line-height: 1.06;
+  letter-spacing: var(--n-tracking-display);
+  color: var(--n-moss-deep);
+}
+.sc-page .sc-head p,
+.nf-wrap p,
+.lg-main .lg-lede {
+  max-width: 60ch;
+  margin: 14px 0 0;
+  font-size: var(--n-text-18);
+  line-height: var(--n-leading-text);
+  color: var(--n-ink-soft);
+}
+
+/* Sections */
+.sc-section {
+  margin-top: clamp(40px, 5vw, 64px);
+}
+.sc-section-tight {
+  margin-top: 24px;
+}
+.sc-page h2 {
+  margin: 0;
+  font-family: var(--n-font-display);
+  font-weight: 400;
+  font-size: var(--n-text-28);
+  line-height: 1.2;
+  letter-spacing: var(--n-tracking-display);
+  color: var(--n-moss-deep);
+}
+.sc-page h2.sc-h21,
+.sc-page h3 {
+  font-family: var(--n-font-display);
+  font-weight: 400;
+  font-size: var(--n-text-21);
+  line-height: 1.3;
+  color: var(--n-moss-deep);
+}
+.sc-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--n-sheet-border);
+}
+.garden-app .sc-section-head p {
+  margin: 0;
+  font-size: var(--n-text-14);
+  color: var(--n-ink-soft);
+}
+.garden-app .sc-text,
+.garden-app .sc-page .sc-ruled p,
+.garden-app .sc-quiet {
+  max-width: 64ch;
+  margin: 10px 0 0;
+  font-size: var(--n-text-16);
+  line-height: var(--n-leading-text);
+  color: var(--n-ink-soft);
+}
+.garden-app .sc-quiet {
+  font-size: var(--n-text-18);
+}
+.garden-app .sc-small {
+  max-width: 80ch;
+  margin-top: 12px;
+  font-size: var(--n-text-14);
+  line-height: var(--n-leading-text);
+  color: var(--n-ink-soft);
+}
+.garden-app .sc-small.sc-section {
+  margin-top: clamp(40px, 5vw, 64px);
+}
+.sc-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin: 16px 0 0;
+}
+.garden-app .sc-after {
+  margin: 20px 0 0;
+}
+/* Text beside a rule, never a tinted card. */
+.sc-ruled {
+  max-width: 70ch;
+  padding-left: 20px;
+  border-left: 3px solid var(--n-moss);
+}
+.garden-app p.sc-ruled {
+  font-size: var(--n-text-16);
+  line-height: var(--n-leading-text);
+  color: var(--n-moss-deep);
+}
+
+/* The secondary pebble; pressed is filled moss. */
+.sc-pebble {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 22px;
+  border: 1px solid var(--n-moss);
+  border-radius: var(--n-radius-pebble);
+  background: transparent;
+  font-family: var(--n-font-ui);
+  font-size: var(--n-text-16);
+  font-weight: 500;
+  color: var(--n-moss-deep);
+  cursor: pointer;
+}
+.sc-pebble:hover:not(:disabled) {
+  background: rgb(63 66 46 / 0.07);
+}
+.sc-pebble[aria-pressed="true"] {
+  background: var(--n-moss);
+  color: var(--n-ivory);
+}
+.sc-pebble[aria-pressed="true"]:hover:not(:disabled) {
+  background: var(--n-moss-deep);
+}
+.sc-pebble:disabled {
+  opacity: 1;
+  border-color: rgb(46 49 34 / 0.35);
+  color: var(--n-ink-soft);
+  cursor: not-allowed;
+}
+.sc-page .simple-mode-control {
+  margin-top: 20px;
+}
+
+/* Fields: 12px radius, 1px border, focus in --n-focus. */
+.garden-app .sc-label,
+.lg-main .sc-label {
+  display: block;
+  margin: 20px 0 8px;
+  font-family: var(--n-font-ui);
+  font-size: var(--n-text-16);
+  font-weight: 600;
+  color: var(--n-moss-deep);
+}
+.garden-app .sc-field,
+.lg-main .sc-field {
+  display: block;
+  width: 100%;
+  max-width: 34rem;
+  min-height: 48px;
+  padding: 11px 14px;
+  border: 1px solid rgb(46 49 34 / 0.35);
+  border-radius: var(--n-radius-field);
+  background: transparent;
+  box-shadow: none;
+  font-family: var(--n-font-ui);
+  font-size: var(--n-text-16);
+  line-height: 1.5;
+  color: var(--n-moss-deep);
+}
+.garden-app textarea.sc-field {
+  max-width: 60ch;
+  resize: vertical;
+}
+.garden-app .sc-field::placeholder,
+.lg-main .sc-field::placeholder {
+  color: var(--n-ink-soft);
+}
+.garden-app .sc-field:focus,
+.lg-main .sc-field:focus {
+  border-color: var(--n-moss);
+  box-shadow: none;
+  outline: 2px solid var(--n-focus);
+  outline-offset: 2px;
+}
+
+/* The system's checkbox (as on New entry). */
+.sc-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: fit-content;
+  min-height: 44px;
+  cursor: pointer;
+}
+.garden-app .sc-check input {
+  flex: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  border: 1.5px solid var(--n-moss);
+  border-radius: 4px;
+  background: transparent center / 14px 14px no-repeat;
+  cursor: pointer;
+}
+.garden-app .sc-check input:checked {
+  background-color: var(--n-ivory);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2.5 7.4l3 3 6-6.6' fill='none' stroke='%233f422e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.garden-app .sc-check input:disabled {
+  border-color: rgb(46 49 34 / 0.35);
+  cursor: not-allowed;
+}
+.garden-app .sc-check input:focus-visible {
+  outline: 2px solid var(--n-focus);
+  outline-offset: 3px;
+}
+.garden-app .sc-check span {
+  font-size: var(--n-text-16);
+  color: var(--n-moss-deep);
+}
+
+/* Context as a definition list in one row: value in Young Serif, label under it. */
+.ctx-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 20px 24px;
+  margin: 20px 0 0;
+}
+.ctx-list .context-card {
+  position: static;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+.ctx-list dt {
+  font-family: var(--n-font-ui);
+  font-size: var(--n-text-14);
+  color: var(--n-ink-soft);
+}
+.ctx-list dd {
+  margin: 0;
+  font-family: var(--n-font-display);
+  font-size: var(--n-text-28);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--n-moss-deep);
+}
+
+/* ───────── My garden ───────── */
+.mg-whole {
+  margin-top: clamp(28px, 4vw, 44px);
+}
+.mg-garden svg {
+  display: block;
+  overflow: visible;
+}
+.mg-month {
+  margin: 0;
+}
+.mg-month + .mg-month {
+  margin-top: 28px;
+}
+.garden-app .mg-month-label {
+  margin: 0 0 6px;
+  font-size: var(--n-text-14);
+  color: var(--n-ink-soft);
+}
+.mg-weeks {
+  margin: 20px 0 0;
+}
+.mg-weeks svg {
+  display: block;
+  overflow: visible;
+}
+.mg-weeks-ground {
+  stroke: var(--n-sheet-border);
+  stroke-width: 1;
+}
+.mg-weeks-stem {
+  stroke-width: var(--n-stroke);
+}
+.mg-weeks-labels {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  margin-top: 8px;
+  font-size: var(--n-text-14);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--n-ink-soft);
+}
+.garden-app .mg-weeks figcaption {
+  margin-top: 10px;
+  font-size: var(--n-text-14);
+  color: var(--n-ink-soft);
+}
+.mg-recent {
+  margin-top: 4px;
+}
+.mg-habit {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--n-sheet-border);
+}
+.garden-app .mg-habit p {
+  margin: 6px 0 0;
+  font-size: var(--n-text-16);
+  color: var(--n-ink-soft);
+}
+
+/* ───────── Your space ───────── */
+.sp-list {
+  margin: clamp(28px, 4vw, 44px) 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--n-sheet-border);
+}
+.sp-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px 32px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--n-sheet-border);
+}
+.sp-text {
+  max-width: 60ch;
+}
+.sc-page .sp-text h2 {
+  font-size: var(--n-text-21);
+  line-height: 1.3;
+}
+.garden-app .sp-text p {
+  margin: 4px 0 0;
+  font-size: var(--n-text-16);
+  line-height: var(--n-leading-text);
+  color: var(--n-ink-soft);
+}
+.garden-app .sp-text .sp-source {
+  font-size: var(--n-text-14);
+}
+/* An accessible switch: role="switch", aria-checked, the state in words. */
+.sp-switch {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--n-font-ui);
+  font-size: var(--n-text-16);
+  color: var(--n-ink-soft);
+  cursor: pointer;
+}
+.sp-track {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 26px;
+  border: 1.5px solid var(--n-moss);
+  border-radius: var(--n-radius-pebble);
+  background: transparent;
+}
+.sp-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: var(--n-moss);
+}
+.sp-switch[aria-checked="true"] {
+  color: var(--n-moss-deep);
+  font-weight: 600;
+}
+.sp-switch[aria-checked="true"] .sp-track {
+  background: var(--n-moss);
+}
+.sp-switch[aria-checked="true"] .sp-knob {
+  left: 21px;
+  background: var(--n-ivory);
+}
+.sp-state {
+  min-width: 7.5em;
+  text-align: left;
+}
+.sp-switch:disabled {
+  opacity: 1;
+  cursor: progress;
+}
+.garden-app .sp-switch:focus-visible {
+  outline: 2px solid var(--n-focus);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+.sp-exp-panel {
+  margin-top: 16px;
+}
+.sp-exp-form {
+  max-width: 34rem;
+}
+.sp-exp {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--n-sheet-border);
+}
+.garden-app .sp-exp-state {
+  margin: 0 0 6px;
+  font-size: var(--n-text-14);
+  font-weight: 600;
+  color: var(--n-moss);
+}
+.sp-exp h3 {
+  margin: 0;
+}
+.sp-exp-quote {
+  max-width: 60ch;
+  margin: 12px 0 0;
+  padding-left: 20px;
+  border-left: 3px solid var(--n-moss);
+  font-family: var(--n-font-display);
+  font-size: var(--n-text-18);
+  line-height: 1.5;
+  color: var(--n-moss-deep);
+}
+.sp-future {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+  margin-top: clamp(40px, 5vw, 64px);
+  padding: 20px 0;
+  border-top: 1px solid var(--n-sheet-border);
+  border-bottom: 1px solid var(--n-sheet-border);
+  color: var(--n-moss-deep);
+}
+.sp-future-title {
+  font-family: var(--n-font-display);
+  font-size: var(--n-text-21);
+  text-decoration: underline;
+  text-decoration-color: var(--n-natural);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
+}
+.sp-future:hover .sp-future-title {
+  text-decoration-color: currentColor;
+}
+.sp-future-text {
+  font-size: var(--n-text-14);
+  color: var(--n-ink-soft);
+}
+
+/* ───────── What helps ───────── */
+.in-patterns {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.in-patterns li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 200px;
+  align-items: center;
+  gap: 6px 24px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--n-sheet-border);
+}
+.in-name {
+  font-size: var(--n-text-18);
+  font-weight: 600;
+  color: var(--n-moss-deep);
+}
+.in-count {
+  font-size: var(--n-text-16);
+  font-variant-numeric: tabular-nums;
+  color: var(--n-ink-soft);
+}
+.in-text {
+  grid-column: 1 / -1;
+  max-width: 64ch;
+  font-size: var(--n-text-16);
+  line-height: var(--n-leading-text);
+  color: var(--n-ink-soft);
+}
+.in-prefs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 28px;
+  margin-top: 12px;
+}
+/* The patient's chart: out-of-range days by shape (a ring), never ochre. */
+.cl-chart.is-patient .cl-chart-dot.is-outside {
+  fill: var(--n-moss-deep);
+}
+.cl-chart.is-patient .cl-chart-ring {
+  stroke: var(--n-moss-deep);
+}
+
+/* ───────── Connections ───────── */
+.cx-list {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--n-sheet-border);
+}
+.cx-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 14rem) minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 4px 24px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--n-sheet-border);
+}
+.cx-name {
+  font-family: var(--n-font-display);
+  font-size: var(--n-text-21);
+  color: var(--n-moss-deep);
+}
+.cx-text {
+  font-size: var(--n-text-16);
+  color: var(--n-ink-soft);
+}
+.cx-state {
+  font-size: var(--n-text-14);
+  color: var(--n-ink-soft);
+}
+
+/* ───────── Login: two zones ───────── */
+.lg-page {
+  display: grid;
+  grid-template-columns: minmax(0, 45fr) minmax(0, 55fr);
+  min-height: 100vh;
+  background: var(--n-paper);
+  color: var(--n-moss-deep);
+  font-family: var(--n-font-ui);
+}
+.lg-main {
+  padding: 32px clamp(24px, 5vw, 72px) 48px;
+}
+.lg-main .wordmark,
+.nf-wrap .wordmark {
+  font-family: var(--n-font-ui);
+  font-weight: 600;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  color: var(--n-moss-deep);
+}
+.lg-main .wordmark svg,
+.nf-wrap .wordmark svg {
+  width: 26px;
+  height: 26px;
+  stroke: var(--n-moss-deep);
+}
+.lg-main .wordmark-dot,
+.nf-wrap .wordmark-dot {
+  color: inherit;
+}
+.lg-back {
+  margin: 24px 0 clamp(32px, 6vh, 64px);
+}
+.lg-main h1 {
+  font-size: clamp(40px, 4.4vw, 64px);
+}
+.lg-main p {
+  color: var(--n-ink-soft);
+  font-size: var(--n-text-16);
+  line-height: var(--n-leading-text);
+}
+/* Signed in elsewhere: a sentence beside a rule, no coloured box. */
+.lg-main .lg-switch {
+  max-width: 34rem;
+  margin: 0 0 28px;
+  padding: 2px 0 2px 18px;
+  border: 0;
+  border-left: 3px solid var(--n-moss);
+  border-radius: 0;
+  background: none;
+  font-size: var(--n-text-16);
+  color: var(--n-moss-deep);
+}
+.lg-switch a {
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.lg-form {
+  max-width: 34rem;
+  margin-top: 28px;
+}
+.lg-form .sc-label:first-child {
+  margin-top: 0;
+}
+.lg-main .lg-help {
+  margin: 12px 0 0;
+  font-size: var(--n-text-14);
+}
+.lg-help .sc-link {
+  font-size: var(--n-text-14);
+}
+.lg-main .lg-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 16px 0 0;
+  color: var(--n-danger);
+}
+.lg-error svg {
+  flex: none;
+  margin-top: 3px;
+}
+.lg-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  margin-top: 24px;
+  padding: 0 30px;
+  border: 0;
+  border-radius: var(--n-radius-pebble);
+  background: var(--n-apricot);
+  font-family: var(--n-font-ui);
+  font-size: var(--n-text-18);
+  font-weight: 600;
+  color: var(--n-moss-deep);
+  cursor: pointer;
+}
+.lg-primary:hover:not(:disabled) {
+  background: #c97e25;
+}
+.lg-primary:disabled {
+  opacity: 1;
+  cursor: progress;
+}
+.lg-main .lg-small {
+  margin: 28px 0 0;
+  font-size: var(--n-text-14);
+}
+.lg-main .lg-other {
+  margin: 12px 0 0;
+}
+.lg-main a:focus-visible,
+.lg-main button:focus-visible,
+.nf-wrap a:focus-visible {
+  outline: 2px solid var(--n-focus);
+  outline-offset: 3px;
+}
+.lg-art {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 48px clamp(24px, 4vw, 64px) 64px;
+}
+.login-motif {
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  height: auto;
+}
+.lg-page.is-clinic .lg-art {
+  align-items: center;
+  background: var(--n-moss);
+}
+.lg-quote {
+  max-width: 14em;
+  margin: 0;
+  font-family: var(--n-font-display);
+  font-size: var(--n-text-28);
+  line-height: 1.3;
+  color: var(--n-ivory);
+}
+
+/* ───────── 404 ───────── */
+.nf-page {
+  min-height: 100vh;
+  background: var(--n-paper);
+  color: var(--n-moss-deep);
+  font-family: var(--n-font-ui);
+}
+.nf-wrap {
+  max-width: 1280px;
+  margin-inline: auto;
+  padding: 32px clamp(16px, 5vw, 72px) 64px;
+}
+.nf-wrap h1 {
+  margin-top: clamp(48px, 10vh, 120px);
+}
+.nf-wrap p + p {
+  margin-top: 24px;
+}
+
+@media (max-width: 900px) {
+  .lg-page {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lg-art {
+    display: none;
+  }
+}
+@media (max-width: 720px) {
+  .sp-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .in-patterns li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .in-patterns .cl-bar {
+    grid-column: 1 / -1;
+  }
+  .cx-list li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

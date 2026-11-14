@@ -25,6 +25,7 @@ import {
   EntryPlant,
   GardenHome,
   JournalLog,
+  LoginMotif,
   ListeningLine,
   LeafMenu,
   MyGarden,
@@ -64,6 +65,7 @@ import type {
 import {
   Badge,
   Empty,
+  ContextCards,
   ErrorNotice,
   Loading,
   PrivacyNote,
@@ -256,14 +258,14 @@ function Login() {
   if (user && sameAccount && !signingIn.current)
     return <Navigate to={portalOf(user)} replace />;
   return (
-    <div className="login-page">
-      <Link to="/" className="back-link">
-        <ArrowLeft size={16} /> Back
-      </Link>
-      <div className="login-card">
+    <div className={"lg-page" + (clinic ? " is-clinic" : "")}>
+      <div className="lg-main">
         <Wordmark />
+        <nav className="lg-back" aria-label="Back">
+          <Link to="/">Back</Link>
+        </nav>
         {user && !sameAccount && (
-          <p className="login-switch" role="status">
+          <p className="login-switch lg-switch" role="status">
             You’re signed in as {user.name}. Signing in here will end that
             session.{" "}
             <Link to={portalOf(user)}>
@@ -272,9 +274,6 @@ function Login() {
             </Link>
           </p>
         )}
-        <span className="eyebrow">
-          {clinic ? "A clearer view, with privacy" : "Your words. Your space."}
-        </span>
         <h1>
           {clinic
             ? "Welcome to your practice."
@@ -282,7 +281,7 @@ function Login() {
               ? "A journal, already growing."
               : "A quiet place to begin."}
         </h1>
-        <p>
+        <p className="lg-lede">
           {clinic
             ? "Follow the patterns that matter, while personal journal entries remain private."
             : sample
@@ -290,6 +289,7 @@ function Login() {
               : "Leave a voice note about your day. There is no questionnaire to complete."}
         </p>
         <form
+          className="lg-form"
           onSubmit={async (e) => {
             e.preventDefault();
             setBusy(true);
@@ -312,31 +312,36 @@ function Login() {
             }
           }}
         >
-          <label>
+          <label className="sc-label" htmlFor="lg-email">
             Demo email
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="username"
-            />
           </label>
-          <label>
+          <input
+            id="lg-email"
+            className="sc-field"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="username"
+          />
+          <label className="sc-label" htmlFor="lg-password">
             Password
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
           </label>
+          <input
+            id="lg-password"
+            className="sc-field"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+          />
           {health?.mode === "local_preview" && (
-            <div className="demo-credentials">
+            <p className="lg-help">
               Local preview password:{" "}
               <button
                 type="button"
+                className="sc-link"
                 onClick={() =>
                   setPassword(
                     clinic
@@ -347,13 +352,17 @@ function Login() {
                   )
                 }
               >
-                {clinic ? "care-demo" : sample ? "sample-demo" : "journal-demo"}{" "}
-                <ArrowUpRight size={12} />
+                {clinic ? "care-demo" : sample ? "sample-demo" : "journal-demo"}
               </button>
-            </div>
+            </p>
           )}
-          <ErrorNotice message={error} />
-          <button disabled={busy} className="button primary full">
+          {error && (
+            <p className="lg-error" role="alert">
+              <CircleAlert size={18} aria-hidden="true" />
+              <span>{error}</span>
+            </p>
+          )}
+          <button disabled={busy} className="lg-primary">
             {busy
               ? "Opening your space…"
               : clinic
@@ -361,19 +370,26 @@ function Login() {
                 : sample
                   ? "Explore the sample"
                   : "Open my journal"}
-            <ArrowRight size={17} />
           </button>
         </form>
-        <small>
+        <p className="lg-small">
           Demonstration accounts only. Please use fictional experiences.
-        </small>
-        <Link
-          to={clinic ? "/login/patient" : "/login/psychologist"}
-          className="text-link"
-        >
-          {clinic ? "Looking for your journal?" : "Are you a psychologist?"}
-          <ArrowUpRight size={15} />
-        </Link>
+        </p>
+        <p className="lg-other">
+          <Link
+            to={clinic ? "/login/patient" : "/login/psychologist"}
+            className="sc-link"
+          >
+            {clinic ? "Looking for your journal?" : "Are you a psychologist?"}
+          </Link>
+        </p>
+      </div>
+      <div className="lg-art">
+        {clinic ? (
+          <p className="lg-quote">Trends only. Journal entries stay private.</p>
+        ) : (
+          <LoginMotif flower={sample} />
+        )}
       </div>
     </div>
   );
@@ -463,12 +479,14 @@ function MyGardenPage() {
 function SpacePage() {
   const { user } = useContext(Auth);
   return (
-    <>
-      <Link to="/patient/garden" className="back-link">
-        <ArrowLeft size={15} /> My garden
-      </Link>
-      <YourSpace user={user!} />
-    </>
+    <div className="sc-page">
+      <div className="sc-wrap">
+        <nav className="sc-back" aria-label="Back">
+          <Link to="/patient/garden">My garden</Link>
+        </nav>
+        <YourSpace user={user!} />
+      </div>
+    </div>
   );
 }
 
@@ -1351,220 +1369,225 @@ function InsightsPage() {
     [saved, setSaved] = useState(false),
     [saveError, setSaveError] = useState("");
   if (!growth) return <Loading />;
+  const back = (
+    <nav className="sc-back" aria-label="Back">
+      <Link to="/patient/garden">My garden</Link>
+    </nav>
+  );
   if (
     growth.simple_mode ||
     !growth.modules.some((m) => m === "voice" || m === "patterns")
   )
     return (
-      <>
-        <Link to="/patient/garden" className="back-link">
-          <ArrowLeft size={15} /> My garden
-        </Link>
-        <section className="insights-empty">
-          <h1>What helps</h1>
-          <p>
-            Your journal is already enough. When you’re curious, you can add
-            this view from your space.
-          </p>
-          <Link className="quiet-link" to="/patient/space">
-            Choose what to explore
-          </Link>
-        </section>
-      </>
-    );
-  return (
-    <>
-      <Link to="/patient/garden" className="back-link">
-        <ArrowLeft size={15} /> My garden
-      </Link>
-      <div className="page-heading">
-        <div>
-          <span className="eyebrow">One day at a time</span>
-          <h1>Getting to know you.</h1>
-          <p>A little understanding, built from your own experience.</p>
-        </div>
-        <Flower2 className="heading-flower" size={45} />
-      </div>
-      <ErrorNotice message={error} />
-      {!data ? (
-        <Loading />
-      ) : (
-        <>
-          {growth.modules.includes("voice") && (
-            <section className="paper-card">
-              <SectionTitle
-                eyebrow="Your own reference"
-                title="The rhythm of your voice"
-              >
-                <Badge tone={data.trend.ready ? "green" : "quiet"}>
-                  {data.trend.ready ? "Personal baseline" : "Still learning"}
-                </Badge>
-              </SectionTitle>
-              <VoiceChart trend={data.trend} />
-              <p className="field-help">
-                Measurements are sensitive to microphones, surroundings and how
-                you speak. These differences are observations, not a diagnosis.
-              </p>
-            </section>
-          )}
-          {growth.modules.includes("patterns") && (
-            <section className="context-section">
-              <SectionTitle title="What you’ve found helpful">
-                <Badge>Based on your feedback</Badge>
-              </SectionTitle>
-              {data.patterns.length ? (
-                <div className="pattern-grid">
-                  {data.patterns.map((p) => {
-                    const Icon = actionIcons[p.kind];
-                    return (
-                      <article className="pattern-card" key={p.kind}>
-                        <Icon size={23} />
-                        <h3>{p.label}</h3>
-                        <strong className="pattern-number">
-                          {p.helpful}
-                          <span> / {p.observations}</span>
-                        </strong>
-                        <p>{p.text}</p>
-                        <small>{p.observations} personal observations</small>
-                      </article>
-                    );
-                  })}
-                </div>
-              ) : (
-                <Empty title="Your own little discoveries">
-                  Try an optional activity and leave feedback when you want.
-                  Patterns will appear here as your journal grows.
-                </Empty>
-              )}
-            </section>
-          )}
-          <section className="paper-card preference-card">
-            <SectionTitle title="Make this space yours">
-              <Settings2 size={20} />
-            </SectionTitle>
-            <p>Which small activities would you like Numa to suggest?</p>
-            <div className="preference-options">
-              {Object.entries(actionIcons).map(([key, Icon]) => (
-                <label key={key}>
-                  <input
-                    type="checkbox"
-                    disabled={user?.source === "simulated"}
-                    checked={(preferences || data.preferences).includes(key)}
-                    onChange={(e) => {
-                      const current = preferences || data.preferences;
-                      setPreferences(
-                        e.target.checked
-                          ? [...current, key]
-                          : current.filter((k) => k !== key),
-                      );
-                      setSaved(false);
-                    }}
-                  />
-                  <Icon size={18} />
-                  {
-                    (
-                      {
-                        walk: "Short walks",
-                        music: "Music",
-                        breathe: "Breathing",
-                        connect: "Connection",
-                      } as Record<string, string>
-                    )[key]
-                  }
-                </label>
-              ))}
-            </div>
-            {user?.source !== "simulated" && (
-              <button
-                className="button outline"
-                disabled={!preferences?.length || saved}
-                onClick={async () => {
-                  try {
-                    await api("/patient/preferences", {
-                      method: "PATCH",
-                      body: json({ actions: preferences }),
-                    });
-                    setSaved(true);
-                    setSaveError("");
-                  } catch (e) {
-                    setSaveError((e as Error).message);
-                  }
-                }}
-              >
-                {saved ? "Preferences saved" : "Save preferences"}
-                <Check size={15} />
-              </button>
-            )}
-            <ErrorNotice message={saveError} />
+      <div className="sc-page">
+        <div className="sc-wrap">
+          {back}
+          <section className="insights-empty">
+            <h1>What helps</h1>
+            <p>
+              Your journal is already enough. When you’re curious, you can add
+              this view from your space.
+            </p>
+            <Link className="quiet-link" to="/patient/space">
+              Choose what to explore
+            </Link>
           </section>
-        </>
-      )}
-      <PrivacyNote />
-    </>
+        </div>
+      </div>
+    );
+  const labels: Record<string, string> = {
+    walk: "Short walks",
+    music: "Music",
+    breathe: "Breathing",
+    connect: "Connection",
+  };
+  return (
+    <div className="sc-page">
+      <div className="sc-wrap">
+        {back}
+        <header className="sc-head">
+          <h1>What helps</h1>
+          <p>A little understanding, built from your own experience.</p>
+        </header>
+        <ErrorNotice message={error} />
+        {!data ? (
+          <Loading />
+        ) : (
+          <>
+            {growth.modules.includes("patterns") && (
+              <section className="sc-section" aria-labelledby="in-helpful">
+                <div className="sc-section-head">
+                  <h2 id="in-helpful">What you’ve found helpful</h2>
+                  <p>Based on your feedback</p>
+                </div>
+                {data.patterns.length ? (
+                  <ul className="in-patterns">
+                    {data.patterns.map((p) => (
+                      <li key={p.kind}>
+                        <span className="in-name">{p.label}</span>
+                        <span className="in-count">
+                          {p.helpful} helpful of{" "}
+                          {plural(p.observations, "response", "responses")}
+                        </span>
+                        <span className="cl-bar" aria-hidden="true">
+                          <span
+                            style={{
+                              width: `${p.observations ? (p.helpful / p.observations) * 100 : 0}%`,
+                            }}
+                          />
+                        </span>
+                        <span className="in-text">{p.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="sc-quiet">
+                    Try an optional activity and leave feedback when you want.
+                    Patterns will appear here as your journal grows.
+                  </p>
+                )}
+              </section>
+            )}
+            {growth.modules.includes("voice") && (
+              <section className="sc-section" aria-labelledby="in-voice">
+                <div className="sc-section-head">
+                  <h2 id="in-voice">Your voice over time</h2>
+                  <p>
+                    {data.trend.ready
+                      ? "Personal baseline: compared only with your own first days."
+                      : "Still learning your usual range."}
+                  </p>
+                </div>
+                <ObservationChart trend={data.trend} audience="patient" />
+                <p className="sc-small">
+                  Measurements are sensitive to microphones, surroundings and
+                  how you speak. These differences are observations, not a
+                  diagnosis.
+                </p>
+              </section>
+            )}
+            <section className="sc-section" aria-labelledby="in-prefs">
+              <h2 id="in-prefs">Make this space yours</h2>
+              <p className="sc-text">
+                Which small activities would you like Numa to suggest?
+              </p>
+              <div className="in-prefs">
+                {Object.keys(actionIcons).map((key) => (
+                  <label className="sc-check" key={key}>
+                    <input
+                      type="checkbox"
+                      disabled={user?.source === "simulated"}
+                      checked={(preferences || data.preferences).includes(key)}
+                      onChange={(e) => {
+                        const current = preferences || data.preferences;
+                        setPreferences(
+                          e.target.checked
+                            ? [...current, key]
+                            : current.filter((k) => k !== key),
+                        );
+                        setSaved(false);
+                      }}
+                    />
+                    <span>{labels[key]}</span>
+                  </label>
+                ))}
+              </div>
+              {user?.source !== "simulated" && (
+                <div className="sc-actions">
+                  <button
+                    type="button"
+                    className="sc-pebble"
+                    disabled={!preferences?.length || saved}
+                    onClick={async () => {
+                      try {
+                        await api("/patient/preferences", {
+                          method: "PATCH",
+                          body: json({ actions: preferences }),
+                        });
+                        setSaved(true);
+                        setSaveError("");
+                      } catch (e) {
+                        setSaveError((e as Error).message);
+                      }
+                    }}
+                  >
+                    {saved ? "Preferences saved" : "Save preferences"}
+                  </button>
+                </div>
+              )}
+              <ErrorNotice message={saveError} />
+            </section>
+          </>
+        )}
+        <p className="sc-small sc-section">
+          Your words stay in your journal. Your psychologist sees trends only.
+        </p>
+      </div>
+    </div>
   );
 }
 
+const FUTURE_CONNECTIONS = [
+  {
+    title: "Apple Health",
+    text: "Sleep, steps and activity, with your permission.",
+  },
+  {
+    title: "Last.fm",
+    text: "Listening habits alongside your own journal observations.",
+  },
+  {
+    title: "Calendar",
+    text: "The shape of your day, with the details you choose.",
+  },
+  { title: "Wearables", text: "Possible future links to Oura or Garmin." },
+];
+
 function Connections() {
+  const { data } = useResource<Insights>("/patient/insights");
   return (
-    <>
-      <Link to="/patient/space" className="back-link">
-        <ArrowLeft size={15} /> Your space
-      </Link>
-      <div className="page-heading">
-        <div>
-          <span className="eyebrow">
-            A fuller picture, with your permission
-          </span>
+    <div className="sc-page">
+      <div className="sc-wrap">
+        <nav className="sc-back" aria-label="Back">
+          <Link to="/patient/space">Your space</Link>
+        </nav>
+        <header className="sc-head">
           <h1>The context of your days.</h1>
           <p>
             Future connections could help you notice how everyday habits go
             together.
           </p>
-        </div>
-      </div>
-      <div className="connection-info">
-        <CloudSun size={22} />
-        <div>
-          <strong>Today’s context is illustrative.</strong>
-          <p>
+        </header>
+        <section className="sc-section" aria-labelledby="cx-today">
+          <div className="sc-section-head">
+            <h2 id="cx-today">Today’s context</h2>
+            <p>Simulated data</p>
+          </div>
+          {data ? <ContextCards context={data.context} /> : <Loading />}
+          <p className="sc-small">
             Sleep, activity, weather and listening history use simulated data in
             this prototype. No external accounts are connected.
           </p>
-        </div>
+        </section>
+        <section className="sc-section" aria-labelledby="cx-future">
+          <h2 id="cx-future">Possible future connections</h2>
+          <ul className="cx-list">
+            {FUTURE_CONNECTIONS.map((c) => (
+              <li key={c.title}>
+                <span className="cx-name">{c.title}</span>
+                <span className="cx-text">{c.text}</span>
+                <span className="cx-state">
+                  Not connected, a future integration
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+        <p className="sc-small sc-section">
+          Your words stay in your journal. Your psychologist sees trends only.
+        </p>
       </div>
-      <div className="connections-grid">
-        {[
-          {
-            icon: "♥",
-            title: "Apple Health",
-            text: "Sleep, steps and activity, with your permission.",
-          },
-          {
-            icon: "♫",
-            title: "Last.fm",
-            text: "Listening habits alongside your own journal observations.",
-          },
-          {
-            icon: "◷",
-            title: "Calendar",
-            text: "The shape of your day, with the details you choose.",
-          },
-          {
-            icon: "◌",
-            title: "Wearables",
-            text: "Possible future links to Oura or Garmin.",
-          },
-        ].map((c) => (
-          <article className="connection-card" key={c.title}>
-            <span className="service-icon">{c.icon}</span>
-            <h3>{c.title}</h3>
-            <p>{c.text}</p>
-            <Badge>Not connected · future integration</Badge>
-          </article>
-        ))}
-      </div>
-      <PrivacyNote />
-    </>
+    </div>
   );
 }
 
@@ -2101,14 +2124,22 @@ function ClinicalDetail({ report = false }: { report?: boolean }) {
   );
 }
 function NotFound() {
+  const { user } = useContext(Auth);
   return (
-    <div className="login-page">
-      <div className="login-card">
+    <div className="nf-page">
+      <div className="nf-wrap">
         <Wordmark />
         <h1>This page wandered off.</h1>
-        <Link to="/" className="button primary">
-          Back to Numa <ArrowRight size={16} />
-        </Link>
+        <p>The page you were looking for isn’t here.</p>
+        <p>
+          <Link className="sc-link" to={user ? portalOf(user) : "/"}>
+            {!user
+              ? "Back to Numa"
+              : user.role === "patient"
+                ? "Back to your garden"
+                : "Back to your practice"}
+          </Link>
+        </p>
       </div>
     </div>
   );

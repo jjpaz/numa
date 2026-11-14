@@ -528,6 +528,7 @@ function PastPlant({
   leaf,
   sway,
   bloomClass,
+  petal = "var(--n-past-bloom)",
 }: {
   kind: Plant["kind"];
   h: number;
@@ -535,6 +536,8 @@ function PastPlant({
   leaf: number;
   sway: number;
   bloomClass?: string;
+  /** Today's flower is apricot; every earlier one is past bloom. */
+  petal?: string;
 }) {
   const tone = (i: number) => LEAF_TONES[(hue + i) % 3];
   const stem = (height: number) => (
@@ -597,7 +600,7 @@ function PastPlant({
       ) : (
         <g transform={`translate(0 ${r1(-top)})`}>
           <g className={bloomClass}>
-            <Bloom r={Math.max(7, leaf * 0.36)} petal="var(--n-past-bloom)" />
+            <Bloom r={Math.max(7, leaf * 0.36)} petal={petal} />
           </g>
         </g>
       )}
@@ -1308,6 +1311,57 @@ export function GardenHome({
 const firstLine = (text: string | null | undefined) =>
   (text ?? "").trim().split(/\n+/)[0]?.trim() ?? "";
 
+/** One entry as a row: date, its plant, then title, reflection, words, meta.
+ *  Shared by the Journal and My garden's recent entries. */
+export function JournalRow({ e }: { e: Entry }) {
+  const today = isToday(e.created_at);
+  const busy = ["pending", "processing"].includes(e.status);
+  const words = firstLine(e.transcript);
+  const meta = busy
+    ? "Still listening"
+    : !e.saved
+      ? "Draft, not saved yet"
+      : e.action?.feedback === "helpful"
+        ? "Something helped"
+        : "";
+  return (
+    <li>
+      <Link
+        to={"/patient/entries/" + e.id}
+        className={
+          "log-entry jl-row" +
+          (today ? " is-today" : "") +
+          (e.saved ? "" : " is-draft")
+        }
+      >
+        <span className="jl-date">
+          <time dateTime={e.created_at}>
+            {today ? "Today" : shortDate(e.created_at)}
+          </time>
+        </span>
+        <span className="jl-plant">
+          <EntryPlant entry={e} glyph decorative />
+        </span>
+        <span className="jl-body">
+          <span className="jl-title">
+            {busy ? "Listening to your day…" : e.title}
+          </span>
+          {!busy && <span className="jl-reflection">{reflectionFor(e)}</span>}
+          {words && <span className="jl-quote">{words}</span>}
+          {meta && (
+            <span className="jl-meta">
+              {meta === "Something helped" && (
+                <Sprout size={14} aria-hidden="true" />
+              )}
+              {meta}
+            </span>
+          )}
+        </span>
+      </Link>
+    </li>
+  );
+}
+
 export function JournalLog({
   entries,
   error,
@@ -1370,60 +1424,9 @@ export function JournalLog({
               >
                 <h2>{month.label}</h2>
                 <ol className="jl-list">
-                  {month.items.map((e) => {
-                    const today = isToday(e.created_at);
-                    const busy = ["pending", "processing"].includes(e.status);
-                    const words = firstLine(e.transcript);
-                    const meta = busy
-                      ? "Still listening"
-                      : !e.saved
-                        ? "Draft, not saved yet"
-                        : e.action?.feedback === "helpful"
-                          ? "Something helped"
-                          : "";
-                    return (
-                      <li key={e.id}>
-                        <Link
-                          to={"/patient/entries/" + e.id}
-                          className={
-                            "log-entry jl-row" +
-                            (today ? " is-today" : "") +
-                            (e.saved ? "" : " is-draft")
-                          }
-                        >
-                          <span className="jl-date">
-                            <time dateTime={e.created_at}>
-                              {today ? "Today" : shortDate(e.created_at)}
-                            </time>
-                          </span>
-                          <span className="jl-plant">
-                            <EntryPlant entry={e} glyph decorative />
-                          </span>
-                          <span className="jl-body">
-                            <span className="jl-title">
-                              {busy ? "Listening to your day…" : e.title}
-                            </span>
-                            {!busy && (
-                              <span className="jl-reflection">
-                                {reflectionFor(e)}
-                              </span>
-                            )}
-                            {words && (
-                              <span className="jl-quote">{words}</span>
-                            )}
-                            {meta && (
-                              <span className="jl-meta">
-                                {meta === "Something helped" && (
-                                  <Sprout size={14} aria-hidden="true" />
-                                )}
-                                {meta}
-                              </span>
-                            )}
-                          </span>
-                        </Link>
-                      </li>
-                    );
-                  })}
+                  {month.items.map((e) => (
+                    <JournalRow key={e.id} e={e} />
+                  ))}
                 </ol>
               </section>
             ))}
@@ -1436,13 +1439,210 @@ export function JournalLog({
 
 /* ───────────────────────── My garden ───────────────────────── */
 
-function WeeksMeadow({
-  entries,
-  animate,
-}: {
-  entries: Entry[];
-  animate: boolean;
-}) {
+/** The width of a box in CSS px, kept current with a ResizeObserver. */
+function useBoxWidth<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [width, setWidth] = useState(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setWidth(el.getBoundingClientRect().width);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, width] as const;
+}
+
+const monthLabel = (d: Date) =>
+  d.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+
+/**
+ * The whole garden, wide: the home's voice line and plants, one plant per saved
+ * entry, in time order. One line per month (newest first) so a long history is
+ * never squeezed. Static: nothing depends on an animation to be seen.
+ */
+function GardenByMonth({ entries }: { entries: Entry[] }) {
+  const [box, W] = useBoxWidth<HTMLDivElement>();
+  const mobile = W > 0 && W < 600;
+  const k = mobile ? 1.05 : 1.7;
+  const amp = mobile ? 12 : 18;
+  const plantById = new Map(plantsFrom(entries).map((p) => [p.id, p]));
+  const months = new Map<string, Entry[]>();
+  for (const e of entries
+    .filter((e) => e.saved)
+    .sort(
+      (a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    )) {
+    const d = new Date(e.created_at);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    months.set(key, [...(months.get(key) ?? []), e]);
+  }
+  const keys = [...months.keys()].sort().reverse();
+  return (
+    <div className="mg-garden" ref={box}>
+      {W > 0 &&
+        keys.map((key) => {
+          const list = months.get(key)!;
+          const first = new Date(list[0].created_at);
+          const days = new Date(
+            first.getFullYear(),
+            first.getMonth() + 1,
+            0,
+          ).getDate();
+          const pad = 14;
+          const slot = (W - 2 * pad) / days;
+          const shapeSlot = Math.max(slot, mobile ? 30 : 48);
+          const byDay = new Map<number, Entry[]>();
+          for (const e of list) {
+            const day = new Date(e.created_at).getDate();
+            byDay.set(day, [...(byDay.get(day) ?? []), e]);
+          }
+          const placed: {
+            e: Entry;
+            x: number;
+            today: boolean;
+            kind: Plant["kind"];
+            hue: number;
+            shape: ReturnType<typeof pastPlantShape>;
+          }[] = [];
+          for (const [day, items] of byDay)
+            items.forEach((e, j) => {
+              const plant = plantById.get(e.id);
+              if (!plant) return;
+              const today = isToday(e.created_at);
+              const kind = today ? "flower" : plant.kind;
+              const shape = pastPlantShape(e.id, kind, k, shapeSlot);
+              const x =
+                pad +
+                (day - 0.5) * slot +
+                shape.offset * 0.4 * slot +
+                (j - (items.length - 1) / 2) * Math.min(14, slot * 0.6);
+              placed.push({ e, x, today, kind, hue: plant.hue, shape });
+            });
+          const top = placed.reduce(
+            (m, p) =>
+              Math.max(
+                m,
+                p.shape.h +
+                  p.shape.leaf * 0.4 +
+                  (p.kind === "flower" ? p.shape.leaf * 0.4 : 0),
+              ),
+            0,
+          );
+          const axis = Math.ceil(top + 10);
+          const height = Math.ceil(axis + amp + 6);
+          const wave = voiceWave({
+            to: W,
+            axis,
+            amp,
+            wavelength: mobile ? 10 : 14,
+            rand: mulberry32(hashString(key)),
+            envelope: (x) =>
+              gaussianEnvelope(
+                placed.map((p) => ({
+                  c: p.x,
+                  s: p.shape.burstSigma,
+                  w: p.shape.burstWeight,
+                })),
+                x,
+              ),
+            settle: false,
+          });
+          const d = `M${r1(wave[0][0])} ${r1(wave[0][1])}` + catmullRom(wave);
+          const label = monthLabel(first);
+          return (
+            <figure className="mg-month" key={key}>
+              <figcaption className="mg-month-label">{label}</figcaption>
+              <svg
+                width={W}
+                height={height}
+                viewBox={`0 0 ${r1(W)} ${height}`}
+                role="img"
+                aria-label={`${label}: ${list.length} ${list.length === 1 ? "plant" : "plants"}, one for each entry you saved.`}
+              >
+                <path className="gh-line" d={d} />
+                {placed.map((p) => (
+                  <g
+                    key={p.e.id}
+                    transform={`translate(${r1(p.x)} ${axis}) rotate(${r1(p.shape.tilt)})`}
+                  >
+                    <PastPlant
+                      kind={p.kind}
+                      h={p.shape.h}
+                      hue={p.hue}
+                      leaf={p.shape.leaf}
+                      sway={p.shape.sway}
+                      petal={p.today ? "var(--n-apricot)" : undefined}
+                    />
+                  </g>
+                ))}
+              </svg>
+            </figure>
+          );
+        })}
+    </div>
+  );
+}
+
+/** A quiet line that turns up into a seed: a garden waiting for its first entry. */
+function SeedLine() {
+  const [box, W] = useBoxWidth<HTMLDivElement>();
+  const radius = 36,
+    axis = 52,
+    stemX = Math.max(radius + 20, W - 12),
+    waveEnd = stemX - radius;
+  const wave =
+    W > 0
+      ? voiceWave({
+          to: waveEnd,
+          axis,
+          amp: 10,
+          wavelength: 14,
+          rand: mulberry32(20261114),
+          envelope: () => 0,
+        })
+      : [];
+  const d = wave.length
+    ? `M${r1(wave[0][0])} ${r1(wave[0][1])}` +
+      catmullRom(wave) +
+      cubicD([
+        [waveEnd, axis],
+        [waveEnd + radius * 0.55, axis],
+        [stemX, axis - radius * 0.45],
+        [stemX, axis - radius],
+      ])
+    : "";
+  return (
+    <div className="mg-garden" ref={box}>
+      {W > 0 && (
+        <svg
+          width={W}
+          height={axis + 12}
+          viewBox={`0 0 ${r1(W)} ${axis + 12}`}
+          role="img"
+          aria-label="Your garden: a single seed, waiting for your first entry."
+        >
+          <path className="gh-line" d={d} />
+          <ellipse
+            cx={r1(stemX)}
+            cy={axis - radius - 4}
+            rx="6"
+            ry="4"
+            fill="var(--n-natural)"
+            transform={`rotate(-30 ${r1(stemX)} ${axis - radius - 4})`}
+          />
+        </svg>
+      )}
+    </div>
+  );
+}
+
+/** Eight weeks, one stem each; every leaf is an entry. The system's stroke, no ground band. */
+function OverTime({ entries }: { entries: Entry[] }) {
+  const [box, W] = useBoxWidth<HTMLDivElement>();
   const now = new Date();
   const monday = new Date(
     now.getFullYear(),
@@ -1473,70 +1673,61 @@ function WeeksMeadow({
         month: "short",
       }),
       count,
-      visible: i % 2 === 1,
     };
   });
-  const reduced = useReducedMotion();
+  const base = 108;
+  const col = W / 8;
   return (
-    <figure className="meadow">
-      <svg
-        viewBox="0 0 320 120"
-        aria-hidden="true"
-        preserveAspectRatio="xMidYMax meet"
-      >
-        <path
-          d="M0 104 C80 98 160 106 240 100 C280 98 300 101 320 100 V120 H0Z"
-          fill="var(--g-ground)"
-        />
-        {weeks.map((w, i) => {
-          const x = 20 + i * 40;
-          const h = w.count ? 18 + Math.min(w.count, 7) * 10 : 4;
-          return (
-            <g key={w.key} transform={`translate(${x} 102)`}>
-              <motion.g
-                style={{ transformBox: "fill-box", originY: 1 }}
-                {...(!animate || reduced
-                  ? {}
-                  : {
-                      initial: { scaleY: 0 },
-                      whileInView: { scaleY: 1 },
-                      viewport: { once: true },
-                      transition: {
-                        duration: 1.4,
-                        delay: i * 0.08,
-                        ease: [0.22, 1, 0.36, 1],
-                      },
-                    })}
-              >
-                <path
-                  d={`M0 0 C2 ${-h / 3} -2 ${(-2 * h) / 3} 0 ${-h}`}
-                  stroke="var(--g-stem)"
-                  strokeWidth="1.8"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-                {Array.from({ length: Math.min(w.count, 7) }, (_, j) => (
-                  <ellipse
-                    key={j}
-                    cx={j % 2 ? 5 : -5}
-                    cy={-12 - j * 10}
-                    rx="5.5"
-                    ry="2.4"
-                    fill={LEAF[j % 3]}
-                    transform={`rotate(${j % 2 ? -25 : 25} ${j % 2 ? 5 : -5} ${-12 - j * 10})`}
-                  />
-                ))}
-                {w.count === 0 && (
-                  <circle cx="0" cy="-2" r="2.5" fill="var(--g-clay)" />
-                )}
-              </motion.g>
-            </g>
-          );
-        })}
-      </svg>
-      <div className="meadow-labels" aria-hidden="true">
-        {weeks.map((w) => (
-          <span key={w.key}>{w.visible ? w.label : ""}</span>
+    <figure className="mg-weeks">
+      <div ref={box}>
+        {W > 0 && (
+          <svg
+            width={W}
+            height={base + 4}
+            viewBox={`0 0 ${r1(W)} ${base + 4}`}
+            aria-hidden="true"
+          >
+            <line
+              className="mg-weeks-ground"
+              x1={0}
+              x2={r1(W)}
+              y1={base}
+              y2={base}
+            />
+            {weeks.map((w, i) => {
+              const x = col * (i + 0.5);
+              const leaves = Math.min(w.count, 7);
+              const h = w.count ? 22 + leaves * 11 : 0;
+              return (
+                <g key={w.key} transform={`translate(${r1(x)} ${base})`}>
+                  {w.count ? (
+                    <>
+                      <path
+                        className="gh-stem mg-weeks-stem"
+                        d={`M0 0 C2 ${r1(-h / 3)} -2 ${r1((-2 * h) / 3)} 0 ${-h}`}
+                      />
+                      {Array.from({ length: leaves }, (_, j) => (
+                        <LeafAt
+                          key={j}
+                          y={-14 - j * 11}
+                          side={j % 2 ? -1 : 1}
+                          length={15}
+                          tone={LEAF_TONES[j % 3]}
+                        />
+                      ))}
+                    </>
+                  ) : (
+                    <circle cx="0" cy="-3" r="2.5" fill="var(--n-natural)" />
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+        )}
+      </div>
+      <div className="mg-weeks-labels" aria-hidden="true">
+        {weeks.map((w, i) => (
+          <span key={w.key}>{i % 2 ? w.label : ""}</span>
         ))}
       </div>
       <figcaption>
@@ -1553,6 +1744,8 @@ function WeeksMeadow({
   );
 }
 
+const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
 export function MyGarden({
   user,
   entries,
@@ -1566,7 +1759,6 @@ export function MyGarden({
 }) {
   const { growth, update, busy, error: growthError } = useGrowth();
   const navigate = useNavigate();
-  const grow = useGrowOnce("numa-my-garden-grown", !!growth && !!entries);
   if (!growth || !entries)
     return (
       <>
@@ -1577,7 +1769,6 @@ export function MyGarden({
   const simple = growth.simple_mode;
   const saved = savedNewestFirst(entries);
   const tended = daysTended(entries);
-  const plants = plantsFrom(entries);
   const invitation = !simple ? growth.invitations[0] : undefined;
   const contextModules = growth.modules.filter((m) =>
     ["sleep", "activity", "music"].includes(m),
@@ -1586,152 +1777,246 @@ export function MyGarden({
     !simple &&
     (growth.modules.includes("patterns") || growth.modules.includes("voice"));
   return (
-    <div className="my-garden">
-      <header className="garden-page-heading">
-        <h1>My garden</h1>
-        <p>
-          {saved.length
-            ? `${saved.length} ${saved.length === 1 ? "plant" : "plants"} so far — ${rhythmPhrase(tended)} lately.`
-            : "A quiet place to watch your journal grow."}
-        </p>
-      </header>
-      <ErrorNotice message={error || growthError} />
-      <section className="garden-panel" aria-label="Your whole garden">
-        <Garden
-          plants={plants}
-          label={gardenLabel(saved.length)}
-          className="garden-wide"
-          animate={grow}
-        />
-      </section>
-
-      <section className="garden-section" aria-labelledby="over-time">
-        <h2 id="over-time">Over time</h2>
-        <WeeksMeadow entries={entries} animate={grow} />
-      </section>
-
-      <section className="garden-section" aria-labelledby="recent">
-        <h2 id="recent">Recent entries</h2>
-        {saved.length ? (
-          <ul className="recent-list">
-            {saved.slice(0, 3).map((e) => (
-              <li key={e.id}>
-                <Link to={"/patient/entries/" + e.id}>
-                  <span className="soft-date">{longDate(e.created_at)}</span>
-                  <span className="reflection">{reflectionFor(e)}</span>
-                  <span className="recent-title">{e.title}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="garden-empty">Your reflections will gather here.</p>
-        )}
-        <Link className="text-link" to="/patient/journal">
-          Read your whole journal <ArrowRight size={16} aria-hidden="true" />
-        </Link>
-      </section>
-
-      {invitation && (
-        <section
-          className="garden-section growth-invitation"
-          aria-labelledby="invitation"
-        >
-          <h2 id="invitation">{invitation.title}</h2>
-          <p>{invitation.text}</p>
-          <div className="invitation-choices">
-            <button
-              className="text-link"
-              disabled={busy}
-              onClick={async () => {
-                if (
-                  await update({
-                    modules: [
-                      ...new Set([...growth.modules, invitation.module]),
-                    ],
-                    dismiss_invitation: invitation.id,
-                  })
-                )
-                  navigate("/patient/insights");
-              }}
-            >
-              Explore this pattern <ArrowRight size={15} />
-            </button>
-            <button
-              className="quiet-button"
-              disabled={busy}
-              onClick={() => void update({ dismiss_invitation: invitation.id })}
-            >
-              Not now
-            </button>
-          </div>
-        </section>
-      )}
-
-      {!simple && growth.modules.includes("habits") && growth.habit_label && (
-        <section
-          className="garden-section habit-today"
-          aria-labelledby="intention"
-        >
-          <div>
-            <h2 id="intention">{growth.habit_label}</h2>
-            <p>Optional, every time. A missed day takes nothing away.</p>
-          </div>
-          <button
-            className={
-              "button outline " + (growth.habit_done_today ? "habit-done" : "")
-            }
-            disabled={busy}
-            aria-pressed={growth.habit_done_today}
-            onClick={() =>
-              void update({ habit_done: !growth.habit_done_today })
-            }
-          >
-            {growth.habit_done_today ? (
-              <>
-                <Check size={16} /> Noted for today
-              </>
-            ) : (
-              "I made room for this"
-            )}
-          </button>
-        </section>
-      )}
-
-      {!simple && contextModules.length > 0 && insights && (
-        <section className="garden-section" aria-labelledby="around">
-          <h2 id="around">Around your days</h2>
-          <p className="garden-note">
-            Only the context you chose · simulated data.
+    <div className="sc-page my-garden">
+      <div className="sc-wrap">
+        <header className="sc-head">
+          <h1>My garden</h1>
+          <p>
+            {saved.length
+              ? `${saved.length} ${saved.length === 1 ? "plant" : "plants"} so far. ${sentence(rhythmPhrase(tended))} lately.`
+              : "A quiet place to watch your journal grow."}
           </p>
-          <ContextCards context={insights.context} modules={contextModules} />
-        </section>
-      )}
-
-      <section className="garden-section tend-space" aria-labelledby="tend">
-        <h2 id="tend">Tend your space</h2>
-        <p>Add or put away small windows, whenever you feel curious.</p>
-        <div className="tend-links">
-          <Link className="text-link" to="/patient/space">
-            <Settings2 size={16} aria-hidden="true" /> Your space
-          </Link>
-          {canExplore && (
-            <Link className="text-link" to="/patient/insights">
-              <Sprout size={16} aria-hidden="true" /> What helps
-            </Link>
+        </header>
+        <ErrorNotice message={error || growthError} />
+        <section className="mg-whole" aria-label="Your whole garden">
+          {saved.length ? (
+            <GardenByMonth entries={entries} />
+          ) : (
+            <>
+              <SeedLine />
+              <p className="sc-quiet">
+                Your garden is ready for its first seed.
+              </p>
+            </>
           )}
-        </div>
-        <SimpleModeControl />
-        {simple && (
-          <p className="garden-note">
-            Simple view is on. Your pages and choices are kept for whenever you
-            want to return.
+        </section>
+
+        <section className="sc-section" aria-labelledby="over-time">
+          <h2 id="over-time">Over time</h2>
+          <OverTime entries={entries} />
+        </section>
+
+        <section className="sc-section" aria-labelledby="recent">
+          <h2 id="recent">Recent entries</h2>
+          {saved.length ? (
+            <ol className="jl-list mg-recent">
+              {saved.slice(0, 3).map((e) => (
+                <JournalRow key={e.id} e={e} />
+              ))}
+            </ol>
+          ) : (
+            <p className="sc-quiet">Your reflections will gather here.</p>
+          )}
+          <p className="sc-after">
+            <Link className="sc-link" to="/patient/journal">
+              Read your whole journal
+            </Link>
+          </p>
+        </section>
+
+        {invitation && (
+          <section
+            className="sc-section growth-invitation sc-ruled"
+            aria-labelledby="invitation"
+          >
+            <h2 id="invitation" className="sc-h21">
+              {invitation.title}
+            </h2>
+            <p>{invitation.text}</p>
+            <div className="sc-actions">
+              <button
+                type="button"
+                className="sc-link"
+                disabled={busy}
+                onClick={async () => {
+                  if (
+                    await update({
+                      modules: [
+                        ...new Set([...growth.modules, invitation.module]),
+                      ],
+                      dismiss_invitation: invitation.id,
+                    })
+                  )
+                    navigate("/patient/insights");
+                }}
+              >
+                Explore this pattern
+              </button>
+              <button
+                type="button"
+                className="sc-quiet-link"
+                disabled={busy}
+                onClick={() =>
+                  void update({ dismiss_invitation: invitation.id })
+                }
+              >
+                Not now
+              </button>
+            </div>
+          </section>
+        )}
+
+        {!simple && growth.modules.includes("habits") && growth.habit_label && (
+          <section className="sc-section mg-habit" aria-labelledby="intention">
+            <div>
+              <h2 id="intention" className="sc-h21">
+                {growth.habit_label}
+              </h2>
+              <p>Optional, every time. A missed day takes nothing away.</p>
+            </div>
+            <button
+              type="button"
+              className="sc-pebble"
+              disabled={busy}
+              aria-pressed={growth.habit_done_today}
+              onClick={() =>
+                void update({ habit_done: !growth.habit_done_today })
+              }
+            >
+              {growth.habit_done_today
+                ? "Noted for today"
+                : "I made room for this"}
+            </button>
+          </section>
+        )}
+
+        {!simple && contextModules.length > 0 && insights && (
+          <section className="sc-section" aria-labelledby="around">
+            <div className="sc-section-head">
+              <h2 id="around">Around your days</h2>
+              <p>Only the context you chose. Simulated data.</p>
+            </div>
+            <ContextCards context={insights.context} modules={contextModules} />
+          </section>
+        )}
+
+        <section className="sc-section" aria-labelledby="tend">
+          <h2 id="tend">Tend your space</h2>
+          <p className="sc-text">
+            Add or put away small windows, whenever you feel curious.
+          </p>
+          <p className="sc-actions">
+            <Link className="sc-link" to="/patient/space">
+              Your space
+            </Link>
+            {canExplore && (
+              <Link className="sc-link" to="/patient/insights">
+                What helps
+              </Link>
+            )}
+          </p>
+          <SimpleModeControl />
+          {simple && (
+            <p className="sc-small">
+              Simple view is on. Your pages and choices are kept for whenever
+              you want to return.
+            </p>
+          )}
+        </section>
+        {user.source === "simulated" && (
+          <p className="sc-small sc-section">
+            This is a fictional sample garden.
           </p>
         )}
-      </section>
-      {user.source === "simulated" && (
-        <p className="garden-note">This is a fictional sample garden.</p>
-      )}
+      </div>
     </div>
+  );
+}
+
+/* ───────────────────────── Login motif ───────────────────────── */
+
+/**
+ * A short stretch of the voice line that ends in a plant: a seed for a new
+ * journal, a flowering plant for the sample. Static and decorative.
+ */
+export function LoginMotif({ flower }: { flower: boolean }) {
+  const W = 520,
+    axis = 420,
+    radius = 64,
+    stemX = 440,
+    waveEnd = stemX - radius;
+  const wave = voiceWave({
+    to: waveEnd,
+    axis,
+    amp: 26,
+    wavelength: 16,
+    rand: mulberry32(flower ? 20261113 : 20261112),
+    envelope: (x) =>
+      gaussianEnvelope(
+        [
+          { c: 110, s: 34, w: 0.9 },
+          { c: 250, s: 26, w: 0.6 },
+        ],
+        x,
+      ),
+  });
+  const turn: Cubic = [
+    [waveEnd, axis],
+    [waveEnd + radius * 0.55, axis],
+    [stemX, axis - radius * 0.45],
+    [stemX, axis - radius],
+  ];
+  const stemTop = axis - 300;
+  const stem: Cubic = [
+    [stemX, axis - radius],
+    [stemX, axis - radius - (axis - radius - stemTop) * 0.4],
+    [stemX - 10, stemTop + (axis - radius - stemTop) * 0.35],
+    [stemX + 3, stemTop],
+  ];
+  const points = sampleCubic(stem);
+  const onStem = (y: number) =>
+    points.reduce((a, b) => (Math.abs(b[1] - y) < Math.abs(a[1] - y) ? b : a));
+  const d =
+    `M${r1(wave[0][0])} ${r1(wave[0][1])}` +
+    catmullRom(wave) +
+    cubicD(turn) +
+    (flower ? cubicD(stem) : "");
+  return (
+    <svg
+      className="login-motif"
+      viewBox={`0 0 ${W} ${axis + 40}`}
+      aria-hidden="true"
+    >
+      <path className="gh-line" d={d} />
+      {flower ? (
+        <>
+          {[0.26, 0.42, 0.57, 0.7, 0.82].map((f, i) => {
+            const [x, y] = onStem(axis - 300 * f);
+            return (
+              <LeafAt
+                key={f}
+                x={x}
+                y={y}
+                side={i % 2 ? -1 : 1}
+                length={56 * (1 - i * 0.07)}
+                tone={LEAF_TONES[i % 3]}
+              />
+            );
+          })}
+          <g transform={`translate(${stem[3][0]} ${stemTop})`}>
+            <Bloom r={26} petal="var(--n-apricot)" />
+          </g>
+        </>
+      ) : (
+        <ellipse
+          cx={stemX}
+          cy={axis - radius - 5}
+          rx="8"
+          ry="5"
+          fill="var(--n-natural)"
+          transform={`rotate(-30 ${stemX} ${axis - radius - 5})`}
+        />
+      )}
+    </svg>
   );
 }

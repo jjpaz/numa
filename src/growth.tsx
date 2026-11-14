@@ -215,8 +215,10 @@ export function SimpleModeControl() {
   const navigate = useNavigate();
   return (
     <button
+      type="button"
       className={
-        "simple-mode-control " + (growth?.simple_mode ? "is-simple" : "")
+        "sc-pebble simple-mode-control" +
+        (growth?.simple_mode ? " is-simple" : "")
       }
       disabled={!growth || busy}
       aria-pressed={growth?.simple_mode || false}
@@ -225,10 +227,7 @@ export function SimpleModeControl() {
           navigate("/patient");
       }}
     >
-      <Sun size={15} />
-      <span>
-        {growth?.simple_mode ? "Back to my space" : "Today, something simple"}
-      </span>
+      {growth?.simple_mode ? "Back to my space" : "Today, something simple"}
     </button>
   );
 }
@@ -237,48 +236,41 @@ const MODULE_CARDS: {
   id: GrowthModule;
   title: string;
   description: string;
-  Icon: typeof Moon;
 }[] = [
   {
     id: "sleep",
     title: "Rest & recovery",
     description:
       "Notice sleep duration alongside your days. No sleep score to chase.",
-    Icon: Moon,
   },
   {
     id: "activity",
     title: "Movement & outdoors",
     description:
       "A little context from steps and time outside, without daily targets.",
-    Icon: Footprints,
   },
   {
     id: "music",
     title: "Music & moments",
     description: "See listening time beside the stories you choose to share.",
-    Icon: Music,
   },
   {
     id: "habits",
     title: "One small intention",
     description:
       "Make room for a habit that matters to you. No streak to maintain.",
-    Icon: Leaf,
   },
   {
     id: "patterns",
     title: "What seems to help",
     description:
       "Explore your optional activity feedback and the observations behind it.",
-    Icon: Sprout,
   },
   {
     id: "voice",
     title: "Your voice over time",
     description:
       "An experimental view of your own vocal patterns. Always optional.",
-    Icon: Mic,
   },
 ];
 
@@ -300,138 +292,113 @@ export function YourSpace({ user }: { user: User }) {
     });
   return (
     <div className="your-space">
-      <div className="page-heading">
-        <div>
-          <span className="eyebrow">You choose the shape of this space</span>
-          <h1>
-            A little more,
-            <br />
-            <em>only when you want it.</em>
-          </h1>
-          <p>
-            Your journal is already enough. These are little windows you can
-            open or close.
-          </p>
-        </div>
-        <GrowingPlant stage={growth.art_stage} />
-      </div>
+      <header className="sc-head">
+        <h1>A little more, only when you want it.</h1>
+        <p>
+          Your journal is already enough. These are little windows you can open
+          or close.
+        </p>
+      </header>
       {growth.simple_mode && (
-        <div className="simple-space-note">
-          <Sun size={18} />
-          <p>
-            Simple view is on. Your choices below are kept for whenever you want
-            to return.
-          </p>
-        </div>
+        <p className="sc-ruled sc-section-tight">
+          Simple view is on. Your choices below are kept for whenever you want
+          to return.
+        </p>
       )}
       <ErrorNotice message={error} />
-      <div className="space-module-grid">
-        {MODULE_CARDS.map(({ id, title, description, Icon }) => {
+      <ul className="sp-list">
+        {MODULE_CARDS.map(({ id, title, description }) => {
           const enabled = growth.modules.includes(id);
           return (
-            <article
-              className={"space-module " + (enabled ? "module-chosen" : "")}
-              key={id}
-            >
-              <div className="module-symbol">
-                <Icon size={22} />
-                {enabled && (
-                  <span>
-                    <Check size={12} />
-                  </span>
+            <li className="space-module sp-row" key={id}>
+              <div className="sp-text">
+                <h2 id={"module-" + id}>{title}</h2>
+                <p>{description}</p>
+                {["sleep", "activity", "music"].includes(id) && (
+                  <p className="sp-source">
+                    Simulated context in this prototype
+                  </p>
                 )}
               </div>
-              <h2>{title}</h2>
-              <p>{description}</p>
-              {["sleep", "activity", "music"].includes(id) && (
-                <span className="source-label">
-                  Simulated context in this prototype
-                </span>
-              )}
               <button
-                className="module-toggle"
-                aria-pressed={enabled}
+                type="button"
+                role="switch"
+                className="sp-switch"
+                aria-checked={enabled}
+                aria-labelledby={"module-" + id}
                 disabled={busy}
                 onClick={() => void toggle(id)}
               >
-                {enabled ? (
-                  <>
-                    <Check size={14} />
-                    Added to your space<span>Remove</span>
-                  </>
-                ) : (
-                  <>
-                    <Plus size={14} />
-                    Add to my space
-                  </>
-                )}
+                <span className="sp-track" aria-hidden="true">
+                  <span className="sp-knob" />
+                </span>
+                <span className="sp-state" aria-hidden="true">
+                  {enabled ? "In your space" : "Not added"}
+                </span>
               </button>
-            </article>
+            </li>
           );
         })}
-      </div>
+      </ul>
       {growth.modules.includes("habits") && (
-        <section className="paper-card habit-settings">
-          <SectionTitle title="Something small, something yours" />
-          <label>
+        <section className="sc-section sp-habit" aria-labelledby="habit-title">
+          <h2 id="habit-title">Something small, something yours</h2>
+          <label className="sc-label" htmlFor="sp-habit">
             A habit you would like to make room for
-            <input
-              maxLength={80}
-              value={habit ?? growth.habit_label}
-              onChange={(e) => setHabit(e.target.value)}
-              placeholder="A cup of tea away from my screen"
-            />
           </label>
-          <div className="button-row">
+          <input
+            id="sp-habit"
+            className="sc-field"
+            maxLength={80}
+            value={habit ?? growth.habit_label}
+            onChange={(e) => setHabit(e.target.value)}
+            placeholder="A cup of tea away from my screen"
+          />
+          <div className="sc-actions">
             <button
+              type="button"
               disabled={busy || !(habit ?? growth.habit_label).trim()}
-              className="button primary"
+              className="sc-pebble"
               onClick={async () => {
                 if (await update({ habit_label: habit ?? growth.habit_label }))
                   setHabit(null);
               }}
             >
               Keep this intention
-              <Check size={15} />
             </button>
-            <span className="small-text muted">
+            <span className="sc-small">
               No reminders or missed-day penalties.
             </span>
           </div>
         </section>
       )}
-      <section className="experiment-intro">
-        <div>
-          <FlaskConical size={24} />
-          <span className="eyebrow">When curiosity comes along</span>
-          <h2>
-            A small question
-            <br />
-            worth exploring?
-          </h2>
-          <p>
-            Try something gentle and notice what follows. Your observations can
-            start a conversation, without proving cause and effect.
-          </p>
-        </div>
-        <div>
+      <section
+        className="sc-section sp-experiments"
+        aria-labelledby="exp-title"
+      >
+        <h2 id="exp-title">A small question worth exploring?</h2>
+        <p className="sc-text">
+          Try something gentle and notice what follows. Your observations can
+          start a conversation, without proving cause and effect.
+        </p>
+        <div className="sc-actions">
           {growth.modules.includes("experiments") ? (
             <button
-              className="text-link"
+              type="button"
+              className="sc-link"
               disabled={busy}
               onClick={() => void toggle("experiments")}
             >
               Put experiments away
-              <X size={14} />
             </button>
           ) : (
             <button
-              className="button outline"
+              type="button"
+              className="sc-pebble"
               disabled={busy}
               onClick={() => void toggle("experiments")}
             >
               Explore personal experiments
-              <ArrowUpRight size={15} />
             </button>
           )}
         </div>
@@ -439,17 +406,13 @@ export function YourSpace({ user }: { user: User }) {
       {growth.modules.includes("experiments") && (
         <ExperimentsPanel user={user} />
       )}
-      <Link className="future-context-link" to="/patient/connections">
-        <span>
-          <Settings2 size={17} />
-          Possible future connections
-        </span>
-        <span>
-          Apple Health, Last.fm & more
-          <ArrowUpRight size={15} />
-        </span>
+      <Link className="sp-future" to="/patient/connections">
+        <span className="sp-future-title">Possible future connections</span>
+        <span className="sp-future-text">Apple Health, Last.fm and more</span>
       </Link>
-      <PrivacyNote />
+      <p className="sc-small sc-section">
+        Your words stay in your journal. Your psychologist sees trends only.
+      </p>
     </div>
   );
 }
@@ -494,15 +457,13 @@ function ExperimentsPanel({ user }: { user: User }) {
   }
   if (user.source === "simulated")
     return (
-      <div className="paper-card">
-        <p>
-          This sample journal is read only. Start an experiment with the fresh
-          patient profile.
-        </p>
-      </div>
+      <p className="sc-text sc-section-tight">
+        This sample journal is read only. Start an experiment with the fresh
+        patient profile.
+      </p>
     );
   return (
-    <section className="experiments-panel">
+    <section className="sp-exp-panel">
       <ErrorNotice message={error} />
       {!items ? (
         <Loading />
@@ -510,7 +471,7 @@ function ExperimentsPanel({ user }: { user: User }) {
         <>
           {!items.some((i) => i.status === "active") && (
             <form
-              className="paper-card experiment-form"
+              className="sp-exp-form"
               onSubmit={async (e) => {
                 e.preventDefault();
                 setBusy(true);
@@ -529,33 +490,41 @@ function ExperimentsPanel({ user }: { user: User }) {
                 }
               }}
             >
-              <label>
+              <label className="sc-label" htmlFor="sp-question">
                 Something you would like to understand
-                <input
-                  value={question}
-                  minLength={3}
-                  maxLength={200}
-                  required
-                  onChange={(e) => setQuestion(e.target.value)}
-                  placeholder="What do I notice after a short walk?"
-                />
               </label>
-              <label>
+              <input
+                id="sp-question"
+                className="sc-field"
+                value={question}
+                minLength={3}
+                maxLength={200}
+                required
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder="What do I notice after a short walk?"
+              />
+              <label className="sc-label" htmlFor="sp-kind">
                 A small activity to try
-                <select value={kind} onChange={(e) => setKind(e.target.value)}>
-                  <option value="walk">A short walk</option>
-                  <option value="music">My own music</option>
-                  <option value="breathe">Quiet breathing</option>
-                  <option value="connect">Reaching out</option>
-                </select>
               </label>
-              <button
-                className="button primary"
-                disabled={busy || question.trim().length < 3}
+              <select
+                id="sp-kind"
+                className="sc-field"
+                value={kind}
+                onChange={(e) => setKind(e.target.value)}
               >
-                Keep this question
-                <ArrowRight size={15} />
-              </button>
+                <option value="walk">A short walk</option>
+                <option value="music">My own music</option>
+                <option value="breathe">Quiet breathing</option>
+                <option value="connect">Reaching out</option>
+              </select>
+              <div className="sc-actions">
+                <button
+                  className="sc-pebble"
+                  disabled={busy || question.trim().length < 3}
+                >
+                  Keep this question
+                </button>
+              </div>
             </form>
           )}
           {items.map((item) => (
@@ -588,31 +557,33 @@ function ExperimentCard({
   const [reflection, setReflection] = useState(item.reflection),
     [finishing, setFinishing] = useState(false);
   return (
-    <article className="paper-card experiment-card">
-      <div className="card-topline">
-        <Badge>
-          {item.status === "active"
-            ? "An open question"
-            : item.status === "paused"
-              ? "Paused, at your pace"
-              : "A question you explored"}
-        </Badge>
-        <FlaskConical size={20} />
-      </div>
+    <article className="sp-exp">
+      <p className="sp-exp-state">
+        {item.status === "active"
+          ? "An open question"
+          : item.status === "paused"
+            ? "Paused, at your pace"
+            : "A question you explored"}
+      </p>
       <h3>{item.question}</h3>
-      <p>
+      <p className="sc-text">
         {item.responses
           ? `${item.helpful} of ${item.responses} activity responses since you started were marked helpful. These include any paused periods and do not establish cause.`
           : "No activity feedback yet. Try an optional action from a journal page whenever you want."}
       </p>
       {item.status === "completed" ? (
-        <>{item.reflection && <blockquote>{item.reflection}</blockquote>}</>
+        <>
+          {item.reflection && (
+            <blockquote className="sp-exp-quote">{item.reflection}</blockquote>
+          )}
+        </>
       ) : (
         <>
-          <div className="button-row">
+          <div className="sc-actions">
             <button
+              type="button"
               disabled={busy}
-              className="text-link"
+              className="sc-link"
               onClick={() =>
                 void change(
                   item,
@@ -625,32 +596,38 @@ function ExperimentCard({
                 : "Pause for now"}
             </button>
             <button
-              className="quiet-button"
+              type="button"
+              className="sc-quiet-link"
               disabled={busy}
+              aria-expanded={finishing}
               onClick={() => setFinishing(!finishing)}
             >
               Finish exploring
             </button>
           </div>
           {finishing && (
-            <div className="experiment-reflection">
-              <label>
+            <div className="sp-exp-reflect">
+              <label className="sc-label" htmlFor={"sp-reflect-" + item.id}>
                 What did you notice? (optional)
-                <textarea
-                  rows={3}
-                  maxLength={1500}
-                  value={reflection}
-                  onChange={(e) => setReflection(e.target.value)}
-                />
               </label>
-              <button
-                className="button primary"
-                disabled={busy}
-                onClick={() => void change(item, "completed", reflection)}
-              >
-                Keep my reflection
-                <Check size={15} />
-              </button>
+              <textarea
+                id={"sp-reflect-" + item.id}
+                className="sc-field"
+                rows={3}
+                maxLength={1500}
+                value={reflection}
+                onChange={(e) => setReflection(e.target.value)}
+              />
+              <div className="sc-actions">
+                <button
+                  type="button"
+                  className="sc-pebble"
+                  disabled={busy}
+                  onClick={() => void change(item, "completed", reflection)}
+                >
+                  Keep my reflection
+                </button>
+              </div>
             </div>
           )}
         </>

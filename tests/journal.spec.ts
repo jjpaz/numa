@@ -147,13 +147,11 @@ test("fictional profile shows trends, connections are clearly future integration
   await page
     .locator(".space-module")
     .filter({ hasText: "Your voice over time" })
-    .getByRole("button")
+    .getByRole("switch")
     .click();
   await page.getByRole("link", { name: "My garden", exact: true }).click();
   await page.getByRole("link", { name: "What helps", exact: true }).click();
-  await expect(
-    page.locator(".badge").filter({ hasText: "Personal baseline" }),
-  ).toBeVisible();
+  await expect(page.getByText(/Personal baseline/)).toBeVisible();
   await page.screenshot({
     path: "test-results/numa-insights-desktop.png",
     fullPage: true,
@@ -162,7 +160,7 @@ test("fictional profile shows trends, connections are clearly future integration
   await page.getByRole("link", { name: "Your space", exact: true }).click();
   await page.getByRole("link", { name: /Possible future connections/ }).click();
   await expect(
-    page.getByText("Not connected · future integration"),
+    page.getByText("Not connected, a future integration"),
   ).toHaveCount(4);
 });
 test("mobile navigation and psychologist report fit the viewport", async ({
@@ -302,12 +300,12 @@ test("space grows only by choice; simple view keeps every module and journal pag
   await page
     .locator(".space-module")
     .filter({ hasText: "Rest & recovery" })
-    .getByRole("button")
+    .getByRole("switch")
     .click();
   await page
     .locator(".space-module")
     .filter({ hasText: "Music & moments" })
-    .getByRole("button")
+    .getByRole("switch")
     .click();
   await page.screenshot({
     path: "test-results/numa-your-space.png",
@@ -353,7 +351,7 @@ test("a personal intention and experiment can be chosen, paused and reflected on
   await page
     .locator(".space-module")
     .filter({ hasText: "One small intention" })
-    .getByRole("button")
+    .getByRole("switch")
     .click();
   await page
     .getByRole("textbox", { name: "A habit you would like to make room for" })

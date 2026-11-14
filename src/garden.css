@@ -138,10 +138,6 @@
 .garden-app .back-link {
   font-size: 15px;
 }
-.garden-app .back-link {
-  color: var(--forest-soft);
-  margin-bottom: 18px;
-}
 .garden-app .button {
   font-size: 15px;
   border-radius: 999px;
@@ -163,21 +159,11 @@
   color: #6b7563;
   opacity: 1;
 }
-.garden-app .page-heading h1,
-.garden-app .centred-heading h1 {
-  font-family: var(--display);
-  font-weight: 500;
-  letter-spacing: -0.5px;
-}
 .garden-app .badge,
 .garden-app .source-label,
 .garden-app .field-help,
 .garden-app .small-text {
   font-size: 13px;
-}
-.back-row {
-  display: flex;
-  gap: 20px;
 }
 
 /* Focus — visible on every interactive element, never colour alone. */
@@ -612,14 +598,6 @@
     padding: 22px 20px 24px;
   }
 }
-
-/* Shared with My garden and the entry page. */
-.soft-date {
-  display: block;
-  margin: 0;
-  font-size: 15px;
-  color: var(--forest-soft);
-}
 .reflection {
   display: block;
   margin: 12px 0 0;
@@ -646,14 +624,6 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.garden-app .page-heading .entry-reflection {
-  margin-top: 8px;
-  font-size: 20px;
-}
-.garden-app .page-heading .soft-date {
-  font-size: 15px;
-  margin-bottom: 4px;
-}
 /* Session & result: no essential text below 13px. */
 .garden-app .privacy-note,
 .garden-app .optional-signals summary span,
@@ -669,26 +639,6 @@
 .garden-app .recorder-controls span {
   font-size: 14px;
   line-height: 1.55;
-}
-.garden-app .optional-signals summary {
-  font-size: 16px;
-}
-
-/* ───────── Journal & My garden ───────── */
-.garden-page-heading {
-  padding: 30px 0 10px;
-}
-.garden-page-heading h1 {
-  margin: 0;
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: clamp(32px, 8vw, 42px);
-  letter-spacing: -0.6px;
-  color: var(--forest);
-}
-.garden-page-heading p {
-  margin: 6px 0 0;
-  font-size: 17px;
 }
 
 /* What helps, before the person adds it from their space: no box, no icon. */
@@ -710,121 +660,6 @@
   font-size: var(--n-text-18);
   line-height: var(--n-leading-text);
   color: var(--n-ink-soft);
-}
-.recent-list {
-  display: grid;
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.garden-empty {
-  margin: 24px 0;
-  font-size: 17px;
-}
-.garden-panel {
-  margin-top: 10px;
-  padding: 18px 10px 0;
-  border-radius: 38px 34px 30px 36px;
-  background: var(--ivory-soft);
-  border: 1px solid var(--line);
-  overflow: hidden;
-}
-.garden-section {
-  margin-top: 40px;
-}
-.garden-note {
-  font-size: 14px;
-}
-.garden-section > p,
-.garden-section.growth-invitation p,
-.garden-section.habit-today p {
-  font-size: 16px;
-  line-height: 1.55;
-}
-.meadow {
-  margin: 12px 0 0;
-}
-.meadow svg {
-  display: block;
-  width: 100%;
-  max-width: 520px;
-  height: auto;
-}
-.meadow-labels {
-  display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  max-width: 520px;
-  font-size: 13px;
-  white-space: nowrap;
-  text-align: center;
-  color: var(--forest-soft);
-}
-.meadow figcaption {
-  margin-top: 10px;
-  font-size: 15px;
-  color: var(--forest-soft);
-}
-.recent-list a {
-  display: grid;
-  gap: 2px;
-  padding: 16px 18px;
-  border-radius: 24px 20px 26px 22px;
-  background: var(--ivory-soft);
-  border: 1px solid var(--line);
-  color: var(--forest);
-}
-.recent-list .reflection {
-  margin: 4px 0 0;
-  font-size: 18px;
-}
-.recent-title {
-  font-size: 15px;
-  color: var(--forest-soft);
-}
-.recent-list + .text-link {
-  margin-top: 14px;
-}
-.garden-section.growth-invitation {
-  padding: 24px;
-  border-radius: 30px;
-  background: #eef0dc;
-  border: 0;
-  display: block;
-}
-.invitation-choices {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 22px;
-  align-items: center;
-}
-.garden-section.habit-today {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 22px 24px;
-  border-radius: 30px;
-  background: var(--ivory-soft);
-  border: 1px solid var(--line);
-}
-.tend-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 24px;
-  margin: 8px 0 16px;
-}
-.tend-space .simple-mode-control {
-  font-size: 15px;
-  border-radius: 999px;
-  padding: 10px 16px;
-  background: var(--ivory-soft);
-  border-color: var(--line);
-  color: var(--forest);
-}
-.tend-space .simple-mode-control span {
-  display: inline;
 }
 
 .visually-hidden {

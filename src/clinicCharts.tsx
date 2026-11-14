@@ -10,8 +10,14 @@ import type { Trend } from "./types";
  *  (backend/domain.py). The band 0–3 is drawn as "Personal range". */
 const RANGE_EDGE = 3;
 
-const rangeWord = (outside: boolean) =>
-  outside ? "outside personal range" : "within personal range";
+const rangeWord = (outside: boolean, patient = false) =>
+  patient
+    ? outside
+      ? "outside your usual range"
+      : "within your usual range"
+    : outside
+      ? "outside personal range"
+      : "within personal range";
 
 /** 140×32: the recent days of one person, compared only with themselves. */
 export function Sparkline({ trend }: { trend: Trend }) {
@@ -72,7 +78,15 @@ export function Sparkline({ trend }: { trend: Trend }) {
 }
 
 /** The protagonist of a person's page: each observation day against their own range. */
-export function ObservationChart({ trend }: { trend: Trend }) {
+export function ObservationChart({
+  trend,
+  audience = "clinic",
+}: {
+  trend: Trend;
+  /** "patient": the same chart in the patient's own words ("your usual range"). */
+  audience?: "clinic" | "patient";
+}) {
+  const patient = audience === "patient";
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const ready = trend.ready && trend.points.length > 0;
@@ -90,9 +104,13 @@ export function ObservationChart({ trend }: { trend: Trend }) {
   if (!ready)
     return (
       <p className="cl-chart-empty">
-        {trend.days > 0
-          ? `Learning this person’s range: ${trend.days} of ${trend.required_days} observation days so far. Nothing is compared until the baseline is complete.`
-          : "No voice observations yet. Written entries carry no vocal signal, so there is nothing to compare."}
+        {patient
+          ? trend.days > 0
+            ? `Your usual range is still forming: ${trend.days} of ${trend.required_days} days so far. Nothing is compared until then.`
+            : "No voice notes yet. Written entries carry no vocal signal, so there is nothing to compare."
+          : trend.days > 0
+            ? `Learning this person’s range: ${trend.days} of ${trend.required_days} observation days so far. Nothing is compared until the baseline is complete.`
+            : "No voice observations yet. Written entries carry no vocal signal, so there is nothing to compare."}
       </p>
     );
 
@@ -127,17 +145,23 @@ export function ObservationChart({ trend }: { trend: Trend }) {
   const last = points[n - 1];
   const outsideCount = points.filter((p) => p.outside).length;
   return (
-    <div className="cl-chart" ref={box}>
+    <div className={"cl-chart" + (patient ? " is-patient" : "")} ref={box}>
       {width > 0 && (
         <svg
           width={width}
           height={H}
           viewBox={`0 0 ${r1(width)} ${H}`}
           role="img"
-          aria-label={`Voice observations on ${n} days, compared only with this person’s own range. ${outsideCount} ${outsideCount === 1 ? "day" : "days"} outside it. Last observation, ${dateLabel(last.date)}: ${rangeWord(last.outside)}.`}
+          aria-label={
+            patient
+              ? `Your voice on ${n} days, compared only with your own usual range. ${outsideCount} ${outsideCount === 1 ? "day" : "days"} outside it. Last voice note, ${dateLabel(last.date)}: ${rangeWord(last.outside, true)}.`
+              : `Voice observations on ${n} days, compared only with this person’s own range. ${outsideCount} ${outsideCount === 1 ? "day" : "days"} outside it. Last observation, ${dateLabel(last.date)}: ${rangeWord(last.outside)}.`
+          }
         >
           <text className="cl-chart-label" x={left} y={16}>
-            Difference from personal range
+            {patient
+              ? "Difference from your usual range"
+              : "Difference from personal range"}
           </text>
           <rect
             className="cl-chart-band"
@@ -152,7 +176,7 @@ export function ObservationChart({ trend }: { trend: Trend }) {
             y={r1(y(RANGE_EDGE) + 20)}
             textAnchor="end"
           >
-            Personal range
+            {patient ? "Your usual range" : "Personal range"}
           </text>
           <line
             className="cl-chart-axis"
@@ -178,7 +202,7 @@ export function ObservationChart({ trend }: { trend: Trend }) {
                 cy={r1(pts[i][1])}
                 r={3}
               >
-                <title>{`${dateLabel(p.date)}: ${rangeWord(p.outside)}`}</title>
+                <title>{`${dateLabel(p.date)}: ${rangeWord(p.outside, patient)}`}</title>
               </circle>
             </g>
           ))}
@@ -204,7 +228,7 @@ export function ObservationChart({ trend }: { trend: Trend }) {
                 x={r1(x(base[0]))}
                 y={r1(bracketY + 20)}
               >
-                Baseline days
+                {patient ? "Your first days" : "Baseline days"}
               </text>
             </>
           )}
@@ -216,7 +240,11 @@ export function ObservationChart({ trend }: { trend: Trend }) {
           <thead>
             <tr>
               <th scope="col">Date</th>
-              <th scope="col">Difference from personal range</th>
+              <th scope="col">
+                {patient
+                  ? "Difference from your usual range"
+                  : "Difference from personal range"}
+              </th>
               <th scope="col">Range</th>
               <th scope="col">Baseline day</th>
             </tr>

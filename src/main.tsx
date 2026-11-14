@@ -12,6 +12,7 @@ import "./garden.css";
 import "./entry.css";
 import "./new-entry.css";
 import "./journal.css";
+import "./secondary.css";
 import "./clinic.css";
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

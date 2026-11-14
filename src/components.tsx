@@ -86,48 +86,41 @@ export function ContextCards({
   context: Context;
   modules?: string[];
 }) {
+  // A definition list in one row: the value first, its label under it.
+  // (.context-card stays on each item: the tests count them.)
   return (
-    <div className="context-grid">
+    <dl className="ctx-list">
       {[
+        { module: "sleep", value: `${context.sleep_hours} h`, label: "Sleep" },
         {
-          module: "sleep",
-          Icon: Moon,
-          value: `${context.sleep_hours} h`,
-          label: "Sleep",
-          detail: "Room for rest",
+          module: "activity",
+          value: context.steps.toLocaleString("en-GB"),
+          label: "Steps",
         },
         {
           module: "activity",
-          Icon: Footprints,
-          value: context.steps.toLocaleString(),
-          label: "Steps",
-          detail: `${context.outdoor_minutes} min outdoors`,
+          value: `${context.outdoor_minutes} min`,
+          label: "Outdoors",
         },
         {
           module: "weather",
-          Icon: CloudSun,
-          value: `${context.temperature_c}°`,
-          label: context.weather,
-          detail: "A little daily context",
+          value: `${context.weather} ${context.temperature_c}°`,
+          label: "Weather",
         },
         {
           module: "music",
-          Icon: Music,
           value: `${context.music_minutes} min`,
           label: "Music",
-          detail: "Your listening rhythm",
         },
       ]
-        .filter((card) => !modules || modules.includes(card.module))
-        .map(({ Icon, value, label, detail }) => (
-          <div className="context-card" key={label}>
-            <Icon size={18} />
-            <span className="context-value">{value}</span>
-            <strong>{label}</strong>
-            <small>{detail}</small>
+        .filter((item) => !modules || modules.includes(item.module))
+        .map(({ value, label }) => (
+          <div className="context-card ctx-item" key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
           </div>
         ))}
-    </div>
+    </dl>
   );
 }
 

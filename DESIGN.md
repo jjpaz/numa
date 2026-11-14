@@ -270,6 +270,52 @@ Styled in [`src/journal.css`](src/journal.css).
   under the date, the title (24px), reflection (16px), words (15px, two lines)
   and meta.
 
+## Secondary screens
+
+My garden, Your space, What helps, Connections, Login and the 404 page are not
+redesigned creatively: they speak the vocabulary of the screens above. Styled in
+[`src/secondary.css`](src/secondary.css) (after `journal.css`, before
+`clinic.css`).
+
+- **Common frame.** Left-aligned on the 1280px column, one Young Serif `h1`
+  (`clamp(40px,5vw,64px)`) in a single colour, an 18px ink-soft subtitle, and a
+  16px underlined back link with no arrow. Sections are Young Serif 28px
+  headings, often over a 1px rule with a 14px note on the right ("Simulated
+  data"). No eyebrows, badges, pills, icons in buttons, "·" between metadata or
+  card grids. Secondary actions are outlined pebbles (`aria-pressed` fills them
+  with moss); text actions are underlined links. Fields have a 12px radius, a 1px
+  border and a `--n-focus` ring; checkboxes are the system's 22px box.
+- **My garden: the wide garden, by month.** The home's voice line and plants,
+  one plant per saved entry placed on its day, across the full width (about
+  300px tall). Each month is its own line (newest first, its name in 14px), so a
+  long history is never squeezed. Today's flower is apricot, earlier flowers past
+  bloom. It is static: nothing depends on an animation to be seen. With no
+  entries it is a quiet line ending in a seed. "Over time" draws eight weeks as
+  stems with the system's stroke and leaves (one per entry) over a 1px ground
+  line, never a filled band. Recent entries reuse the Journal's rows. An
+  invitation is text beside a 3px moss rule.
+- **Your space: switches that say their state.** Six rows with 1px lines: the
+  module in Young Serif 21px, its description in 16px (max 60ch) and, where it
+  applies, "Simulated context in this prototype". On the right a real switch
+  (`role="switch"`, `aria-checked`, named by the module's heading) with its state
+  in words, "In your space" / "Not added". The state is never colour alone.
+- **What helps** lists activity feedback as rows with a thin bar (as in the
+  clinic) and keeps each pattern's own "personal association, not proof of
+  cause". Voice over time reuses the clinic's observation chart with
+  `audience="patient"`: "your usual range", "your first days", out-of-range days
+  marked by a ring in moss-deep. `--n-attention` stays clinic-only.
+- **Connections** shows today's simulated context as the same definition list
+  (value in Young Serif 28, label 14px) and future integrations as rows: "Not
+  connected, a future integration".
+- **Login in two zones.** Left (~45%): wordmark, back link, `h1`, sentence and
+  form. Right: one calm, static motif: a stretch of voice line ending in a seed
+  (new journal) or a flowering plant (sample); for the psychologist a plain moss
+  field with "Trends only. Journal entries stay private." in Young Serif 28
+  ivory. One column at ≤900px. A session for another account is a sentence
+  beside a 3px moss rule; errors are an icon and words in `--n-danger`.
+- **404** is an `h1`, one sentence and an underlined link home (or back to the
+  person's own portal).
+
 ## Clinic (`/clinic`, `/clinic/patients/:id`, `…/report`)
 
 The psychologist's portal is a professional tool. It shares the tokens, type
