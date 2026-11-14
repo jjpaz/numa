@@ -70,7 +70,7 @@ def create_app(repo=None, demo=None, secret=None):
         raise RuntimeError('Set a unique NUMA_SESSION_SECRET of at least 32 characters.')
     secret = secret or secrets.token_hex(32)
     if not demo:
-        for name in ['NUMA_PATIENT_PASSWORD','NUMA_SAMPLE_PASSWORD','NUMA_CLINICIAN_PASSWORD','GEMINI_API_KEY']:
+        for name in ['NUMA_PATIENT_PASSWORD','NUMA_SAMPLE_PASSWORD','NUMA_CLINICIAN_PASSWORD','GEMINI_API_KEY','GEMINI_MODEL']:
             if not os.getenv(name) or os.environ[name].startswith('REPLACE_'): raise RuntimeError(f'{name} is required.')
         if any(os.getenv(name) in ('journal-demo','sample-demo','care-demo') for name in ['NUMA_PATIENT_PASSWORD','NUMA_SAMPLE_PASSWORD','NUMA_CLINICIAN_PASSWORD']):
             raise RuntimeError('Set unique account passwords before deploying connected mode.')
@@ -150,7 +150,10 @@ def create_app(repo=None, demo=None, secret=None):
         transcript=None
         def words():
             content = text if text is not None else transcribe(data,mime)
-            return content,semantics(content,demo)
+            try:return content,semantics(content,demo)
+            except Exception:
+                errors.append('Journal summary unavailable. Your words are retained and the summary is editable.')
+                return content,None
         with ThreadPoolExecutor(max_workers=2) as pool:
             vf = pool.submit(analyse_voice,data,demo) if data else None
             sf = pool.submit(words) if not follow else None
@@ -173,6 +176,8 @@ def create_app(repo=None, demo=None, secret=None):
                 if voice is not None: entry['voice']=voice
                 if transcript is not None: entry['transcript']=transcript
                 if semantic: entry.update(semantic)
+                elif transcript is not None:
+                    entry.update(summary=entry.get('summary') or transcript[:1500],tags=[],explicit=[],semantic_source='unavailable')
             repo.put('entries',entry_id,entry,entry['patient_id'])
 
     def new_entry(user,key):

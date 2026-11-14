@@ -1,5 +1,37 @@
 # Implementation and verification record
 
+## Minimal connected backend: phase 3, Gemini contracts — 14 November 2026
+
+- Previous phase committed as `25aa632`. Added model listing with pagination via
+  Gemini's official models endpoint. API key is sent only in a header. A selected
+  `GEMINI_MODEL` must be explicitly configured; removed the guessed model default.
+  Requests use generateContent JSON MIME/schema, bounded output and connect/read
+  timeouts. Provider failures/invalid JSON produce sanitized exceptions.
+- Audio normalizes to temporary mono16k WAV in memory, then requests transcript
+  JSON. Summary/feeling extraction receives text only. Successful transcription is
+  now retained even if the subsequent summary call fails; manual transcript/summary
+  edits still save and only text is re-evaluated.
+- Added a conservative literal first-person English evidence guard. Ordinary events,
+  negations, common quoted/conditional statements and other people's states are
+  rejected. Unsupported wording/languages can omit genuine feelings; this is a
+  conservative MVP filter, not validated semantic coverage or a clinical classifier.
+- Added `backend.verify_gemini`: list accessible generation models, then verify a
+  user-selected model using a real local Safari file plus JSON/text summary. Prints
+  only statuses/model IDs, never words/key/path; metadata-only report under `.local`.
+  A model's presence in the listing alone does not prove audio+JSON capability.
+- Full backend test command for this phase was rejected before execution outside
+  the sandbox. Did not retry it. Safe pure HTTP-mock subset executed inside sandbox:
+  `.\.venv\Scripts\python.exe -m pytest backend/tests/test_gemini_connected.py -q
+  -k 'not provider_failure_still_allows_save_and_summary_edits and not transcript_survives_summary_failure_and_edit_only_reanalyses_text'
+  --basetemp=.local/pytest-min-connected-gemini-pure`: **11 passed, 4 deselected**,
+  existing Starlette warning. Covers listing, audio JSON/text separation, schema
+  failures and literal/no-feeling examples. Four API failure/edit cases are written
+  with HTTP mocks but **no verificado** because their execution was not authorized.
+- Real Gemini model listing/selection/audio/summary: **BLOQUEADA** (no API key).
+  Model actually used: **none**. Real Safari transcription: **no verificado**;
+  no Safari recording file has been supplied. Earlier iPhone UI confirmation is
+  not evidence of transcription. No live Gemini requests or secret updates made.
+
 ## Minimal connected backend: phase 2, PostgreSQL contracts — 14 November 2026
 
 - Previous phase committed as `cae8455`. PostgreSQL URLs now require explicit TLS;

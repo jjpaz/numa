@@ -147,7 +147,7 @@ def test_quality_checks_and_real_acoustic_measurement():
 def test_gemini_receives_normalized_wav_not_browser_codec_mime(monkeypatch):
     import backend.analysis as analysis
     captured=[]
-    def fake_gemini(prompt,audio=None):
+    def fake_gemini(prompt,audio=None,**kwargs):
         captured.append(audio)
         return {'transcript':'An ordinary day.'}
     monkeypatch.setattr(analysis,'gemini',fake_gemini)
