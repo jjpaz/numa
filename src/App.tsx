@@ -38,7 +38,6 @@ import {
   ArrowUpRight,
   BookOpen,
   Check,
-  ChevronRight,
   CircleAlert,
   CloudSun,
   Flower2,
@@ -48,7 +47,6 @@ import {
   LogOut,
   Mic,
   Plus,
-  Printer,
   Search,
   Settings2,
   ShieldCheck,
@@ -65,7 +63,6 @@ import type {
 } from "./types";
 import {
   Badge,
-  ContextCards,
   Empty,
   ErrorNotice,
   Loading,
@@ -77,6 +74,7 @@ import {
   Wordmark,
   actionIcons,
 } from "./components";
+import { ObservationChart, Sparkline } from "./clinicCharts";
 
 const Auth = createContext<{
   user: User | null;
@@ -380,7 +378,7 @@ function Login() {
     </div>
   );
 }
-/** The same facts as ModeBanner, written as sentences for the patient's space. */
+/** Which preview this is, written as sentences for the patient's space. */
 function PatientFootnote() {
   const { health, user } = useContext(Auth);
   const mode =
@@ -393,18 +391,6 @@ function PatientFootnote() {
       {user?.source === "simulated" ? ", on a fictional profile." : "."}{" "}
       Research prototype, no clinical diagnosis.
     </p>
-  );
-}
-function ModeBanner() {
-  const { health, user } = useContext(Auth);
-  return (
-    <div className="mode-note">
-      <span className="status-dot" />
-      {health?.mode === "local_preview"
-        ? "Local preview · ephemeral data · acoustic measurements only"
-        : "Connected prototype · experimental voice analysis"}
-      {user?.source === "simulated" && " · Fictional profile"}
-    </div>
   );
 }
 function PatientLayout() {
@@ -1582,249 +1568,297 @@ function Connections() {
   );
 }
 
-function ClinicLayout() {
-  const { user, logout } = useContext(Auth);
+/* ───────────── Clinic: the psychologist's portal ─────────────
+   See DESIGN.md → "Clinic". A professional tool: same tokens and type as the
+   patient's space, but no garden, plants or decorative voice line. It only
+   ever shows the restricted projection: never journal text, audio or summaries. */
+
+const CLINIC_STATUS: Record<string, { mark: string; text: string }> = {
+  review: { mark: "●", text: "Review suggested" },
+  learning: { mark: "○", text: "Learning baseline" },
+  steady: { mark: "—", text: "Within typical range" },
+};
+/** State as words with a symbol, never a coloured pill. */
+function ClinicStatus({ status }: { status: string }) {
+  const s = CLINIC_STATUS[status] ?? CLINIC_STATUS.steady;
   return (
-    <div className="clinic-app">
-      <aside className="clinic-sidebar no-print">
-        <Wordmark />
-        <div className="practice-label">PRACTICE SPACE</div>
-        <NavLink to="/clinic" end>
-          <Users size={18} />
-          Overview
-        </NavLink>
-        <div className="sidebar-note">
-          <ShieldCheck size={24} />
-          <strong>A view with boundaries.</strong>
-          <p>
-            Patterns and shared activity feedback. Personal journal entries stay
-            private.
-          </p>
+    <span className={"cl-status is-" + status}>
+      <span aria-hidden="true">{s.mark}</span> {s.text}
+    </span>
+  );
+}
+const plural = (n: number, one: string, many: string) =>
+  `${n} ${n === 1 ? one : many}`;
+
+function ClinicLayout() {
+  const { user, health, logout } = useContext(Auth);
+  const report = useLocation().pathname.endsWith("/report");
+  const foot = (
+    <footer className="cl-foot">
+      <p>
+        {health?.mode === "local_preview"
+          ? "Local preview: temporary data, acoustic measurements only."
+          : "Connected prototype with experimental voice analysis."}{" "}
+        Numa, professional space. Research prototype, no clinical diagnosis.
+      </p>
+    </footer>
+  );
+  if (report)
+    return (
+      <div className="cl-app is-report">
+        <div className="cl-content">
+          <main className="cl-main">
+            <Outlet />
+          </main>
+          {foot}
         </div>
-        <div className="clinician-profile">
-          <span className="avatar">ER</span>
-          <div>
-            <strong>{user?.name}</strong>
-            <small>Psychologist</small>
+      </div>
+    );
+  const initials = (user?.name ?? "")
+    .split(/\s+/)
+    .filter((w) => /^[A-Za-z]/.test(w) && !w.endsWith("."))
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  return (
+    <div className="cl-app">
+      <aside className="cl-side no-print">
+        <Wordmark />
+        <nav className="cl-nav" aria-label="Practice">
+          <NavLink to="/clinic">Overview</NavLink>
+        </nav>
+        <div className="cl-side-foot">
+          <p className="cl-side-note">
+            <strong>A view with boundaries.</strong> Patterns and shared
+            activity feedback. Personal journal entries stay private.
+          </p>
+          <div className="cl-user">
+            {initials && (
+              <span className="cl-user-initials" aria-hidden="true">
+                {initials}
+              </span>
+            )}
+            <span className="cl-user-text">
+              <span className="cl-user-name">{user?.name}</span>
+              <span className="cl-user-role">Psychologist</span>
+            </span>
+            <button
+              type="button"
+              className="cl-signout"
+              onClick={logout}
+              aria-label="Sign out"
+            >
+              <LogOut size={18} aria-hidden="true" />
+            </button>
           </div>
-          <button
-            className="icon-button"
-            onClick={logout}
-            aria-label="Sign out"
-          >
-            <LogOut size={17} />
-          </button>
         </div>
       </aside>
-      <div className="clinic-content">
-        <header className="clinic-topbar no-print">
-          <span>
-            YOUR PRACTICE / <strong>Patient wellbeing</strong>
-          </span>
-          <span>
-            {new Date().toLocaleDateString("en-GB", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          </span>
+      <div className="cl-content">
+        <header className="cl-top no-print">
+          <p>
+            Your practice / <span>Patient wellbeing</span>
+          </p>
+          <p className="cl-top-right">
+            <time>
+              {new Date().toLocaleDateString("en-GB", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </time>
+            <span className="cl-live">
+              <span className="cl-live-dot" aria-hidden="true" />
+              Live, updates every 5 seconds
+            </span>
+          </p>
         </header>
-        <main>
-          <ModeBanner />
+        <main className="cl-main">
           <Outlet />
         </main>
-        <footer className="app-footer">
-          <span>Numa · Professional space</span>
-          <span>Research prototype · No clinical diagnosis</span>
-        </footer>
+        {foot}
       </div>
     </div>
   );
 }
+
 function ClinicDashboard() {
   const { data: patients, error } = useResource<Clinical[]>(
     "/clinic/patients",
     5000,
   );
+  const navigate = useNavigate();
   const [search, setSearch] = useState(""),
     [filter, setFilter] = useState("all");
   const review = patients?.filter((p) => p.status === "review") || [];
+  const shown = (patients ?? []).filter(
+    (p) =>
+      p.name.toLowerCase().includes(search.toLowerCase()) &&
+      (filter === "all" || p.status === filter),
+  );
+  const pages = (patients ?? []).reduce((a, p) => a + p.entry_count, 0);
   return (
-    <>
-      <div className="page-heading">
-        <div>
-          <span className="eyebrow">
-            A little perspective between appointments
-          </span>
-          <h1>Your patients, thoughtfully.</h1>
-          <p>See the patterns. Keep the person at the centre.</p>
-        </div>
-        <Badge tone="green">
-          <span className="status-dot" />
-          Updates every 5 seconds
-        </Badge>
-      </div>
+    <div className="cl-dash">
+      <header className="cl-head">
+        <h1>Your patients</h1>
+        <p>See the patterns. Keep the person at the centre.</p>
+      </header>
       <ErrorNotice message={error} />
       {!patients ? (
         <Loading />
       ) : (
         <>
-          <div className="clinic-stats">
-            <article>
-              <span>People in your care</span>
-              <strong>
-                {patients.length}
-                <Users size={24} />
-              </strong>
-              <small>Assigned demonstration profiles</small>
-            </article>
-            <article>
-              <span>Patterns to review</span>
-              <strong>
-                {review.length}
-                <Leaf size={24} />
-              </strong>
-              <small>Persistent changes from personal baseline</small>
-            </article>
-            <article>
-              <span>Journal pages</span>
-              <strong>
-                {patients.reduce((a, p) => a + p.entry_count, 0)}
-                <BookOpen size={24} />
-              </strong>
-              <small>Content remains private to each patient</small>
-            </article>
-          </div>
+          <p className="cl-summary">
+            <b>{patients.length}</b>{" "}
+            {patients.length === 1 ? "person" : "people"} in your care.{" "}
+            <b>{review.length}</b>{" "}
+            {review.length === 1 ? "pattern" : "patterns"} to review.{" "}
+            <b>{pages}</b> private journal {pages === 1 ? "page" : "pages"},
+            never shown here.
+          </p>
           {review.map((p) => (
             <Link
               key={p.id}
               to={"/clinic/patients/" + p.id}
-              className="review-banner"
+              className="cl-review"
             >
-              <span className="review-icon">
-                <Leaf size={22} />
+              <span className="cl-review-title">
+                <span className="cl-review-name">{p.name}</span>{" "}
+                <span className="cl-review-what">
+                  A pattern worth a closer look
+                </span>
               </span>
-              <div>
-                <strong>A pattern worth a closer look · {p.name}</strong>
-                <p>
-                  Three consecutive observations outside this person’s typical
-                  vocal range. A conversation may add context.
-                </p>
-              </div>
-              <ArrowRight size={20} />
+              <span className="cl-review-text">
+                Three consecutive observations outside this person’s typical
+                vocal range. A conversation may add context.
+              </span>
+              <span className="cl-review-open">Open {p.name}</span>
             </Link>
           ))}
-          <SectionTitle
-            eyebrow="Your overview"
-            title="People, beyond the patterns"
-          >
-            <span className="small-text muted">
-              Trends only · private journals excluded
-            </span>
-          </SectionTitle>
-          <div className="list-controls">
-            <div className="filter-tabs">
+          <div className="cl-controls">
+            <div className="cl-filters" role="group" aria-label="Show">
               {[
                 { k: "all", t: "All patients" },
                 { k: "review", t: "To review" },
                 { k: "learning", t: "Learning baseline" },
               ].map((f) => (
                 <button
+                  type="button"
                   key={f.k}
+                  aria-pressed={filter === f.k}
                   onClick={() => setFilter(f.k)}
-                  className={filter === f.k ? "active" : ""}
                 >
                   {f.t}
                 </button>
               ))}
             </div>
-            <label className="search-field">
-              <Search size={16} />
+            <label className="cl-search">
+              <Search size={18} aria-hidden="true" />
               <input
+                type="search"
                 aria-label="Search patients"
-                placeholder="Find a person…"
+                placeholder="Find a person"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </label>
           </div>
-          <div className="patient-table">
-            <div className="table-heading">
-              <span>Person</span>
-              <span>Personal pattern</span>
-              <span>Last journal entry</span>
-              <span>Activity feedback</span>
-              <span />
-            </div>
-            {patients
-              .filter(
-                (p) =>
-                  p.name.toLowerCase().includes(search.toLowerCase()) &&
-                  (filter === "all" || p.status === filter),
-              )
-              .map((p) => (
-                <Link
-                  to={"/clinic/patients/" + p.id}
-                  key={p.id}
-                  className="patient-row"
-                >
-                  <div className="table-person">
-                    <span className={"avatar " + p.status}>{p.initials}</span>
-                    <div>
-                      <strong>{p.name}</strong>
-                      <small>
-                        {p.source === "simulated"
-                          ? "Fictional history"
-                          : "Fresh demonstration profile"}
-                      </small>
-                    </div>
-                  </div>
-                  <div>
-                    <Badge
-                      tone={
-                        p.status === "review"
-                          ? "amber"
-                          : p.status === "steady"
-                            ? "green"
-                            : "quiet"
-                      }
-                    >
-                      {p.status === "review"
-                        ? "Review pattern"
-                        : p.status === "steady"
-                          ? "Within typical range"
-                          : "Learning baseline"}
-                    </Badge>
-                  </div>
-                  <div>
-                    <strong>
-                      {p.last_entry_at
-                        ? dateLabel(p.last_entry_at)
-                        : "No entries yet"}
-                    </strong>
-                    <small>{p.entry_count} saved pages</small>
-                  </div>
-                  <div>
-                    <strong>{p.actions_completed} activities</strong>
-                    <small>
-                      {p.patterns.reduce((a, x) => a + x.observations, 0)}{" "}
-                      feedback responses
-                    </small>
-                  </div>
-                  <ChevronRight size={18} />
-                </Link>
-              ))}
-          </div>
-          <div className="clinical-privacy">
-            <LockKeyhole size={19} />
-            <p>
-              Journal text, audio and summaries are excluded from this portal
-              and its API responses.
+          <table className="cl-table">
+            <caption className="visually-hidden">
+              People in your care. Trends only; private journals are excluded.
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Person</th>
+                <th scope="col">Pattern</th>
+                <th scope="col">Voice, recent days</th>
+                <th scope="col">Last entry</th>
+                <th scope="col">Activity feedback</th>
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map((p) => {
+                const responses = p.patterns.reduce(
+                  (a, x) => a + x.observations,
+                  0,
+                );
+                return (
+                  <tr
+                    key={p.id}
+                    className="patient-row"
+                    onClick={(e) => {
+                      if (!(e.target as HTMLElement).closest("a"))
+                        navigate("/clinic/patients/" + p.id);
+                    }}
+                  >
+                    <th scope="row" className="cl-person">
+                      <span className="cl-initials" aria-hidden="true">
+                        {p.initials}
+                      </span>
+                      <span className="cl-person-text">
+                        <Link to={"/clinic/patients/" + p.id}>
+                          {p.name}
+                          <span className="visually-hidden">
+                            ,{" "}
+                            {(
+                              CLINIC_STATUS[p.status] ?? CLINIC_STATUS.steady
+                            ).text.toLowerCase()}
+                            , {p.actions_completed} activities
+                          </span>
+                        </Link>
+                        <span className="cl-sub">
+                          {p.source === "simulated"
+                            ? "Fictional history"
+                            : "Fresh demonstration profile"}
+                        </span>
+                      </span>
+                    </th>
+                    <td className="cl-cell-status">
+                      <ClinicStatus status={p.status} />
+                    </td>
+                    <td className="cl-cell-voice">
+                      <Sparkline trend={p.trend} />
+                    </td>
+                    <td className="cl-cell-last">
+                      <span className="cl-num">
+                        {p.last_entry_at
+                          ? dateLabel(p.last_entry_at)
+                          : "No entries yet"}
+                      </span>
+                      <span className="cl-sub">
+                        {plural(p.entry_count, "saved page", "saved pages")}
+                      </span>
+                    </td>
+                    <td className="cl-cell-activity">
+                      <span className="cl-num">
+                        {p.actions_completed} activities
+                      </span>
+                      <span className="cl-sub">
+                        {plural(
+                          responses,
+                          "feedback response",
+                          "feedback responses",
+                        )}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {shown.length === 0 && (
+            <p className="cl-none" role="status">
+              No one matches this view.
             </p>
-          </div>
+          )}
+          <p className="cl-privacy">
+            <LockKeyhole size={18} aria-hidden="true" />
+            Journal text, audio and summaries are excluded from this portal and
+            its API responses.
+          </p>
         </>
       )}
-    </>
+    </div>
   );
 }
 
@@ -1851,154 +1885,180 @@ function ClinicalDetail({ report = false }: { report?: boolean }) {
         {!error && <Loading />}
       </>
     );
+  const c = p.context;
   return (
-    <div className={report ? "report-page" : ""}>
-      <div className="no-print">
-        <Link to="/clinic" className="back-link">
-          <ArrowLeft size={15} /> All patients
-        </Link>
-      </div>
-      <div className="page-heading">
+    <article className={"cl-detail" + (report ? " is-report" : "")}>
+      <nav className="cl-back no-print" aria-label="Back">
+        {report ? (
+          <Link to={"/clinic/patients/" + id}>Back to this person’s page</Link>
+        ) : (
+          <Link to="/clinic">All patients</Link>
+        )}
+      </nav>
+      {report && (
+        <p className="cl-report-kicker">
+          Numa, one-page observation report. Generated{" "}
+          {new Date().toLocaleDateString("en-GB", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })}
+          .
+        </p>
+      )}
+      <header className="cl-detail-head">
         <div>
-          <span className="eyebrow">
-            {report
-              ? "Numa · One-page observation report"
-              : "A person’s own patterns"}
-          </span>
           <h1>{p.name}</h1>
-          <p>
+          <p className="cl-lede">
             {p.source === "simulated"
-              ? "Fictional demonstration history"
-              : "Fresh demonstration profile"}{" "}
-            · {p.entry_count} private journal entries
+              ? "Fictional demonstration history."
+              : "Fresh demonstration profile."}{" "}
+            {plural(
+              p.entry_count,
+              "private journal entry",
+              "private journal entries",
+            )}
+            .
+          </p>
+          <p className="cl-detail-state">
+            <ClinicStatus status={p.status} />
+            <span className="cl-private">
+              <LockKeyhole size={14} aria-hidden="true" />
+              Journal content is private
+            </span>
           </p>
         </div>
-        <div className="button-row no-print">
+        <div className="no-print">
           {report ? (
-            <button className="button outline" onClick={() => window.print()}>
-              <Printer size={16} />
+            <button
+              type="button"
+              className="cl-pebble"
+              onClick={() => window.print()}
+            >
               Print / save PDF
             </button>
           ) : (
             <Link
-              className="button outline"
+              className="cl-pebble"
               to={"/clinic/patients/" + id + "/report"}
             >
-              <BookOpen size={16} />
               Observation report
             </Link>
           )}
         </div>
-      </div>
+      </header>
       <ErrorNotice message={error} />
-      <div className="detail-topline">
-        <Badge
-          tone={
-            p.status === "review"
-              ? "amber"
-              : p.status === "steady"
-                ? "green"
-                : "quiet"
-          }
-        >
-          {p.status === "review"
-            ? "Pattern review suggested"
-            : p.status === "steady"
-              ? "Within typical range"
-              : "Learning personal baseline"}
-        </Badge>
-        <span>
-          <LockKeyhole size={13} /> Journal content is private
-        </span>
-      </div>
-      <section className="paper-card">
-        <SectionTitle
-          eyebrow="Compared only with this person’s history"
-          title="Voice observations"
-        >
-          <span className="small-text muted">
-            {p.trend.days} distinct observation days
-          </span>
-        </SectionTitle>
-        <VoiceChart trend={p.trend} />
+
+      <section className="cl-section" aria-labelledby="cl-voice">
+        <div className="cl-section-head">
+          <h2 id="cl-voice">Voice observations</h2>
+          <p>
+            Compared only with this person’s history.{" "}
+            <span className="cl-num">
+              {plural(
+                p.trend.days,
+                "distinct observation day",
+                "distinct observation days",
+              )}
+              .
+            </span>
+          </p>
+        </div>
+        <ObservationChart trend={p.trend} />
         {p.trend.persistent_change && (
-          <div className="pattern-review-note">
+          <p className="cl-flag">
             Three consecutive observations differ from the first five baseline
             days. This heuristic is a prompt for professional review, not an
             assessment of depression.
-          </div>
+          </p>
         )}
-        <p className="field-help">
+        <p className="cl-small">
           Range uses median and median absolute deviation of energy and pauses.
           Microphone, recording conditions and speaking style may affect
           measurements.
         </p>
       </section>
-      <section className="context-section">
-        <SectionTitle title="Everyday context">
-          <Badge>Simulated data</Badge>
-        </SectionTitle>
-        <ContextCards context={p.context} />
+
+      <section className="cl-section" aria-labelledby="cl-context">
+        <div className="cl-section-head">
+          <h2 id="cl-context">Everyday context</h2>
+          <p>Simulated data</p>
+        </div>
+        <dl className="cl-context">
+          {[
+            ["Sleep", `${c.sleep_hours} h`],
+            ["Steps", c.steps.toLocaleString("en-GB")],
+            ["Outdoors", `${c.outdoor_minutes} min`],
+            ["Weather", `${c.weather} ${c.temperature_c}°`],
+            ["Music", `${c.music_minutes} min`],
+          ].map(([label, value]) => (
+            <div key={label}>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
-      <section className="context-section">
-        <SectionTitle title="Actions and patient feedback">
-          <Badge>{p.actions_completed} activities completed</Badge>
-        </SectionTitle>
+
+      <section className="cl-section" aria-labelledby="cl-actions">
+        <div className="cl-section-head">
+          <h2 id="cl-actions">Actions and patient feedback</h2>
+          <p className="cl-num">{p.actions_completed} activities completed</p>
+        </div>
         {p.patterns.length ? (
-          <div className="clinical-patterns">
-            {p.patterns.map((pattern) => {
-              const Icon = actionIcons[pattern.kind];
-              return (
-                <div className="clinical-pattern" key={pattern.kind}>
-                  <Icon size={18} />
-                  <div>
-                    <strong>{pattern.label}</strong>
-                    <p>
-                      {pattern.helpful} helpful / {pattern.observations}{" "}
-                      responses
-                    </p>
-                  </div>
-                  <div className="helpfulness-bar">
-                    <span
-                      style={{
-                        width: `${(pattern.helpful / pattern.observations) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <ul className="cl-actions">
+            {p.patterns.map((pattern) => (
+              <li key={pattern.kind}>
+                <span className="cl-action-name">{pattern.label}</span>
+                <span className="cl-action-count cl-num">
+                  {pattern.helpful} helpful of{" "}
+                  {plural(pattern.observations, "response", "responses")}
+                </span>
+                <span className="cl-bar" aria-hidden="true">
+                  <span
+                    style={{
+                      width: `${pattern.observations ? (pattern.helpful / pattern.observations) * 100 : 0}%`,
+                    }}
+                  />
+                </span>
+              </li>
+            ))}
+          </ul>
         ) : (
-          <p className="muted">No shared activity feedback yet.</p>
+          <p className="cl-empty">No shared activity feedback yet.</p>
         )}
-        <p className="field-help">
-          {p.follow_up_count} optional voice comparisons. Reported helpfulness
-          and vocal changes are separate observations; neither establishes
-          causality.
+        <p className="cl-small">
+          {plural(
+            p.follow_up_count,
+            "optional voice comparison",
+            "optional voice comparisons",
+          )}
+          . Reported helpfulness and vocal changes are separate observations;
+          neither establishes causality.
         </p>
       </section>
+
       {!report && (
-        <section className="paper-card notes-card">
-          <SectionTitle title="Your professional notes">
-            <Badge>Psychologist only</Badge>
-          </SectionTitle>
-          <label>
-            Notes
-            <textarea
-              maxLength={4000}
-              rows={4}
-              value={note}
-              onChange={(e) => {
-                setNote(e.target.value);
-                setStatus("");
-              }}
-              placeholder="Add context for your next conversation…"
-            />
-          </label>
-          <div className="button-row">
+        <section className="cl-section cl-notes" aria-labelledby="cl-notes">
+          <div className="cl-section-head">
+            <h2 id="cl-notes">Your professional notes</h2>
+            <p>Psychologist only</p>
+          </div>
+          <label htmlFor="cl-note">Notes</label>
+          <GrowingTextarea
+            id="cl-note"
+            maxLength={4000}
+            value={note}
+            onChange={(e) => {
+              setNote(e.target.value);
+              setStatus("");
+            }}
+            placeholder="Add context for your next conversation"
+          />
+          <div className="cl-notes-row">
             <button
-              className="button primary"
+              type="button"
+              className="cl-primary"
               onClick={async () => {
                 try {
                   await api("/clinic/patients/" + id + "/notes", {
@@ -2012,27 +2072,32 @@ function ClinicalDetail({ report = false }: { report?: boolean }) {
                 }
               }}
             >
-              Save notes <Check size={15} />
+              Save notes
             </button>
-            <span role="status" className="small-text muted">
-              {status}
+            <span role="status" aria-live="polite" className="cl-saved">
+              {status && (
+                <>
+                  <Check size={16} aria-hidden="true" /> {status}
+                </>
+              )}
             </span>
           </div>
           <ErrorNotice message={noteError} />
         </section>
       )}
-      <div className="clinical-privacy">
-        <ShieldCheck size={19} />
-        <p>
-          Observation coverage: {p.entry_count} entries, {p.trend.days} valid
-          distinct days.{" "}
+
+      <p className="cl-privacy cl-coverage">
+        <ShieldCheck size={18} aria-hidden="true" />
+        <span>
+          Observation coverage: {plural(p.entry_count, "entry", "entries")},{" "}
+          {plural(p.trend.days, "valid distinct day", "valid distinct days")}.{" "}
           {p.source === "simulated"
             ? "All history and measurements in this profile are illustrative."
             : "No fictional baseline is used for this profile."}{" "}
           No journal content is included.
-        </p>
-      </div>
-    </div>
+        </span>
+      </p>
+    </article>
   );
 }
 function NotFound() {

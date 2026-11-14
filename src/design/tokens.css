@@ -10,6 +10,7 @@
   --n-apricot: #d78b30; /* only the flower and the primary action */
   --n-past-bloom: #d9b98a; /* "past bloom": flowers of earlier days, never text */
   --n-danger: #9a3b26; /* destructive confirmation only; ivory text on it is 5.6:1 */
+  --n-attention: #9a5b13; /* clinic "review" state only; 4.8:1 on paper. Never on plain ivory (4.4:1) */
   --n-natural: #9f886f; /* decorative only, never text */
   --n-sage: #a3ac84; /* leaves, never text */
   --n-focus: #8a5a22; /* focus ring */
