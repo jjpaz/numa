@@ -147,7 +147,7 @@ def test_quality_checks_and_real_acoustic_measurement():
 def test_gemini_receives_normalized_wav_not_browser_codec_mime(monkeypatch):
     import backend.analysis as analysis
     captured=[]
-    def fake_gemini(prompt,audio=None):
+    def fake_gemini(prompt,audio=None,**kwargs):
         captured.append(audio)
         return {'transcript':'An ordinary day.'}
     monkeypatch.setattr(analysis,'gemini',fake_gemini)
@@ -231,7 +231,8 @@ def test_preference_filter_and_feedback_evidence():
 @pytest.mark.skipif(not __import__('os').getenv('TEST_DATABASE_URL'),reason='A dedicated PostgreSQL test URL is not configured')
 def test_postgresql_persistence():
     import os,secrets
-    repo=Repository(os.environ['TEST_DATABASE_URL']);key='test-'+secrets.token_hex(8)
+    from backend.repository import dedicated_test_url
+    repo=Repository(dedicated_test_url());key='test-'+secrets.token_hex(8)
     try:
         repo.put('verification',key,{'value':'persists'},'test')
         assert Repository(os.environ['TEST_DATABASE_URL']).get('verification',key)=={'value':'persists'}

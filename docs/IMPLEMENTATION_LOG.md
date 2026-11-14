@@ -1,5 +1,104 @@
 # Implementation and verification record
 
+## Minimal connected backend: phase 3, Gemini contracts — 14 November 2026
+
+- Previous phase committed as `25aa632`. Added model listing with pagination via
+  Gemini's official models endpoint. API key is sent only in a header. A selected
+  `GEMINI_MODEL` must be explicitly configured; removed the guessed model default.
+  Requests use generateContent JSON MIME/schema, bounded output and connect/read
+  timeouts. Provider failures/invalid JSON produce sanitized exceptions.
+- Audio normalizes to temporary mono16k WAV in memory, then requests transcript
+  JSON. Summary/feeling extraction receives text only. Successful transcription is
+  now retained even if the subsequent summary call fails; manual transcript/summary
+  edits still save and only text is re-evaluated.
+- Added a conservative literal first-person English evidence guard. Ordinary events,
+  negations, common quoted/conditional statements and other people's states are
+  rejected. Unsupported wording/languages can omit genuine feelings; this is a
+  conservative MVP filter, not validated semantic coverage or a clinical classifier.
+- Added `backend.verify_gemini`: list accessible generation models, then verify a
+  user-selected model using a real local Safari file plus JSON/text summary. Prints
+  only statuses/model IDs, never words/key/path; metadata-only report under `.local`.
+  A model's presence in the listing alone does not prove audio+JSON capability.
+- Full backend test command for this phase was rejected before execution outside
+  the sandbox. Did not retry it. Safe pure HTTP-mock subset executed inside sandbox:
+  `.\.venv\Scripts\python.exe -m pytest backend/tests/test_gemini_connected.py -q
+  -k 'not provider_failure_still_allows_save_and_summary_edits and not transcript_survives_summary_failure_and_edit_only_reanalyses_text'
+  --basetemp=.local/pytest-min-connected-gemini-pure`: **11 passed, 4 deselected**,
+  existing Starlette warning. Covers listing, audio JSON/text separation, schema
+  failures and literal/no-feeling examples. Four API failure/edit cases are written
+  with HTTP mocks but **no verificado** because their execution was not authorized.
+- Real Gemini model listing/selection/audio/summary: **BLOQUEADA** (no API key).
+  Model actually used: **none**. Real Safari transcription: **no verificado**;
+  no Safari recording file has been supplied. Earlier iPhone UI confirmation is
+  not evidence of transcription. No live Gemini requests or secret updates made.
+
+## Minimal connected backend: phase 2, PostgreSQL contracts — 14 November 2026
+
+- Previous phase committed as `cae8455`. PostgreSQL URLs now require explicit TLS;
+  recommended Aiven mode `verify-full`. Optional `NUMA_DATABASE_CA_CERT` supplies
+  CA PEM through the secret; it is written only to a temporary permission-limited
+  certificate file and removed on repository close. Pool bounded to 2 connections,
+  connect/statement timeouts 10 seconds, SQL parameters hidden from errors.
+- Recoverable connection failures preserve JSON changes in a bounded **volatile**
+  in-process queue (128 records), with `persistence_status=pending_retry` and an
+  explicit restart-loss warning on entries. Later reads flush when DB recovers.
+  Existing rows are not overwritten when an outage prevented checking identity:
+  conflicting temporary words remain visible with `persistence_status=conflict`.
+  Nonrecoverable errors/full buffers return sanitized 503; no false durable-save claim.
+  PostgreSQL remains the only persistent datastore. Raw audio is never queued.
+- Added tests for recoverable saves, unknown records, conflict preservation, owner
+  isolation, deletion, bounded buffers and private-error redaction. Mock restart
+  covers entries, feedback, professional notes, habits/growth, experiments/reflections
+  and legacy entries. These tests are explicitly mocks, not Aiven verification.
+- Clinical context/notes now use allowlists to prevent unexpected private fields
+  from historical JSON escaping through nested containers. Tests recursively assert
+  absence of transcript/transcription/summary/audio/experiments/questions/reflections,
+  tags/explicit/model scores, plus role and owner restrictions.
+- Real opt-in suite uses TEST_DATABASE_URL, checks it is a different database even
+  if credentials/driver spelling differ, and creates only its own verification
+  IDs/owner scope. Cleanup never purges tables. Production DATABASE_URL is never
+  used as a test target.
+- `.\.venv\Scripts\python.exe -m pytest backend/tests -q
+  --basetemp=.local/pytest-min-connected-storage`: **48 passed, 2 skipped**, 2.37 s,
+  existing Starlette warning. Both real PostgreSQL tests skipped because the URL
+  is absent. Aiven CRUD/TLS/restart persistence: **BLOQUEADA / no verificado**.
+- Fundamental limit: a database outage plus process/container loss cannot provide
+  durable saves using only PostgreSQL. Pending entries are explicitly temporary;
+  the existing frontend does not yet render these new persistence fields.
+
+## Minimal connected backend: phase 1, ML deliberately disabled — 14 November 2026
+
+- Starting branch `ml/vad-browser-check`, commit `8e3cd21`, clean tree. Created
+  `backend/min-connected` directly from `main` at `d9fce5a`, as requested. Main was
+  not modified and no experimental branch was merged. Isolated DAM/VAD work remains
+  preserved on `ml/modal-dam-check`, `ml/vad-quality` and `ml/vad-browser-check`.
+- Phase C cancelled. ML is future work: **evaluado, desactivado a propósito hasta
+  validarlo**. API defaults to `NUMA_ML_ENABLED=false`; acoustic results keep
+  `ml_status=not_configured`. No DAM/VAD pipeline is imported into the diary.
+- Restored only the already-deployed additive backend name-login/session changes
+  from `deploy/modal-demo` to preserve public demo compatibility; frontend untouched.
+- Current public demo health: external `Invoke-RestMethod` returned ok, ephemeral
+  demo memory, vocal model false and name-only login true. Modal 1.6.4, authenticated
+  workspace `rebollmartin`. No deployment has occurred in this phase yet.
+- Compared public source at `8e3cd21` with demo `d198df5`: API requirements identical;
+  Modal image definition differs only by the later name-login flag, not ML packages.
+  Main still had the old SpeechBrain/PyTorch/T4 definition; replaced it on this new
+  branch with the demo CPU image, zero minimum/reserve, max one, idle 30 seconds,
+  no GPU/model Volume/ML installs. Keep FFmpeg/libsndfile for audio decoding.
+  Removed image overrides that emptied database/Gemini settings so secrets can
+  configure connected mode. Image defaults preserve the current demo until then.
+- Baseline from main: `.\.venv\Scripts\python.exe -m pytest backend/tests -q
+  --basetemp=.local/pytest-min-connected-baseline`: **26 passed, 1 skipped**,
+  existing Starlette warning. The omitted test needs a dedicated PostgreSQL URL.
+- Credential presence checked without values in process environment and known local
+  dotenv/credential files: DATABASE_URL, TEST_DATABASE_URL and GEMINI_API_KEY absent.
+  Real Aiven and Gemini verification: **BLOQUEADA**. No values requested from user.
+  Connected deployment/model listing/Safari-file transcription: **no verificado**.
+- Phase-1 validation: `.\.venv\Scripts\python.exe -m pytest backend/tests -q
+  --basetemp=.local/pytest-min-connected-ml-off`: **37 passed, 1 skipped** in 2.11 s,
+  existing Starlette warning. Includes disabled-ML import/load boundary and
+  CPU-image dependency checks, plus deployed name-login/session compatibility.
+
 Date: 14 November 2026. All Numa source was created in a new project directory during this task. No earlier MVP source or brand assets were copied.
 
 ## Delivered
