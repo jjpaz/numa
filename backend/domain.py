@@ -61,6 +61,12 @@ def simulated_context(date=None):
     return {'source': 'simulated', 'sleep_hours': [6.2,7.4,8.1,5.8][day % 4], 'steps': [2400,5100,7200,3900][day % 4], 'outdoor_minutes': [12,25,40,8][day % 4], 'weather': ['Cloudy','Light rain','Clear','Overcast'][day % 4], 'temperature_c': 9 + day % 5, 'music_minutes': 15 + day % 35}
 
 def clinical_projection(user, entries, notes):
+    # Context is a quantitative allowlist, never a container for private entry fields.
+    allowed=set(simulated_context())
+    def shared_context(value):
+        return {k:v for k,v in (value or {}).items() if k in allowed and isinstance(v,(str,int,float,bool,type(None)))}
+    entries=[{**e,'context':shared_context(e.get('context'))} for e in entries]
+    notes={k:v for k,v in notes.items() if k in {'text','updated_at','author_id'} and isinstance(v,str)}
     saved = sorted([e for e in entries if e.get('saved')], key=lambda e:e['created_at'])
     trend = baseline_and_trend(saved)
     return {'id': user['id'], 'name': user['name'], 'initials': ''.join(x[0] for x in user['name'].split()), 'source': user['source'], 'entry_count': len(saved), 'last_entry_at': saved[-1]['created_at'] if saved else None, 'trend': trend, 'context': saved[-1].get('context') if saved else simulated_context(), 'contexts': [{'date':e['created_at'][:10], **e['context']} for e in saved], 'patterns': patterns(saved), 'actions_completed': sum(bool(e.get('action',{}).get('completed_at')) for e in saved), 'follow_up_count': sum(bool(e.get('follow_up',{}).get('voice')) for e in saved), 'notes': notes, 'status': 'review' if trend['persistent_change'] else 'learning' if not trend['ready'] else 'steady'}

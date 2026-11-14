@@ -6,10 +6,11 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Literal
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks, Header
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-from .repository import Repository
+from .repository import Repository, StorageUnavailable
 from .security import issue_token, verify_session
 from .seed import USERS, seed
 from .domain import utcnow, simulated_context, patterns, baseline_and_trend, clinical_projection, recommend, ACTIONS
@@ -81,6 +82,9 @@ def create_app(repo=None, demo=None, secret=None):
     app = FastAPI(title='Numa API',version='0.1.0')
     app.state.repo = repo
     app.state.demo = demo
+    @app.exception_handler(StorageUnavailable)
+    async def storage_unavailable(request, exc):
+        return JSONResponse(status_code=503,content={'detail':'Storage is temporarily unavailable. Keep your words and retry.','persistence_status':'unavailable'},headers={'Retry-After':'5'})
     demo_name_login = demo and os.getenv('NUMA_DEMO_NAME_LOGIN','false').lower()=='true'
     app.add_middleware(CORSMiddleware,allow_origins=[o.strip() for o in os.getenv('NUMA_ALLOWED_ORIGINS','http://127.0.0.1:5173,http://localhost:5173').split(',')],allow_methods=['GET','POST','PATCH','DELETE'],allow_headers=['Authorization','Content-Type'])
     bearer = HTTPBearer(auto_error=False)

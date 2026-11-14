@@ -1,5 +1,39 @@
 # Implementation and verification record
 
+## Minimal connected backend: phase 2, PostgreSQL contracts — 14 November 2026
+
+- Previous phase committed as `cae8455`. PostgreSQL URLs now require explicit TLS;
+  recommended Aiven mode `verify-full`. Optional `NUMA_DATABASE_CA_CERT` supplies
+  CA PEM through the secret; it is written only to a temporary permission-limited
+  certificate file and removed on repository close. Pool bounded to 2 connections,
+  connect/statement timeouts 10 seconds, SQL parameters hidden from errors.
+- Recoverable connection failures preserve JSON changes in a bounded **volatile**
+  in-process queue (128 records), with `persistence_status=pending_retry` and an
+  explicit restart-loss warning on entries. Later reads flush when DB recovers.
+  Existing rows are not overwritten when an outage prevented checking identity:
+  conflicting temporary words remain visible with `persistence_status=conflict`.
+  Nonrecoverable errors/full buffers return sanitized 503; no false durable-save claim.
+  PostgreSQL remains the only persistent datastore. Raw audio is never queued.
+- Added tests for recoverable saves, unknown records, conflict preservation, owner
+  isolation, deletion, bounded buffers and private-error redaction. Mock restart
+  covers entries, feedback, professional notes, habits/growth, experiments/reflections
+  and legacy entries. These tests are explicitly mocks, not Aiven verification.
+- Clinical context/notes now use allowlists to prevent unexpected private fields
+  from historical JSON escaping through nested containers. Tests recursively assert
+  absence of transcript/transcription/summary/audio/experiments/questions/reflections,
+  tags/explicit/model scores, plus role and owner restrictions.
+- Real opt-in suite uses TEST_DATABASE_URL, checks it is a different database even
+  if credentials/driver spelling differ, and creates only its own verification
+  IDs/owner scope. Cleanup never purges tables. Production DATABASE_URL is never
+  used as a test target.
+- `.\.venv\Scripts\python.exe -m pytest backend/tests -q
+  --basetemp=.local/pytest-min-connected-storage`: **48 passed, 2 skipped**, 2.37 s,
+  existing Starlette warning. Both real PostgreSQL tests skipped because the URL
+  is absent. Aiven CRUD/TLS/restart persistence: **BLOQUEADA / no verificado**.
+- Fundamental limit: a database outage plus process/container loss cannot provide
+  durable saves using only PostgreSQL. Pending entries are explicitly temporary;
+  the existing frontend does not yet render these new persistence fields.
+
 ## Minimal connected backend: phase 1, ML deliberately disabled — 14 November 2026
 
 - Starting branch `ml/vad-browser-check`, commit `8e3cd21`, clean tree. Created
