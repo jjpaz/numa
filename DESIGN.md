@@ -24,7 +24,9 @@ memorable element; everything around it stays quiet and disciplined.
 | `--n-moss` | `#3F422E` | Main ink; the dark "earth" surface |
 | `--n-moss-deep` | `#2E3122` | Strong ink: headings, primary text, button text |
 | `--n-ink-soft` | `#5F5643` | Secondary text (6.4:1 on paper, 5.9:1 on ivory) |
-| `--n-apricot` | `#D78B30` | **Only** the flower and the primary action |
+| `--n-apricot` | `#D78B30` | **Only** the flower (today's, in the patient garden), the primary action and the tip of a live recording |
+| `--n-danger` | `#9A3B26` | Only the confirm button of a destructive action, with ivory text (5.6:1). Never decoration |
+| `--n-past-bloom` | `#D9B98A` | "Past bloom": flowers of earlier days, with an ivory centre. Desaturated so today stays the only apricot flower. Never text |
 | `--n-natural` | `#9F886F` | Decorative only (leaves, underlines, rules). Never text |
 | `--n-sage` | `#A3AC84` | Leaves. Never text |
 | `--n-focus` | `#8A5A22` | Focus ring: 2px outline, 3px offset |
@@ -86,6 +88,197 @@ generic grey drop shadow is never allowed.
   at the height of the first headline line, at least 64px from the right edge on
   desktop. On screens ≤720px the plant is at least 140px tall and never covers
   text.
+
+### Shared module: `src/design/voiceLine.ts`
+
+Every voice line is drawn with the same pure helpers, so the public page and the
+patient's garden are the same line:
+
+| Export | What it does |
+|---|---|
+| `mulberry32(seed)` | Seeded PRNG |
+| `hashString(text)` | Stable 32-bit hash (FNV-1a), e.g. from an entry id |
+| `voiceWave(options)` | Points of a smooth waveform: drifting carrier, a fresh amplitude per half cycle, any envelope, and an optional `limitLift` to keep crests clear of text |
+| `gaussianEnvelope(bursts, at)` | Sum of Gaussian bursts, capped at 1 |
+| `catmullRom(points)` | Points to cubic béziers, with no corners |
+| `cubicAt`, `sampleCubic`, `lengthOf`, `cubicD` | Curves for stems, and lengths for the drawing animation |
+
+## Patient garden (`/patient`)
+
+The patient's home continues the public page: **your garden grows from your own
+voice.**
+
+- **One line, recent days.** A single voice line across the content width (max
+  1280px) shows the **last 14 days**: two weeks ago on the left, today on the
+  right. On screens ≤720px it shows the **last 7 days**. The only labels are
+  "Two weeks ago" (or "This week") and "Today", at 14px in ink-soft. There are
+  no other date marks.
+- **Today's plant is the protagonist.** As on the public page, the line ends in
+  a wide curve and rises as today's stem: about 170–195px tall at 1440 (150px on
+  small screens), with leaves along the stem.
+  - `done`: the full plant with today's six-petal **apricot** flower. Apart from
+    the button, this is the only apricot in the garden.
+  - `in_progress`: the same plant, shorter, with only its stem and two leaves
+    and no flower.
+  - `pending`: the line ends in the curve with a seed at its tip. There is no
+    stem.
+
+  For a new person, the first entry should feel like a reward: one tall
+  flowering plant, not a small sprout at the edge.
+- **Earlier days are secondary.** Each day with a saved entry is a soft burst
+  (Gaussian envelope, 35–70% of the day's width, ±16–22px at 1440), and that
+  entry's small plant (50–120px) grows from the centre of its burst. Flowers of
+  earlier days use `--n-past-bloom`, never apricot.
+- **Deterministic variation, never measurements.** Every variation comes only
+  from a hash of the entry id:
+  - height by `kind` ±15%;
+  - tilt from −5° to +5°;
+  - an offset of ±30% within the day's slot;
+  - leaf size ±15%;
+  - each burst's width and weight.
+
+  Several entries on one day gather with a slight overlap. Duration, energy,
+  pauses and any acoustic or mood data are never used: a plant remembers that
+  there was a page, it does not measure how the person is.
+- **Nothing withers.** Days without an entry are near-flat pauses. Plants never
+  shrink, fade or disappear for absences.
+- **The drawing is as tall as what grows in it.** The SVG height follows its
+  tallest plant, so with 0–2 entries the greeting, the garden and the action
+  read as one compact block. There is no empty sky over a flat line.
+- **Today is one group**, right-aligned under the end of the line: "Today"
+  (14px ink-soft), 8px, the state sentence (icon plus words, never colour
+  alone), 12px, the button, then "Add another entry". On screens ≤720px,
+  "This week" and "Today" share a row and the action is left-aligned and full
+  width below it.
+- **Below the line**, a moss "earth" band holds two columns:
+  - The latest entry on an ivory sheet, about 55% of the row. It starts with a
+    16px line ("Today's entry" or "Your latest entry", then the date in tabular
+    figures). Its self-care reflection is the sheet's only `h2`, in Young Serif
+    28px.
+  - Beside it, top-aligned with the sheet, "How your garden is growing" in
+    words, never a streak counter.
+- **Simple mode** keeps only the greeting, the garden and today's action.
+- **Motion:** the line draws left to right (~1.5s), and each earlier plant rises
+  from its base as the trace passes its day. Today's leaves unfold after the
+  stem is drawn, and today's flower opens last. This happens once per browser
+  session (`numa-garden-grown` in sessionStorage); after that, and with reduced
+  motion, the final state is shown directly. There is no page-level fade: text
+  is visible from the first frame on every page.
+
+## Entry page (`/patient/entries/:id`)
+
+"A page of your journal". It uses the same 1280px column as `/` and `/patient`.
+
+- **Header.**
+  - The long date in 16px ink-soft, the title as the only `h1` (Young Serif,
+    `clamp(40px, 5vw, 64px)`) and the entry's self-care reflection under it.
+  - Beside them (above them on small screens) is **the same plant this entry
+    has in the garden**: drawn by `EntryPlant`, which uses the garden's own
+    `pastPlantShape` (same kind, height, tilt, leaves and sway from the entry
+    id), growing from its own short burst of voice line.
+  - Flowers: today's saved entry flowers in apricot; earlier days use
+    `--n-past-bloom`; a draft is a young plant with no flower.
+  - When feedback turns an earlier plant into a flower, the flower opens once
+    as a direct response. The text never promises this.
+  - A 1px `--n-sheet-border` rule closes the header.
+- **The words on a sheet, never in a form.**
+  - **Reading mode** (saved): the transcript as text in Young Serif 24–28px
+    (21px when long, and on small screens), line height 1.5, max 60ch. Under it
+    come "In short" and the summary in Hanken 18px.
+  - **Writing mode** (a fresh draft, or after "Edit words"): the same blocks
+    become borderless textareas in the same type and place. They have a
+    transparent background, a 1px bottom line, a visible focus ring and grow to
+    fit. The first field keeps the accessible name "Transcript".
+  - **Saving is a state, not a dead button:**
+    - draft: "Save this page" plus "Discard draft";
+    - saved: "✓ Saved in your journal" plus "Edit words";
+    - editing: "Save changes" (only once something changed) plus "Cancel".
+  - The fictional sample is always read only.
+  - Tags are plain 14px text, never pills.
+- **What Numa noticed** sits beside the sheet, with no box, always visible.
+  - "From your voice" and "In your own words" are two separate perspectives.
+    Each states its source in words ("Measured acoustics. ML not active.").
+  - Model categories live in a closed `<details>`, together with the reminder
+    that they are not feelings.
+  - It closes with: "A voice estimate never overrides your experience."
+  - Simulated context is a plain list labelled "Simulated".
+  - In simple mode the whole column folds into one closed `<details>`, but its
+    content stays in the DOM.
+- **A small next step** lives in the moss "earth" band (ivory on moss), only for
+  saved, non-sample entries.
+  - The title is in Young Serif 36px; the reason is in ivory at 75%.
+  - "I tried this" is the apricot pebble. The feedback choices are ivory-bordered
+    pebbles; the chosen one fills with ivory and has `aria-pressed`, and a check.
+  - The breathing guide only moves while it is open.
+  - The voice-comparison recorder sits directly on the band in its dark tone
+    (`tone="dark"`: ivory line, text and record pebble; see "Recording").
+- **Footer.** The privacy sentence (said once, here) and a quiet "Delete entry"
+  or "Discard draft" link. Deleting is confirmed inline: "Delete this entry?
+  This can't be undone." with a `--n-danger` "Delete" and "Keep it". There is
+  never a modal.
+- **Processing.** The title "Listening to your day…" and one sentence. The voice
+  line draws once and a dot breathes at its end while the entry is read. With
+  reduced motion it is still.
+
+## Recording (`/patient/new`, and the voice comparison)
+
+**Your voice draws the line.** The system's voice line is the recording canvas.
+It is drawn by `Recorder` in [`src/components.tsx`](src/components.tsx), styled
+in [`src/new-entry.css`](src/new-entry.css).
+
+- **The record button is the origin of the line.** The 72px pebble sits at the
+  left end, centred on the line's axis, and the line leaves its edge. The state
+  text ("Tap to begin" / "Tap to finish" / "Record again", 18px) sits above the
+  line, to the right of the pebble, clear of the highest crest. Same on small
+  screens.
+- **The width is the time.** The line runs from the pebble to exactly the right
+  edge of the content (max 1280px), measured with a ResizeObserver and redrawn
+  on resize. After a quiet start with the system's micro-undulation (it eases
+  in from the pebble), the rest stands for the 2 minutes available: the part
+  still free is a dense dotted track in `--n-natural` at 70%, ending in a "2 min"
+  label (14px ink-soft) that disappears once the recording is finished.
+- **Live, and only real.** While recording, the line grows left to right from
+  the microphone's measured loudness: the RMS of the `AnalyserNode` about 10
+  times a second, smoothed, with a small noise floor and a soft limit (±28px at
+  1440, ±18px on small screens). It is drawn with `voiceWave` + `catmullRom`
+  using a fixed carrier and `rand: () => 1`, so the height at every point is the
+  measured loudness and nothing else. Pauses are near-flat stretches. A synthetic
+  or decorative waveform is never shown as someone's voice.
+- **The tip** is a 6px apricot dot that moves with the time: the one exception to
+  "apricot only for the flower and the primary action", because it is the moment
+  being planted. Beside it (below the line on small screens) is the elapsed time
+  in 16px tabular figures. There is no "Listening ·" label.
+- **Finished:** the line stays exactly as recorded. It then settles to the axis,
+  rises a little and ends in a seed (the same shape as the garden's `pending`
+  seed). The dotted remainder disappears.
+- **Controls:** the moss record pebble has an ivory icon. Listening back is a
+  secondary outlined pebble ("Listen back" / "Pause", `aria-pressed`) with the
+  duration; the `<audio>` element stays hidden. There are no permanent animated
+  halos.
+- **Dark tone** (`tone="dark"`, for the moss band): ivory line, text and pebble
+  (moss icon); the seed uses `--n-past-bloom`.
+- **Writing instead** replaces the line with a borderless textarea (Young Serif
+  24–28px, line height 1.5, max 60ch, 1px bottom line) labelled "Your note".
+  On focus the bottom line becomes 2px `--n-focus` and a 2px `--n-focus` frame
+  with a 6px radius appears 8px away, so the words never touch an edge and it
+  never looks like a form box. Switching modes never loses what was recorded or
+  written before it is sent.
+- **Consent is short, the full text is one click away.** The system checkbox
+  (22px, 1.5px moss edge, 4px radius, a moss check on ivory when ticked, focus
+  ring 3px away) with a single 16px sentence; the whole label is clickable. Under it, a closed `<details>` "How audio is handled"
+  holds the complete consent text, word for word, in 16px ink-soft (max 70ch).
+  The checkbox is described by that text.
+- **The one action says why it is waiting.** Until "Make a little sense of
+  today" can act it has `aria-disabled`, `cursor: not-allowed` and a softened
+  fill: apricot mixed 45% into `--n-paper` (moss-deep text on it is 8:1), never
+  opacity. A sentence under it, in an `aria-live="polite"` region linked with
+  `aria-describedby`, says what is missing ("Record or write something first." /
+  "Tick the box above to continue."). When it becomes available the fill turns
+  full apricot in 160ms (instantly with reduced motion).
+- **Errors** (no microphone, permission refused, a failed send) are a sentence in
+  `--n-danger` with an icon, never colour alone, plus "Write a note instead".
+- With reduced motion the live line still follows the voice (it is a direct
+  response); there are no decorative transitions.
 
 ## Motion
 

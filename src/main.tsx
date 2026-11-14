@@ -9,6 +9,8 @@ import "./styles.css";
 import "./theme.css";
 import "./landing.css";
 import "./garden.css";
+import "./entry.css";
+import "./new-entry.css";
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>

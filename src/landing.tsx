@@ -3,57 +3,18 @@ import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { Wordmark } from "./components";
 
-/* ───────── Deterministic, smooth voice trace ───────── */
-
-function mulberry32(seed: number) {
-  let a = seed;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-type Pt = [number, number];
-const r1 = (n: number) => Math.round(n * 10) / 10;
-
-/** Catmull-Rom through the points, emitted as cubic béziers: smooth, no corners. */
-function catmullRom(points: Pt[]) {
-  let d = "";
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[i - 1] ?? points[i],
-      p1 = points[i],
-      p2 = points[i + 1],
-      p3 = points[i + 2] ?? p2;
-    const c1: Pt = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
-    const c2: Pt = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
-    d += ` C${r1(c1[0])} ${r1(c1[1])} ${r1(c2[0])} ${r1(c2[1])} ${r1(p2[0])} ${r1(p2[1])}`;
-  }
-  return d;
-}
-function cubicAt(p: [Pt, Pt, Pt, Pt], t: number): Pt {
-  const u = 1 - t;
-  const k = [u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t];
-  return [
-    k[0] * p[0][0] + k[1] * p[1][0] + k[2] * p[2][0] + k[3] * p[3][0],
-    k[0] * p[0][1] + k[1] * p[1][1] + k[2] * p[2][1] + k[3] * p[3][1],
-  ];
-}
-const sampleCubic = (p: [Pt, Pt, Pt, Pt], n = 48) =>
-  Array.from({ length: n + 1 }, (_, i) => cubicAt(p, i / n));
-const lengthOf = (pts: Pt[]) =>
-  pts.reduce(
-    (sum, pt, i) =>
-      i ? sum + Math.hypot(pt[0] - pts[i - 1][0], pt[1] - pts[i - 1][1]) : 0,
-    0,
-  );
-const cubicD = (p: [Pt, Pt, Pt, Pt]) =>
-  ` C${p
-    .slice(1)
-    .map(([x, y]) => `${r1(x)} ${r1(y)}`)
-    .join(" ")}`;
+import {
+  catmullRom,
+  cubicD,
+  gaussianEnvelope,
+  lengthOf,
+  mulberry32,
+  r1,
+  sampleCubic,
+  voiceWave,
+  type Cubic,
+  type Pt,
+} from "./design/voiceLine";
 
 // Speech bursts as Gaussian envelopes: centre and width as fractions of the wave, peak weight.
 // The strongest burst sits in the open stretch between the words and the plant.
@@ -113,15 +74,8 @@ function buildGeometry(m: Measure, contentTop: number): Geometry {
   const radius = mobile ? 36 : Math.min(110, Math.max(64, m.width * 0.065));
   const waveEnd = stemX - radius;
 
-  // Wave: a carrier with gentle frequency drift, a fresh amplitude every half
-  // cycle (it changes at zero crossings, so the curve stays continuous) and
-  // Gaussian envelopes per burst. Pauses keep only a micro-undulation.
+  // Wave: see voiceWave() in src/design/voiceLine.ts.
   const wavelength = Math.max(11, (22 * m.width) / 1440);
-  const step = wavelength / 6;
-  const halfAmps = Array.from(
-    { length: Math.ceil((waveEnd / wavelength) * 2) + 4 },
-    () => 0.45 + 0.55 * rand(),
-  );
   // Under the last headline line, crests rise at most ~9px (soft limit) so the
   // words can rest 14px above the axis; troughs and other stretches keep ±amp.
   const last = m.lines[m.lines.length - 1];
@@ -138,36 +92,30 @@ function buildGeometry(m: Measure, contentTop: number): Geometry {
       ),
     );
   };
-  const wave: Pt[] = [];
-  for (let x = 0; x <= waveEnd; x += step) {
-    const f = x / waveEnd;
-    let env = 0;
-    for (const b of BURSTS)
-      env += b.w * Math.exp(-0.5 * ((f - b.c) / b.s) ** 2);
-    env = Math.min(1, env);
-    const drift =
-      x + wavelength * 0.12 * Math.sin((2 * Math.PI * x) / (wavelength * 11));
-    const half = Math.floor(drift / (wavelength / 2));
-    const carrier = Math.sin((2 * Math.PI * drift) / wavelength);
-    const breath = 0.6 * Math.sin((2 * Math.PI * x) / (wavelength * 7)); // micro-undulation
-    const fade = Math.min(1, (waveEnd - x) / (wavelength * 2)); // settle before the stem
-    let lift = (amp * env * halfAmps[half] * carrier + breath) * fade; // + is upwards
-    const t = underText(x);
-    if (lift > 0 && t > 0)
-      lift = (1 - t) * lift + t * ceiling * Math.tanh(lift / ceiling);
-    wave.push([x, axis - lift]);
-  }
-  wave.push([waveEnd, axis]);
+  const wave = voiceWave({
+    to: waveEnd,
+    axis,
+    amp,
+    wavelength,
+    rand,
+    envelope: (x) => gaussianEnvelope(BURSTS, x / waveEnd),
+    limitLift: (x, lift) => {
+      const t = underText(x);
+      return lift > 0 && t > 0
+        ? (1 - t) * lift + t * ceiling * Math.tanh(lift / ceiling)
+        : lift;
+    },
+  });
 
   // A wide, continuous turn (a quarter-ellipse), then the stem with a slight sway.
-  const turn: [Pt, Pt, Pt, Pt] = [
+  const turn: Cubic = [
     [waveEnd, axis],
     [waveEnd + radius * 0.55, axis],
     [stemX, axis - radius * 0.45],
     [stemX, axis - radius],
   ];
   const sway = mobile ? 4 : 10;
-  const stem: [Pt, Pt, Pt, Pt] = [
+  const stem: Cubic = [
     [stemX, axis - radius],
     [stemX, axis - radius - (axis - radius - top) * 0.4],
     [stemX - sway, top + (axis - radius - top) * 0.35],

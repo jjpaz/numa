@@ -3,8 +3,10 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
+  type TextareaHTMLAttributes,
 } from "react";
 import {
   Link,
@@ -18,11 +20,12 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { motion, useReducedMotion } from "motion/react";
 import { GrowthProvider, YourSpace, useGrowth } from "./growth";
 import {
+  EntryPlant,
   GardenHome,
   JournalLog,
+  ListeningLine,
   LeafMenu,
   MyGarden,
   TodayNotice,
@@ -35,8 +38,8 @@ import {
   ArrowUpRight,
   BookOpen,
   Check,
-  CheckCheck,
   ChevronRight,
+  CircleAlert,
   CloudSun,
   Flower2,
   Leaf,
@@ -49,10 +52,7 @@ import {
   Search,
   Settings2,
   ShieldCheck,
-  Trash2,
   Users,
-  Wind,
-  X,
 } from "lucide-react";
 import { api, dateLabel, json, setToken, getToken } from "./api";
 import type {
@@ -124,9 +124,6 @@ function useResource<T>(path: string, interval = 0) {
 }
 
 export function App() {
-  const reducedMotion = useReducedMotion();
-  // The home page has one orchestrated animation (the voice line); its text must not fade in.
-  const isHome = useLocation().pathname === "/";
   const [user, setUser] = useState<User | null>(null),
     [health, setHealth] = useState<Health | null>(null),
     [ready, setReady] = useState(false);
@@ -167,11 +164,8 @@ export function App() {
   if (!ready) return <Loading />;
   return (
     <Auth.Provider value={{ user, health, login, logout }}>
-      <motion.div
-        initial={reducedMotion || isHome ? false : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.25 }}
-      >
+      {/* No page-level fade: text is visible from the first frame on every page. */}
+      <div>
         {backendError && (
           <div className="connection-banner">{backendError}</div>
         )}
@@ -202,7 +196,7 @@ export function App() {
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </motion.div>
+      </div>
     </Auth.Provider>
   );
 }
@@ -386,6 +380,21 @@ function Login() {
     </div>
   );
 }
+/** The same facts as ModeBanner, written as sentences for the patient's space. */
+function PatientFootnote() {
+  const { health, user } = useContext(Auth);
+  const mode =
+    health?.mode === "local_preview"
+      ? "Local preview: temporary data, acoustic measurements only"
+      : "Connected prototype with experimental voice analysis";
+  return (
+    <p>
+      {mode}
+      {user?.source === "simulated" ? ", on a fictional profile." : "."}{" "}
+      Research prototype, no clinical diagnosis.
+    </p>
+  );
+}
 function ModeBanner() {
   const { health, user } = useContext(Auth);
   return (
@@ -428,8 +437,7 @@ function PatientFrame() {
         <Outlet />
       </main>
       <footer className="garden-footer">
-        <ModeBanner />
-        <span>Research prototype · No clinical diagnosis</span>
+        <PatientFootnote />
       </footer>
     </div>
   );
@@ -489,7 +497,24 @@ function NewEntry() {
     [error, setError] = useState("");
   const requestId = useRef(crypto.randomUUID());
   const existing = useResource<Entry[]>("/patient/entries");
+  // Switching modes keeps both the recording and the words until something is sent.
+  const switched = useRef(false);
+  useEffect(() => {
+    if (write && switched.current) document.getElementById("ne-note")?.focus();
+  }, [write]);
+  function switchMode(toWriting: boolean) {
+    switched.current = true;
+    setError("");
+    setWrite(toWriting);
+  }
+  const hasContent = write ? !!text.trim() : !!blob;
+  const ready = hasContent && consent && !busy;
+  const needs = [
+    !hasContent && "Record or write something first.",
+    !consent && "Tick the box above to continue.",
+  ].filter(Boolean) as string[];
   async function submit() {
+    if (!ready) return;
     setBusy(true);
     setError("");
     try {
@@ -515,85 +540,324 @@ function NewEntry() {
       setBusy(false);
     }
   }
+  const local = health?.mode === "local_preview";
   if (user?.source === "simulated")
     return (
-      <Empty title="This journal is a fictional sample">
-        Use the fresh patient profile to create your own demonstration entries.
-      </Empty>
+      <div className="ne-page">
+        <div className="ne-wrap">
+          <nav className="ne-back" aria-label="Back">
+            <Link to="/patient/garden">My garden</Link>
+          </nav>
+          <header className="ne-head">
+            <h1>This journal is a fictional sample</h1>
+            <p>Use the fresh patient profile to create your own entries.</p>
+          </header>
+        </div>
+      </div>
     );
   return (
-    <div className="narrow-page">
-      <Link to="/patient" className="back-link">
-        <ArrowLeft size={15} /> Your garden
-      </Link>
-      <TodayNotice entries={existing.data} />
-      <div className="centred-heading">
-        <h1>What happened in your world?</h1>
-        <p>
-          Tell me about something from your day.
-          <br />A passing thought is a perfectly good place to start.
-        </p>
-      </div>
-      <section className="recording-card">
-        {!write ? (
-          <Recorder onReady={setBlob} onClear={() => setBlob(null)} />
-        ) : (
-          <label className="written-label">
-            Your note
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              maxLength={16000}
-              placeholder="Today, I noticed…"
-              rows={7}
+    <div className="ne-page">
+      <div className="ne-wrap">
+        <nav className="ne-back" aria-label="Back">
+          <Link to="/patient/garden">My garden</Link>
+        </nav>
+        <div className="ne-notice">
+          <TodayNotice entries={existing.data} />
+        </div>
+        <header className="ne-head">
+          <h1>What happened in your world?</h1>
+          <p>
+            Tell me about something from your day. A passing thought is a good
+            place to start.
+          </p>
+        </header>
+        <div className="ne-capture">
+          <div hidden={write}>
+            <Recorder
+              active={!write}
+              onReady={setBlob}
+              onClear={() => setBlob(null)}
+              onWriteInstead={() => switchMode(true)}
             />
-          </label>
-        )}
-        <button
-          className="text-link recording-toggle"
-          onClick={() => setWrite(!write)}
-        >
-          {write ? (
-            <>
-              <Mic size={15} />
-              I’d rather leave a voice note
-            </>
-          ) : (
-            <>
-              <BookOpen size={15} />
-              I’d rather write today
-            </>
+          </div>
+          {write && (
+            <div className="ne-write">
+              <label htmlFor="ne-note">Your note</label>
+              <div className="ne-field">
+                <GrowingTextarea
+                  id="ne-note"
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  maxLength={16000}
+                  placeholder="Today, I noticed…"
+                />
+              </div>
+            </div>
           )}
-        </button>
-      </section>
-      <label className="consent">
-        <input
-          type="checkbox"
-          checked={consent}
-          onChange={(e) => setConsent(e.target.checked)}
-        />
-        <span>
-          {health?.mode === "local_preview"
-            ? "I understand this preview uses temporary server memory. Audio is processed for acoustic measurements; emotional ML is not active. If Gemini is unavailable, I can add the words myself."
-            : "I agree to temporary audio processing by Numa on Modal and transcription by Gemini. My saved words remain private to my account. Audio is not retained by Numa after processing."}{" "}
-          Use fictional experiences for this demonstration.
-        </span>
-      </label>
-      <ErrorNotice message={error} />
-      <button
-        className="button primary full"
-        disabled={busy || !consent || (write ? !text.trim() : !blob)}
-        onClick={() => void submit()}
-      >
-        {busy ? "Opening your page…" : "Make a little sense of today"}
-        <ArrowRight size={17} />
-      </button>
-      <PrivacyNote />
+          <button
+            type="button"
+            className="ne-toggle"
+            onClick={() => switchMode(!write)}
+          >
+            {write ? "I’d rather leave a voice note" : "I’d rather write today"}
+          </button>
+        </div>
+        <div className="ne-send">
+          <div className="ne-consent">
+            <label className="ne-check">
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+                aria-describedby="ne-audio-terms"
+              />
+              <span>
+                {local
+                  ? "This is a fictional experience, and I understand how this preview handles audio."
+                  : "This is a fictional experience, and I understand how Numa handles my audio."}
+              </span>
+            </label>
+            <details className="ne-terms">
+              <summary>How audio is handled</summary>
+              <p id="ne-audio-terms">
+                {local
+                  ? "I understand this preview uses temporary server memory. Audio is processed for acoustic measurements; emotional ML is not active. If Gemini is unavailable, I can add the words myself."
+                  : "I agree to temporary audio processing by Numa on Modal and transcription by Gemini. My saved words remain private to my account. Audio is not retained by Numa after processing."}{" "}
+                Use fictional experiences for this demonstration.
+              </p>
+            </details>
+          </div>
+          <button
+            type="button"
+            className="ne-primary"
+            aria-disabled={!ready}
+            aria-busy={busy || undefined}
+            aria-describedby={needs.length && !busy ? "ne-needs" : undefined}
+            onClick={() => void submit()}
+          >
+            {busy ? "Opening your page…" : "Make a little sense of today"}
+          </button>
+          <p id="ne-needs" className="ne-needs" aria-live="polite">
+            {busy ? "" : needs.join(" ")}
+          </p>
+          {error && (
+            <p className="ne-error" role="alert">
+              <CircleAlert size={18} aria-hidden="true" />
+              <span>
+                {error}
+                {!write && (
+                  <>
+                    {" "}
+                    <button
+                      type="button"
+                      className="ne-error-link"
+                      onClick={() => switchMode(true)}
+                    >
+                      Write a note instead
+                    </button>
+                  </>
+                )}
+              </span>
+            </p>
+          )}
+          <p className="ne-privacy">
+            Your words stay in your journal. Your psychologist sees trends only.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
 
+const entryDate = (value: string) =>
+  new Date(value).toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+
+/** A borderless textarea that grows with its words. */
+function GrowingTextarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }, [props.value]);
+  return <textarea ref={ref} rows={1} {...props} />;
+}
+
+const PROBABILITY_LABELS: Record<string, string> = {
+  neu: "Neutral",
+  hap: "Happy",
+  sad: "Sad",
+  ang: "Angry",
+};
+
+/** What Numa noticed: voice and words, always as separate perspectives. */
+function EntrySignals({
+  entry,
+  modules,
+  simple,
+}: {
+  entry: Entry;
+  modules: string[];
+  simple: boolean;
+}) {
+  const features = entry.voice?.features;
+  const context = entry.context;
+  const contextModules = simple
+    ? []
+    : modules.filter((m) => ["sleep", "activity", "music"].includes(m));
+  return (
+    <>
+      <h3>From your voice</h3>
+      {features && (
+        <p className="voice-facts">
+          {Math.round(features.duration_sec)} seconds recorded
+          {entry.voice?.quality === "valid"
+            ? `, ${Math.round((features.pause_ratio || 0) * 100)}% pauses.`
+            : "."}
+        </p>
+      )}
+      {/* One source line only: the most descriptive one available. */}
+      {!entry.voice ? (
+        <p className="ep-source">
+          No vocal signal. Your words can still be saved.
+        </p>
+      ) : entry.voice.quality !== "valid" ? (
+        <>
+          {/* Here the observation is the reason the audio could not be measured. */}
+          {entry.voice.observation && <p>{entry.voice.observation}</p>}
+          <p className="ep-source">Measured acoustics. ML not active.</p>
+        </>
+      ) : (
+        <p className="ep-source">
+          {entry.voice.observation ||
+            (entry.voice.source === "simulated"
+              ? "Illustrative voice measurements from a fictional journal."
+              : entry.voice.model
+                ? "Experimental ML and acoustic measurements."
+                : "Measured acoustics. ML not active.")}
+        </p>
+      )}
+      {entry.voice?.probabilities &&
+        Object.keys(entry.voice.probabilities).length > 0 && (
+          <details className="ep-model">
+            <summary>
+              {entry.source === "simulated"
+                ? "Illustrative model output"
+                : "Experimental model output"}
+            </summary>
+            <p>
+              Vocal-expression categories describe the model’s estimate, not
+              your actual feelings.
+            </p>
+            <dl>
+              {Object.entries(entry.voice.probabilities).map(
+                ([label, probability]) => (
+                  <div key={label}>
+                    <dt>
+                      {PROBABILITY_LABELS[label] ||
+                        label.charAt(0).toUpperCase() +
+                          label.slice(1).toLowerCase()}
+                    </dt>
+                    <dd>{Math.round(probability * 100)}%</dd>
+                  </div>
+                ),
+              )}
+            </dl>
+          </details>
+        )}
+      <h3>In your own words</h3>
+      {entry.explicit.length ? (
+        entry.explicit.map((signal, i) => (
+          <blockquote className="ep-quote" key={i}>
+            <span>{signal.feeling}</span> “{signal.evidence}”
+          </blockquote>
+        ))
+      ) : (
+        <p>No explicit feeling was recorded. You don’t need to name one.</p>
+      )}
+      <p className="ep-source">
+        {entry.semantic_source === "gemini"
+          ? "Explicit mentions, found by Gemini."
+          : entry.semantic_source === "simulated"
+            ? "Illustrative self-report."
+            : "No inferred self-report."}
+      </p>
+      <p className="ep-perspectives">
+        Two separate perspectives. A voice estimate never overrides your
+        experience.
+      </p>
+      {contextModules.length > 0 && (
+        <div className="ep-context">
+          <h3>
+            Around this day <span>Simulated</span>
+          </h3>
+          <ul>
+            {contextModules.includes("sleep") && (
+              <li>{context.sleep_hours} hours of sleep</li>
+            )}
+            {contextModules.includes("activity") && (
+              <li>
+                {context.steps.toLocaleString("en-GB")} steps and{" "}
+                {context.outdoor_minutes} minutes outdoors
+              </li>
+            )}
+            {contextModules.includes("music") && (
+              <li>{context.music_minutes} minutes of music</li>
+            )}
+          </ul>
+        </div>
+      )}
+    </>
+  );
+}
+
+const ACTION_TITLES: Record<string, string> = {
+  walk: "A short walk",
+  music: "Your own music",
+  breathe: "Quiet breathing",
+  connect: "Reaching out",
+};
+
+/** The sample's next step, read only: what was tried and what they said. */
+function ActionSummary({
+  action,
+  name,
+}: {
+  action: NonNullable<Entry["action"]>;
+  name: string;
+}) {
+  const said =
+    action.feedback === "helpful"
+      ? " They said it helped."
+      : action.feedback === "not_helpful"
+        ? " They said it didn’t help."
+        : action.feedback === "skip"
+          ? " They skipped the question."
+          : "";
+  return (
+    <section className="ep-step" aria-labelledby="ep-step-title">
+      <div className="ep-wrap ep-step-inner">
+        <p className="ep-step-kicker">A small next step, always optional</p>
+        <h2 id="ep-step-title">
+          {ACTION_TITLES[action.kind] ?? "A small next step"}
+        </h2>
+        {action.completed_at && (
+          <p className="ep-step-desc">
+            {name} tried this.{said}
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function EntryPage() {
+  const { user } = useContext(Auth);
   const { growth } = useGrowth();
   const { id } = useParams();
   const resource = useResource<Entry>("/patient/entries/" + id, 1800);
@@ -604,7 +868,8 @@ function EntryPage() {
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [edited, setEdited] = useState(false),
-    [confirmDelete, setConfirmDelete] = useState(false);
+    [editing, setEditing] = useState(false),
+    [confirmAt, setConfirmAt] = useState<"sheet" | "foot" | null>(null);
   const initialized = useRef("");
   useEffect(() => {
     if (
@@ -627,6 +892,7 @@ function EntryPage() {
         body: json({ transcript: text, summary, saved: true }),
       });
       setEdited(false);
+      setEditing(false);
       await resource.refresh();
     } catch (e) {
       setError((e as Error).message);
@@ -644,281 +910,251 @@ function EntryPage() {
       setBusy(false);
     }
   }
+  function cancelEdit() {
+    if (!entry) return;
+    setText(entry.transcript);
+    setSummary(entry.summary);
+    setEdited(false);
+    setEditing(false);
+  }
   if (!entry)
     return (
-      <>
+      <div className="ep-wrap ep-loading">
         <ErrorNotice message={resource.error} />
         {!resource.error && <Loading />}
-      </>
+      </div>
     );
   const processing = ["pending", "processing"].includes(entry.status),
-    sample = entry.source === "simulated";
+    sample = entry.source === "simulated",
+    simple = !!growth?.simple_mode;
+  const writing = !sample && !processing && (!entry.saved || editing);
+  const longWords = (writing ? text : entry.transcript).length > 600;
+  const confirm = (
+    <div className="ep-confirm" role="group" aria-label="Confirm deletion">
+      <span>Delete this entry? This can’t be undone.</span>
+      <button
+        type="button"
+        className="ep-danger"
+        disabled={busy}
+        onClick={() => void remove()}
+      >
+        Delete
+      </button>
+      <button
+        type="button"
+        className="ep-link"
+        onClick={() => setConfirmAt(null)}
+      >
+        Keep it
+      </button>
+    </div>
+  );
+  const signals = (
+    <EntrySignals
+      entry={entry}
+      modules={growth?.modules ?? []}
+      simple={simple}
+    />
+  );
   return (
-    <div className="entry-page">
-      <div className="back-row">
-        <Link to="/patient" className="back-link">
-          <ArrowLeft size={15} /> Your garden
-        </Link>
-        <Link to="/patient/journal" className="back-link">
-          Journal
-        </Link>
-      </div>
-      <div className="page-heading">
-        <div>
-          <p className="soft-date">{dateLabel(entry.created_at)}</p>
+    <div className="entry-page-v2">
+      <nav className="ep-wrap ep-back" aria-label="Back to">
+        <Link to="/patient">Your garden</Link>
+        <Link to="/patient/journal">Journal</Link>
+      </nav>
+      <header className="ep-wrap ep-head">
+        <div className="ep-head-text">
+          <p className="ep-date">{entryDate(entry.created_at)}</p>
           <h1>{processing ? "Listening to your day…" : entry.title}</h1>
-          {!processing && (
-            <p className="reflection entry-reflection">
-              {reflectionFor(entry)}
+          <p className="ep-reflection entry-reflection">
+            {processing
+              ? "Finding the threads. Your voice and your words are read separately."
+              : reflectionFor(entry)}
+          </p>
+          {processing && (
+            <p className="ep-processing-note">
+              You can leave this page and come back.
             </p>
           )}
         </div>
-        <Badge>
-          <LockKeyhole size={12} /> Private entry
-        </Badge>
-      </div>
-      {processing ? (
-        <div className="analysis-card">
-          <div className="thinking-flower">✳</div>
-          <h2>Finding the threads.</h2>
-          <p>
-            Listening to your voice and understanding your words separately.
-          </p>
-          <span className="small-text muted">
-            You can leave this page and come back.
-          </span>
+        <div className="ep-plant">
+          {processing ? <ListeningLine /> : <EntryPlant entry={entry} />}
         </div>
-      ) : (
+      </header>
+      <div className="ep-wrap">
+        <hr className="ep-rule" />
+      </div>
+      {!processing && (
         <>
-          <div className="entry-detail-grid">
-            <section className="paper-card private-writing">
-              <div className="card-topline">
-                <h2>Your words</h2>
-                <Badge>
-                  {sample
-                    ? "Fictional entry"
-                    : entry.saved
-                      ? "Saved in your journal"
-                      : "Draft"}
-                </Badge>
+          <div className="ep-wrap ep-body">
+            <section className="ep-sheet" aria-labelledby="ep-words">
+              <div className="ep-sheet-top">
+                <h2 id="ep-words" className="ep-label">
+                  Your words
+                </h2>
+                {entry.saved && !sample && !editing && (
+                  <button
+                    type="button"
+                    className="ep-link"
+                    onClick={() => setEditing(true)}
+                  >
+                    Edit words
+                  </button>
+                )}
               </div>
-              <label>
-                Transcript
-                <textarea
-                  readOnly={sample}
-                  value={text}
-                  onChange={(e) => {
-                    setText(e.target.value);
-                    setEdited(true);
-                  }}
-                  rows={6}
-                  maxLength={16000}
-                  placeholder="Transcription unavailable? Add the words you want to keep."
-                />
-              </label>
-              <label>
-                A little summary
-                <textarea
-                  readOnly={sample}
-                  value={summary}
-                  onChange={(e) => {
-                    setSummary(e.target.value);
-                    setEdited(true);
-                  }}
-                  rows={3}
-                  maxLength={1500}
-                />
-              </label>
-              {!sample && (
-                <p className="field-help">
-                  Make these words your own. Corrections update the text
-                  analysis, while voice measurements stay unchanged.
+              {writing ? (
+                <>
+                  <GrowingTextarea
+                    aria-label="Transcript"
+                    className={
+                      "ep-transcript ep-field" + (longWords ? " is-long" : "")
+                    }
+                    value={text}
+                    onChange={(e) => {
+                      setText(e.target.value);
+                      setEdited(true);
+                    }}
+                    maxLength={16000}
+                    placeholder="Transcription unavailable? Add the words you want to keep."
+                  />
+                  <label className="ep-label ep-short-label" htmlFor="ep-short">
+                    In short
+                  </label>
+                  <GrowingTextarea
+                    id="ep-short"
+                    className="ep-summary ep-field"
+                    value={summary}
+                    onChange={(e) => {
+                      setSummary(e.target.value);
+                      setEdited(true);
+                    }}
+                    maxLength={1500}
+                  />
+                  <p className="ep-help">
+                    Corrections update the text analysis. Voice measurements
+                    stay the same.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p
+                    className={"ep-transcript" + (longWords ? " is-long" : "")}
+                  >
+                    {entry.transcript || "No words were kept for this entry."}
+                  </p>
+                  {summaryAddsSomething(entry.transcript, entry.summary) && (
+                    <>
+                      <h3 className="ep-label ep-short-label">In short</h3>
+                      <p className="ep-summary">{entry.summary}</p>
+                    </>
+                  )}
+                </>
+              )}
+              {entry.tags.length > 0 && (
+                <p className="ep-tags">
+                  <span className="visually-hidden">Themes: </span>
+                  {entry.tags.join(" ")}
                 </p>
               )}
-              <div className="tag-row">
-                {entry.tags.map((t) => (
-                  <span className="tag" key={t}>
-                    {t}
-                  </span>
-                ))}
-              </div>
-            </section>
-            <details
-              className="optional-signals"
-              open={
-                (!growth?.simple_mode && growth?.modules.includes("voice")) ||
-                undefined
-              }
-            >
-              <summary>
-                What Numa noticed{" "}
-                <span>Optional · voice and words, kept separate</span>
-              </summary>
-              <aside className="signal-stack">
-                <div className="signal-card">
-                  <span className="eyebrow">
-                    <Mic size={13} /> From your voice
-                  </span>
-                  <p>
-                    {entry.voice?.observation ||
-                      "Voice analysis is unavailable for this entry. Your words can still be saved."}
-                  </p>
-                  <span className="source-label">
-                    {entry.voice?.source === "simulated"
-                      ? "Illustrative measurements"
-                      : entry.voice?.model
-                        ? "Experimental ML + acoustic measurements"
-                        : entry.voice
-                          ? "Measured acoustics · ML not active"
-                          : "No vocal signal"}
-                  </span>
-                  {entry.voice?.features && (
-                    <div className="voice-facts">
-                      <span>{entry.voice.features.duration_sec}s recorded</span>
-                      {entry.voice.quality === "valid" && (
-                        <span>
-                          {Math.round(
-                            (entry.voice.features.pause_ratio || 0) * 100,
-                          )}
-                          % pauses
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  {entry.voice?.probabilities &&
-                    Object.keys(entry.voice.probabilities).length > 0 && (
-                      <details className="model-details">
-                        <summary>
-                          {entry.source === "simulated"
-                            ? "Illustrative model output"
-                            : "Experimental model output"}
-                        </summary>
-                        <p>
-                          Vocal-expression categories describe the model’s
-                          estimate, not your actual feelings.
-                        </p>
-                        {Object.entries(entry.voice.probabilities).map(
-                          ([label, probability]) => (
-                            <div className="model-probability" key={label}>
-                              <span>
-                                {(
-                                  {
-                                    neu: "Neutral",
-                                    hap: "Happy",
-                                    sad: "Sad",
-                                    ang: "Angry",
-                                  } as Record<string, string>
-                                )[label] || label}
-                              </span>
-                              <span>{Math.round(probability * 100)}%</span>
-                            </div>
-                          ),
-                        )}
-                      </details>
-                    )}
-                </div>
-                <div className="signal-card">
-                  <span className="eyebrow">
-                    <BookOpen size={13} /> In your own words
-                  </span>
-                  {entry.explicit.length ? (
-                    entry.explicit.map((signal, i) => (
-                      <div className="explicit-signal" key={i}>
-                        <strong>{signal.feeling}</strong>
-                        <q>{signal.evidence}</q>
-                      </div>
-                    ))
-                  ) : (
-                    <p>
-                      No explicit feeling was recorded. You don’t need to name
-                      one.
-                    </p>
-                  )}
-                  <span className="source-label">
-                    {entry.semantic_source === "gemini"
-                      ? "Explicit mentions · Gemini"
-                      : entry.semantic_source === "simulated"
-                        ? "Illustrative self-report"
-                        : "No inferred self-report"}
-                  </span>
-                </div>
-                <div className="quiet-info">
-                  These are separate perspectives. A voice estimate never
-                  overrides your experience.
-                </div>
-              </aside>
-            </details>
-          </div>
-          {entry.analysis?.errors.map((e, i) => (
-            <ErrorNotice key={i} message={e} />
-          ))}
-          <ErrorNotice message={error} />
-          <div className="entry-save-row">
-            {!sample && (
-              <>
-                <button
-                  className="button primary"
-                  onClick={() => void save()}
-                  disabled={busy || (entry.saved && !edited)}
-                >
-                  {busy
-                    ? "Saving…"
-                    : entry.saved
-                      ? edited
-                        ? "Save changes"
-                        : "Saved"
-                      : "Save this page"}
-                  <Check size={16} />
-                </button>
-                {!confirmDelete ? (
-                  <button
-                    className="quiet-button danger"
-                    onClick={() => setConfirmDelete(true)}
-                  >
-                    <Trash2 size={15} />
-                    {entry.saved ? "Delete entry" : "Discard draft"}
-                  </button>
-                ) : (
-                  <div className="button-row">
-                    <span>Delete this page?</span>
+              {entry.analysis?.errors.map((e, i) => (
+                <ErrorNotice key={i} message={e} />
+              ))}
+              <ErrorNotice message={error} />
+              <div className="ep-save">
+                {sample ? (
+                  <p className="ep-saved">A fictional entry, read only.</p>
+                ) : !entry.saved ? (
+                  <>
                     <button
-                      className="button danger"
+                      type="button"
+                      className="ep-primary"
                       disabled={busy}
-                      onClick={() => void remove()}
+                      onClick={() => void save()}
                     >
-                      Delete
+                      {busy ? "Saving…" : "Save this page"}
                     </button>
                     <button
-                      className="quiet-button"
-                      onClick={() => setConfirmDelete(false)}
+                      type="button"
+                      className="ep-link"
+                      onClick={() => setConfirmAt("sheet")}
                     >
-                      Keep it
+                      Discard draft
                     </button>
-                  </div>
+                  </>
+                ) : editing ? (
+                  <>
+                    {/* Only offered once something changed: never a dead button. */}
+                    {edited && (
+                      <button
+                        type="button"
+                        className="ep-primary"
+                        disabled={busy}
+                        onClick={() => void save()}
+                      >
+                        {busy ? "Saving…" : "Save changes"}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="ep-link"
+                      onClick={cancelEdit}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <p className="ep-saved" role="status">
+                    <Check size={16} aria-hidden="true" /> Saved in your journal
+                  </p>
                 )}
-              </>
-            )}
-            <PrivacyNote />
+              </div>
+              {confirmAt === "sheet" && confirm}
+            </section>
+            <aside className="ep-noticed" aria-labelledby="ep-noticed">
+              {simple ? (
+                <details className="ep-noticed-fold">
+                  <summary id="ep-noticed">What Numa noticed</summary>
+                  {signals}
+                </details>
+              ) : (
+                <>
+                  <h2 id="ep-noticed">What Numa noticed</h2>
+                  {signals}
+                </>
+              )}
+            </aside>
           </div>
           {entry.saved && !sample && (
             <ActionPanel entry={entry} refresh={resource.refresh} />
           )}
-          {!growth?.simple_mode &&
-            growth?.modules.some((m) =>
-              ["sleep", "activity", "music"].includes(m),
-            ) && (
-              <div className="context-section">
-                <SectionTitle title="The context around this day">
-                  <Badge>Simulated data</Badge>
-                </SectionTitle>
-                <ContextCards
-                  context={entry.context}
-                  modules={growth.modules}
-                />
-              </div>
-            )}
+          {sample && entry.action && (
+            <ActionSummary
+              action={entry.action}
+              name={user?.name.split(" ")[0] ?? "They"}
+            />
+          )}
         </>
       )}
+      <footer className="ep-wrap ep-foot">
+        <p>
+          Your words stay in your journal. Your psychologist sees trends only.
+        </p>
+        {!sample && !processing && (
+          <div className="ep-foot-delete">
+            {confirmAt === "foot" ? (
+              confirm
+            ) : (
+              <button
+                type="button"
+                className="ep-link"
+                onClick={() => setConfirmAt("foot")}
+              >
+                {entry.saved ? "Delete entry" : "Discard draft"}
+              </button>
+            )}
+          </div>
+        )}
+      </footer>
     </div>
   );
 }
@@ -937,7 +1173,6 @@ function ActionPanel({
     [blob, setBlob] = useState<Blob | null>(null),
     [breathing, setBreathing] = useState(false);
   const kind = entry.action?.kind || rec.data?.kind;
-  const Icon = actionIcons[kind || "walk"] || Leaf;
   async function update(feedback?: string) {
     setBusy(true);
     try {
@@ -974,91 +1209,96 @@ function ActionPanel({
       setBusy(false);
     }
   }
+  const done = !!entry.action?.completed_at;
   return (
-    <section className="action-panel">
-      <div className="action-icon">
-        <Icon size={25} />
-      </div>
-      <div className="action-content">
-        <span className="eyebrow">A small next step · always optional</span>
-        <h2>
-          {entry.action?.completed_at
+    <section className="ep-step" aria-labelledby="ep-step-title">
+      <div className="ep-wrap ep-step-inner">
+        <p className="ep-step-kicker">A small next step, always optional</p>
+        <h2 id="ep-step-title">
+          {done
             ? "You made a little space."
             : rec.data?.title || "Finding a small next step…"}
         </h2>
-        <p>
-          {entry.action?.completed_at
-            ? "Keep what works for you. There is no right answer here."
-            : rec.data?.description}
-        </p>
-        {!entry.action?.completed_at && (
+        {!done && (
           <>
-            <p className="evidence-reason">
-              {rec.data?.explanation || rec.data?.reason}
-            </p>
-            <div className="button-row">
+            {rec.data?.description && (
+              <p className="ep-step-desc">{rec.data.description}</p>
+            )}
+            {(rec.data?.explanation || rec.data?.reason) && (
+              <p className="ep-step-reason">
+                {rec.data?.explanation || rec.data?.reason}
+              </p>
+            )}
+            <div className="ep-step-actions">
               <button
-                className="button primary"
+                type="button"
+                className="ep-primary"
                 disabled={busy || !rec.data}
                 onClick={() => void update()}
               >
-                <Check size={16} /> I tried this
+                I tried this
               </button>
               {kind === "breathe" && (
                 <button
-                  className="button outline"
+                  type="button"
+                  className="ep-pebble"
+                  aria-expanded={breathing}
                   onClick={() => setBreathing(!breathing)}
                 >
-                  <Wind size={16} />
                   {breathing ? "Close breathing guide" : "Open breathing guide"}
                 </button>
               )}
-              <span className="muted small-text">
-                {rec.data?.minutes} gentle minutes
-              </span>
+              {rec.data && <span>{rec.data.minutes} gentle minutes</span>}
             </div>
           </>
         )}
         {breathing && (
-          <div className="breathing-guide">
-            <div className="breathing-circle" />
-            <span>Breathe in and out comfortably. Follow your own pace.</span>
+          <div className="ep-breath">
+            <span className="ep-breath-circle" aria-hidden="true" />
+            <p>Breathe in and out comfortably. Follow your own pace.</p>
           </div>
         )}
-        {entry.action?.completed_at && (
+        {done && (
           <>
-            <h4>Was this useful for you?</h4>
-            <div className="feedback-row">
+            <h3 className="ep-step-question">Was this useful for you?</h3>
+            <div
+              className="ep-feedback"
+              role="group"
+              aria-label="Was this useful for you?"
+            >
               {[
-                { value: "helpful", text: "Helpful", Icon: Leaf },
-                { value: "not_helpful", text: "Not helpful", Icon: X },
-                { value: "skip", text: "Skip", Icon: ArrowRight },
-              ].map((f) => (
-                <button
-                  key={f.value}
-                  disabled={busy}
-                  className={
-                    "feedback-button " +
-                    (entry.action?.feedback === f.value ? "selected" : "")
-                  }
-                  onClick={() => void update(f.value)}
-                >
-                  <f.Icon size={15} />
-                  {f.text}
-                </button>
-              ))}
+                { value: "helpful", text: "Helpful" },
+                { value: "not_helpful", text: "Not helpful" },
+                { value: "skip", text: "Skip" },
+              ].map((f) => {
+                const chosen = entry.action?.feedback === f.value;
+                return (
+                  <button
+                    type="button"
+                    key={f.value}
+                    disabled={busy}
+                    aria-pressed={chosen}
+                    className={"ep-pebble" + (chosen ? " selected" : "")}
+                    onClick={() => void update(f.value)}
+                  >
+                    {chosen && <Check size={16} aria-hidden="true" />}
+                    {f.text}
+                  </button>
+                );
+              })}
             </div>
             <button
-              className="text-link"
+              type="button"
+              className="ep-step-link"
+              aria-expanded={following}
               onClick={() => setFollowing(!following)}
             >
-              <Mic size={14} />
               {following
                 ? "Close comparison"
                 : "Optionally add a short voice comparison"}
             </button>
             {following && (
-              <div className="follow-up">
+              <div className="ep-follow">
                 <p>
                   Say anything you like. A difference in voice does not prove
                   that an activity helped.
@@ -1067,36 +1307,54 @@ function ActionPanel({
                   onReady={setBlob}
                   onClear={() => setBlob(null)}
                   label="Record a voice comparison"
+                  tone="dark"
                 />
                 <button
-                  className="button primary"
+                  type="button"
+                  className="ep-primary"
                   disabled={busy || !blob}
                   onClick={() => void sendFollow()}
                 >
-                  Save comparison <ArrowRight size={16} />
+                  Save comparison
                 </button>
               </div>
             )}
             {entry.follow_up && (
-              <div className="follow-result">
-                {["pending", "processing"].includes(entry.follow_up.status) ? (
-                  "Listening to your comparison…"
-                ) : entry.follow_up.voice ? (
-                  <>
-                    <CheckCheck size={16} /> Comparison recorded.{" "}
-                    {entry.follow_up.interpretation}
-                  </>
-                ) : (
-                  "Comparison could not be analysed. You can try recording again."
-                )}
-              </div>
+              <p className="ep-follow-result" role="status">
+                {["pending", "processing"].includes(entry.follow_up.status)
+                  ? "Listening to your comparison…"
+                  : entry.follow_up.voice
+                    ? `Comparison recorded. ${entry.follow_up.interpretation ?? ""}`
+                    : "Comparison could not be analysed. You can try recording again."}
+              </p>
             )}
           </>
         )}
-        <ErrorNotice message={error || rec.error} />
+        {(error || rec.error) && (
+          <p className="ep-step-error" role="alert">
+            {error || rec.error}
+          </p>
+        )}
       </div>
     </section>
   );
+}
+
+/* "In short" earns its place only when it says something the words don't.
+   Compare ignoring case, runs of whitespace and trailing punctuation. */
+function normaliseForCompare(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[\s.!?…,;:"'”’)\]]+$/u, "");
+}
+function summaryAddsSomething(
+  transcript: string | null | undefined,
+  summary: string | null | undefined,
+) {
+  const s = normaliseForCompare(summary ?? "");
+  return s !== "" && s !== normaliseForCompare(transcript ?? "");
 }
 
 function InsightsPage() {
@@ -1112,11 +1370,21 @@ function InsightsPage() {
     !growth.modules.some((m) => m === "voice" || m === "patterns")
   )
     return (
-      <Empty title="Your journal is already enough">
-        <Link className="text-link" to="/patient/space">
-          Choose what you would like to explore <ArrowRight size={15} />
+      <>
+        <Link to="/patient/garden" className="back-link">
+          <ArrowLeft size={15} /> My garden
         </Link>
-      </Empty>
+        <section className="insights-empty">
+          <h1>What helps</h1>
+          <p>
+            Your journal is already enough. When you’re curious, you can add
+            this view from your space.
+          </p>
+          <Link className="quiet-link" to="/patient/space">
+            Choose what to explore
+          </Link>
+        </section>
+      </>
     );
   return (
     <>

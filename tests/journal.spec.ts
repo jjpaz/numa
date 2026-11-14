@@ -99,11 +99,12 @@ test("patient creates a private entry, adds feedback, and psychologist receives 
   await expect(
     page.getByRole("textbox", { name: "Transcript", exact: true }),
   ).toHaveValue(privateText);
-  await page.locator(".optional-signals > summary").click();
+  // "What Numa noticed" is always visible now: nothing to unfold.
   await expect(
     page.getByText("No explicit feeling was recorded."),
   ).toBeVisible();
   await page.getByRole("button", { name: "Save this page" }).click();
+  await expect(page.getByText("Saved in your journal")).toBeVisible();
   await page.getByRole("button", { name: "I tried this" }).click();
   await page.getByRole("button", { name: "Helpful", exact: true }).click();
   await expect(
@@ -258,16 +259,18 @@ test("browser microphone path records real media frames and permits manual recov
   await expect(
     page.getByRole("textbox", { name: "Transcript", exact: true }),
   ).toBeVisible();
-  await page.locator(".optional-signals > summary").click();
+  // One source line: the backend's own description, which says no ML is active.
   await expect(
-    page.getByText("Measured acoustics · ML not active"),
-  ).toBeVisible();
-  await expect(page.locator(".voice-facts")).toContainText("s recorded");
+    page
+      .locator(".ep-source")
+      .filter({ hasText: /voice model is not enabled|ML not active/ }),
+  ).toHaveCount(1);
+  await expect(page.locator(".voice-facts")).toContainText("seconds recorded");
   await page
     .getByRole("textbox", { name: "Transcript", exact: true })
     .fill("A fictional walk in the park.");
   await page
-    .getByRole("textbox", { name: "A little summary" })
+    .getByRole("textbox", { name: "In short" })
     .fill("An afternoon walk.");
   await page.getByRole("button", { name: "Save this page" }).click();
   await expect(
@@ -281,10 +284,14 @@ test("space grows only by choice; simple view keeps every module and journal pag
 }) => {
   await signIn(page, "patient", true);
   await expect(page.locator(".garden-hero")).toBeVisible();
-  // Softened Everforest cream (--cream #f4eedb).
+  // The patient's space sits on --n-paper (#F8F0DF), as on the public page.
   expect(
-    await page.evaluate(() => getComputedStyle(document.body).backgroundColor),
-  ).toBe("rgb(244, 238, 219)");
+    await page.evaluate(
+      () =>
+        getComputedStyle(document.querySelector(".garden-app")!)
+          .backgroundColor,
+    ),
+  ).toBe("rgb(248, 240, 223)");
   await expect(page.locator(".context-card")).toHaveCount(0);
   await openFromLeafMenu(page, "My garden");
   await expect(page.locator(".context-card")).toHaveCount(0);

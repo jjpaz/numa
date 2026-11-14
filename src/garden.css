@@ -1,56 +1,53 @@
-/* Garden design layer — softened Everforest-inspired palette.
-   Tokens are shared (the clinic portal picks them up too); every layout rule
-   below is scoped to .garden-app so the psychologist portal keeps its composition. */
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap");
+/* The patient's space. Built on src/design/tokens.css (see DESIGN.md).
+   Nothing here touches :root: every variable is scoped to .garden-app, so the
+   psychologist portal keeps its own composition and theme.css values. */
 
-:root {
-  /* Base palette */
-  --cream: #f4eedb;
-  --oat: #ebe4cc;
-  --ivory-soft: #fbf8ec;
-  --forest: #2f3a2e;
-  --forest-soft: #4f5c4a;
-  --peach: #e9a77c;
-  --peach-deep: #df9566;
-  --g-moss: #6f8a5c;
-  --g-leaf: #8ea677;
-  --g-sage: #adbf98;
-  --g-stem: #5d7350;
-  --g-hill: #e3e2c4;
-  --g-ground: #d7dcb7;
-  --g-soil: #cdd2a9;
-  --g-butter: #f0d690;
-  --g-petal: #f1b892;
-  --g-clay: #c98e6b;
-  --focus: #2f3a2e;
-  --display: "Fraunces", Georgia, "Times New Roman", serif;
-
-  /* Re-map the existing identity tokens so every screen shares the palette. */
-  --ivory: var(--cream);
-  --apricot: var(--peach);
-  --natural: #9aa785;
-  --organic: var(--forest);
-  --paper: var(--cream);
-  --white: var(--ivory-soft);
-  --green: var(--forest);
-  --deep: #26301f;
-  --sage: #e6e5c9;
-  --line: #d9d6ba;
-  --muted: var(--forest-soft);
-  --amber: #8a5a33;
-  --plant-halo: #e6e6c8;
-  background: var(--cream);
-  color: var(--forest);
-}
-
-/* ───────── Shell ───────── */
 .garden-app {
+  /* Garden vocabulary, derived from the --n- tokens. */
+  --cream: var(--n-paper);
+  --oat: #efe3c8;
+  --ivory-soft: var(--n-ivory);
+  --forest: var(--n-moss-deep);
+  --forest-soft: var(--n-ink-soft);
+  --peach: var(--n-apricot);
+  --peach-deep: #c97e25;
+  --g-moss: var(--n-moss);
+  --g-leaf: var(--n-sage);
+  --g-sage: var(--n-sage);
+  --g-stem: var(--n-moss);
+  --g-hill: #efe4c9;
+  --g-ground: #e8dcbd;
+  --g-soil: #dfd2b0;
+  --g-butter: var(--n-apricot);
+  --g-petal: var(--n-apricot);
+  --g-clay: var(--n-natural);
+  --focus: var(--n-focus);
+  --display: var(--n-font-display);
+
+  /* Older shared variables, resolved locally for the other patient screens. */
+  --ivory: var(--n-paper);
+  --apricot: var(--n-apricot);
+  --natural: var(--n-natural);
+  --organic: var(--n-moss-deep);
+  --paper: var(--n-paper);
+  --white: #fbf4e4;
+  --green: var(--n-moss);
+  --deep: var(--n-moss-deep);
+  --sage: #efe3c8;
+  --line: #e2d4b4;
+  --muted: var(--n-ink-soft);
+  --amber: var(--n-focus);
+  --plant-halo: var(--n-ivory);
+  --heading: var(--n-font-ui);
+
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--cream);
-  color: var(--forest);
+  background: var(--n-paper);
+  color: var(--n-moss-deep);
+  font-family: var(--n-font-ui);
   font-size: 16px;
+  line-height: var(--n-leading-text);
   overflow-x: clip;
 }
 .garden-header {
@@ -64,13 +61,19 @@
   padding: 20px 16px 4px;
 }
 .garden-header .wordmark {
+  font-family: var(--n-font-ui);
+  font-weight: 600;
   font-size: 26px;
-  color: var(--forest);
+  letter-spacing: -0.02em;
+  color: var(--n-moss-deep);
 }
 .garden-header .wordmark svg {
-  width: 28px;
-  height: 28px;
-  stroke: var(--forest);
+  width: 26px;
+  height: 26px;
+  stroke: var(--n-moss-deep);
+}
+.garden-header .wordmark-dot {
+  color: inherit;
 }
 .garden-main {
   flex: 1;
@@ -89,13 +92,32 @@
   margin: 0 auto;
   padding: 18px 16px 28px;
   border-top: 1px solid var(--line);
-  font-size: 13px;
-  color: var(--forest-soft);
+  font-size: 14px;
+  color: var(--n-ink-soft);
 }
-.garden-footer .mode-note {
+.garden-footer p {
+  margin: 0;
+  font-size: 14px;
+  line-height: var(--n-leading-text);
+}
+
+/* The home uses the full 1280px column of the public page; the other patient
+   screens keep their narrower reading width. */
+.garden-app:has(.garden-home) .garden-header,
+.garden-app:has(.garden-home) .garden-footer {
+  max-width: 1280px;
+  padding-inline: clamp(16px, 5vw, 72px);
+}
+.garden-app:has(.garden-home) .garden-header {
+  padding-block: 28px 0;
+}
+.garden-main:has(> .garden-home) {
+  max-width: none;
   padding: 0;
-  font-size: 13px;
-  color: var(--forest-soft);
+}
+.garden-app:has(.garden-home) .garden-footer {
+  border-top: 0;
+  padding-block: 24px 36px;
 }
 
 /* Legible defaults for every patient screen (session, result, space…). */
@@ -165,9 +187,8 @@
 .garden-app input:focus-visible,
 .garden-app textarea:focus-visible,
 .garden-app select:focus-visible {
-  outline: 3px solid var(--focus);
+  outline: 2px solid var(--n-focus);
   outline-offset: 3px;
-  border-radius: 12px;
 }
 
 /* ───────── Leaf menu ───────── */
@@ -179,191 +200,420 @@
   place-items: center;
   width: 44px;
   height: 44px;
-  border-radius: 46% 54% 50% 50% / 55% 48% 52% 45%;
-  border: 1px solid var(--line);
-  background: var(--ivory-soft);
-  color: var(--g-stem);
+  border-radius: var(--n-radius-pebble);
+  border: 1px solid var(--n-sheet-border);
+  background: transparent;
+  color: var(--n-moss);
   cursor: pointer;
-  transition: background 0.3s ease;
 }
 .leaf-button:hover,
 .leaf-button[aria-expanded="true"] {
-  background: var(--oat);
+  background: var(--n-ivory);
 }
+/* The menu is a small ivory sheet; it appears without animation. */
 .leaf-panel {
   position: absolute;
   right: 0;
-  top: calc(100% + 10px);
+  top: calc(100% + 8px);
   z-index: 30;
   min-width: 200px;
-  padding: 10px;
-  border-radius: 22px;
-  background: var(--ivory-soft);
-  border: 1px solid var(--line);
-  box-shadow: 0 18px 40px -22px #2f3a2e55;
-  animation: leaf-open 0.35s ease-out;
+  padding: 6px;
+  border-radius: var(--n-radius-sheet);
+  background: var(--n-ivory);
+  border: 1px solid var(--n-sheet-border);
+  box-shadow: var(--n-sheet-shadow);
 }
 .leaf-panel nav {
   display: grid;
 }
 .leaf-panel nav a {
-  padding: 12px 14px;
-  border-radius: 14px;
-  font-family: var(--display);
-  font-size: 19px;
-  color: var(--forest);
+  padding: 10px 12px;
+  border-radius: 4px;
+  font-family: var(--n-font-ui);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--n-moss-deep);
 }
 .leaf-panel nav a:hover,
 .leaf-panel nav a.active {
-  background: var(--oat);
+  background: rgb(46 49 34 / 0.06);
 }
 .leaf-signout {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
-  margin-top: 6px;
-  padding: 10px 14px;
+  margin-top: 4px;
+  padding: 10px 12px;
   border: 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--n-sheet-border);
   background: none;
-  color: var(--forest-soft);
-  font-size: 14px;
+  font-family: var(--n-font-ui);
+  color: var(--n-ink-soft);
+  font-size: 16px;
   cursor: pointer;
 }
-@keyframes leaf-open {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-}
 
-/* ───────── Home ───────── */
-.garden-hero {
-  text-align: center;
-  padding: 28px 0 8px;
+/* ───────── Home: "your garden grows from your own voice" ───────── */
+.gh-wrap {
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: clamp(16px, 5vw, 72px);
 }
-.garden-date {
+.garden-hero {
+  padding-top: clamp(24px, 4vw, 48px);
+}
+.garden-app .garden-date {
   margin: 0 0 10px;
-  font-size: 15px;
+  font-size: var(--n-text-16);
+  color: var(--n-ink-soft);
 }
 .garden-hero h1 {
   margin: 0;
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: clamp(32px, 8vw, 46px);
-  line-height: 1.12;
-  letter-spacing: -0.8px;
-  color: var(--forest);
+  font-family: var(--n-font-display);
+  font-weight: 400;
+  font-size: clamp(40px, 5vw, 72px);
+  line-height: 1.06;
+  letter-spacing: var(--n-tracking-display);
+  color: var(--n-moss-deep);
 }
-.garden-lede {
-  margin: 10px auto 0;
-  max-width: 30ch;
-  font-family: var(--display);
-  font-size: clamp(19px, 4.6vw, 23px);
-  line-height: 1.35;
-  color: var(--forest-soft);
+.garden-app .garden-lede {
+  max-width: 40ch;
+  margin: 14px 0 0;
+  font-size: var(--n-text-21);
+  color: var(--n-ink-soft);
 }
-.garden {
-  display: block;
+.garden-hero .error-notice {
+  margin-top: 16px;
+}
+
+/* The voice garden: one line, two weeks (one week on small screens). */
+.gh-garden {
+  display: flex;
+  flex-direction: column;
+  margin-top: clamp(20px, 3vw, 36px);
+}
+.gh-garden-art {
   width: 100%;
-  height: auto;
 }
-.garden-hero-art {
-  max-width: 620px;
-  margin: 18px auto 0;
-  padding: 0;
+.gh-garden-art svg {
+  display: block;
+  overflow: visible;
 }
+/* Under the line: "Two weeks ago" at the start, the Today group at the end. */
+.gh-under {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-top: 8px;
+}
+.gh-start-label,
+.gh-today-label {
+  font-size: var(--n-text-14);
+  line-height: 1.4;
+  color: var(--n-ink-soft);
+}
+.gh-narrow-only {
+  display: none;
+}
+.gh-line {
+  fill: none;
+  stroke: var(--n-moss);
+  stroke-width: var(--n-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.gh-stem {
+  fill: none;
+  stroke: var(--n-moss);
+  stroke-width: 1.5px;
+  stroke-linecap: round;
+}
+.gh-blades path {
+  fill: none;
+  stroke-width: var(--n-stroke);
+  stroke-linecap: round;
+}
+
+/* Today as one group: label, 8px, state, 12px, action, 12px, secondary link. */
 .today-action {
   display: flex;
   flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+.today-action > .today-status {
+  margin-top: 8px;
+}
+.today-action > .garden-cta {
+  margin-top: 12px;
+}
+.today-action > .gh-today-label + .garden-cta {
+  margin-top: 8px;
+}
+.today-action > .quiet-link,
+.today-action > .today-hint {
+  margin-top: 12px;
+}
+.garden-app .today-status {
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 22px;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--n-text-16);
+  color: var(--n-moss-deep);
+}
+.today-status svg {
+  flex: none;
+  color: var(--n-moss);
 }
 .garden-cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-height: 54px;
-  padding: 14px 30px;
-  border-radius: 999px;
-  background: var(--peach);
-  color: var(--forest);
-  font-size: 17px;
-  font-weight: 650;
-  box-shadow: 0 10px 24px -16px #b36a3a;
-  transition:
-    background 0.3s ease,
-    transform 0.3s ease;
+  min-height: 52px;
+  padding: 0 30px;
+  border-radius: var(--n-radius-pebble);
+  background: var(--n-apricot);
+  color: var(--n-moss-deep);
+  font-size: var(--n-text-18);
+  font-weight: 600;
 }
 .garden-cta:hover {
-  background: var(--peach-deep);
-  transform: translateY(-1px);
+  background: #c97e25;
 }
-.garden-cta.is-waiting {
-  background: var(--oat);
-  color: var(--forest-soft);
-  box-shadow: none;
-}
-.today-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+.garden-app .today-hint {
   margin: 0;
-  font-size: 16px;
-  color: var(--forest) !important;
-}
-.today-status svg {
-  color: var(--g-stem);
-}
-.today-hint {
-  margin: 0;
-  font-size: 15px;
+  font-size: var(--n-text-14);
+  color: var(--n-ink-soft);
 }
 .quiet-link {
-  font-size: 15px;
-  color: var(--forest-soft);
+  font-size: var(--n-text-16);
+  font-weight: 500;
+  color: var(--n-moss-deep);
   text-decoration: underline;
-  text-underline-offset: 3px;
+  text-decoration-color: var(--n-natural);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
+}
+.quiet-link:hover {
+  text-decoration-color: currentColor;
+}
+.garden-app .gh-simple-note {
+  max-width: 48ch;
+  margin: 32px 0 0;
+  font-size: var(--n-text-16);
+  color: var(--n-ink-soft);
 }
 
-.garden-understory {
-  margin-top: 4px;
+/* The earth: latest entry on a sheet, and how the garden is growing. */
+.gh-earth {
+  margin-top: clamp(48px, 5vw, 64px);
+  padding-block: clamp(48px, 7vw, 96px);
+  background: var(--n-moss);
+  color: var(--n-ivory);
 }
-svg.garden-band {
-  max-width: 620px;
-  margin: 0 auto;
+.gh-earth-grid {
+  display: grid;
+  /* the sheet takes ~55% of the row */
+  grid-template-columns: minmax(0, 11fr) minmax(0, 9fr);
+  gap: 40px clamp(32px, 5vw, 80px);
+  align-items: start;
 }
-.latest-entry,
-.growth-note {
-  max-width: 560px;
-  margin: 28px auto 0;
-  padding: 28px 26px;
-  border-radius: 34px 30px 36px 28px;
-  background: var(--ivory-soft);
-  border: 1px solid var(--line);
+.gh-sheet {
+  display: grid;
+  gap: 8px;
+  padding: 28px 28px 30px;
+  border-radius: var(--n-radius-sheet);
+  border: 1px solid var(--n-sheet-border);
+  background: var(--n-ivory);
+  box-shadow: var(--n-sheet-shadow);
+  color: var(--n-moss-deep);
 }
-.latest-entry h2,
-.growth-note h2,
-.garden-section h2 {
-  margin: 0 0 6px;
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: 23px;
-  letter-spacing: -0.3px;
-  color: var(--forest);
-}
-.latest-entry h3 {
-  margin: 12px 0 4px;
-  font-size: 17px;
+.garden-app .gh-sheet-kicker {
+  margin: 0;
+  font-size: var(--n-text-16);
   font-weight: 600;
-  color: var(--forest);
+  color: var(--n-moss);
 }
-.latest-entry.is-empty {
-  text-align: center;
+.gh-sheet-kicker time {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--n-ink-soft);
 }
+.garden-app .gh-reflection {
+  margin: 4px 0;
+  font-family: var(--n-font-display);
+  font-size: var(--n-text-28);
+  line-height: 1.22;
+  letter-spacing: -0.01em;
+  color: var(--n-moss-deep);
+}
+.gh-sheet h3 {
+  margin: 4px 0 0;
+  font-family: var(--n-font-ui);
+  font-size: var(--n-text-18);
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--n-moss-deep);
+}
+.garden-app .gh-summary {
+  margin: 0;
+  font-size: var(--n-text-16);
+  color: var(--n-ink-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.gh-sheet-link {
+  justify-self: start;
+  margin-top: 8px;
+  font-size: var(--n-text-16);
+  font-weight: 500;
+  color: var(--n-moss-deep);
+  text-decoration: underline;
+  text-decoration-color: var(--n-natural);
+  text-underline-offset: 6px;
+}
+.gh-growth h2 {
+  margin: 0 0 14px;
+  font-family: var(--n-font-display);
+  font-weight: 400;
+  font-size: var(--n-text-28);
+  line-height: 1.15;
+  letter-spacing: var(--n-tracking-display);
+  color: var(--n-ivory);
+}
+.garden-app .gh-growth p {
+  max-width: 38ch;
+  margin: 0 0 22px;
+  font-size: clamp(var(--n-text-18), 1.45vw, var(--n-text-21));
+  color: var(--n-ivory);
+}
+.gh-growth-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+}
+.gh-growth-links a {
+  font-size: var(--n-text-16);
+  font-weight: 500;
+  color: var(--n-ivory);
+  text-decoration: underline;
+  text-decoration-color: rgb(245 230 197 / 0.55);
+  text-underline-offset: 6px;
+}
+.gh-growth-links a:hover {
+  text-decoration-color: currentColor;
+}
+.gh-earth a:focus-visible {
+  outline-color: var(--n-ivory);
+}
+.gh-earth .gh-sheet a:focus-visible {
+  outline-color: var(--n-focus);
+}
+
+/* One orchestrated moment, first visit per session only (.is-growing). */
+@keyframes gh-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+@keyframes gh-rise {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes gh-open {
+  from {
+    transform: scale(0) rotate(-40deg);
+  }
+}
+@keyframes gh-unfurl {
+  from {
+    transform: scale(0);
+  }
+}
+.is-growing .gh-line {
+  animation: gh-draw 1.5s var(--n-ease) both;
+}
+.is-growing .gh-plant {
+  animation: gh-rise 0.5s var(--n-ease) both;
+  animation-delay: var(--d, 0s);
+}
+/* Today's leaves unfold from their base once the stem is drawn; the flower opens last. */
+.is-growing .gh-unfurl {
+  animation: gh-unfurl 0.55s var(--n-ease) both;
+  animation-delay: calc(1.3s + var(--i) * 90ms);
+}
+.is-growing .gh-bloom {
+  animation: gh-open 0.7s var(--n-ease) both;
+  animation-delay: 1.8s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .is-growing .gh-line,
+  .is-growing .gh-plant,
+  .is-growing .gh-unfurl,
+  .is-growing .gh-bloom {
+    animation: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .garden-app .garden-header .wordmark {
+    font-size: 22px;
+  }
+  .garden-app .garden-header .wordmark svg {
+    width: 22px;
+    height: 22px;
+  }
+  .garden-app .garden-lede {
+    font-size: var(--n-text-18);
+  }
+  /* Small screens: "This week … Today" on one row, then the action, full width. */
+  .gh-under {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+  .gh-wide-only {
+    display: none;
+  }
+  .gh-narrow-only {
+    display: inline;
+  }
+  .today-action {
+    align-items: stretch;
+    text-align: left;
+  }
+  .today-action > .gh-today-label {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+  .today-action > .today-status,
+  .today-action > .garden-cta,
+  .today-action > .gh-today-label + .garden-cta {
+    margin-top: 16px;
+  }
+  .today-action .quiet-link {
+    align-self: flex-start;
+  }
+  .gh-earth-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .gh-sheet {
+    padding: 22px 20px 24px;
+  }
+}
+
+/* Shared with My garden and the entry page. */
 .soft-date {
   display: block;
   margin: 0;
@@ -374,27 +624,14 @@ svg.garden-band {
   display: block;
   margin: 12px 0 0;
   font-family: var(--display);
-  font-style: italic;
   font-size: 20px;
   line-height: 1.4;
   color: var(--g-stem) !important;
 }
-.latest-summary {
-  margin: 0 0 14px;
-  font-size: 16px;
-}
-.growth-note {
-  background: transparent;
-  border-style: dashed;
-}
-.growth-note p {
-  font-size: 17px;
-  line-height: 1.6;
-}
-.growth-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 26px;
+.garden {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 .today-notice {
   margin: 0 0 18px;
@@ -452,6 +689,27 @@ svg.garden-band {
 .garden-page-heading p {
   margin: 6px 0 0;
   font-size: 17px;
+}
+
+/* What helps, before the person adds it from their space: no box, no icon. */
+.insights-empty {
+  padding: 30px 0 48px;
+  max-width: 34rem;
+}
+.garden-app .insights-empty h1 {
+  margin: 0;
+  font-family: var(--n-font-display);
+  font-weight: 400;
+  font-size: clamp(32px, 8vw, 42px);
+  letter-spacing: -0.6px;
+  color: var(--n-moss-deep);
+}
+.garden-app .insights-empty p {
+  margin: 12px 0 24px;
+  font-family: var(--n-font-ui);
+  font-size: var(--n-text-18);
+  line-height: var(--n-leading-text);
+  color: var(--n-ink-soft);
 }
 .week-trace {
   display: grid;
@@ -564,7 +822,6 @@ svg.garden-band {
 }
 .log-reflection {
   font-family: var(--display);
-  font-style: italic;
   font-size: 16px;
   color: var(--g-stem);
 }
@@ -699,17 +956,5 @@ svg.garden-band {
   .garden-footer {
     padding-left: 28px;
     padding-right: 28px;
-  }
-  .garden-hero {
-    padding-top: 44px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .leaf-panel {
-    animation: none;
-  }
-  .garden-cta:hover {
-    transform: none;
   }
 }

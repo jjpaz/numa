@@ -211,7 +211,8 @@ test("completed: after saving today's entry the main action opens that entry", a
     .getByRole("button", { name: "Make a little sense of today" })
     .click();
   await page.getByRole("button", { name: "Save this page" }).click();
-  await expect(page.getByRole("button", { name: "Saved" })).toBeVisible();
+  // Saved state is a sentence now, not a disabled "Saved" button.
+  await expect(page.getByText("Saved in your journal")).toBeVisible();
   const entryPath = new URL(page.url()).pathname;
   await expect(page.locator(".entry-reflection")).toContainText(/today/i);
 
@@ -245,4 +246,62 @@ test("leaf menu opens Journal and My garden and closes with Escape", async ({
   await page.keyboard.press("Escape");
   await expect(menu).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Open menu" })).toBeFocused();
+});
+
+test("entry page reads like a page, and edits in place without boxes", async ({
+  page,
+}) => {
+  await signInFresh(page);
+  await page
+    .getByRole("link", { name: /^(Add an entry|Add another entry)$/ })
+    .click();
+  await page.getByRole("button", { name: "I’d rather write today" }).click();
+  await page
+    .getByRole("textbox", { name: "Your note" })
+    .fill("A fictional evening: soup, a book, an early night.");
+  await page.getByRole("checkbox").check();
+  await page
+    .getByRole("button", { name: "Make a little sense of today" })
+    .click();
+  // Draft: editable fields, one primary action and a way to discard.
+  const words = page.getByRole("textbox", { name: "Transcript", exact: true });
+  await expect(words).toBeVisible();
+  await expect(page.getByRole("button", { name: "Discard draft" })).toHaveCount(
+    2,
+  );
+  await page.getByRole("button", { name: "Save this page" }).click();
+  // Saved: reading mode, no textbox, no dead "Saved" button.
+  await expect(page.getByText("Saved in your journal")).toBeVisible();
+  await expect(words).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Saved" })).toHaveCount(0);
+  // Edit, then cancel: nothing changes.
+  await page.getByRole("button", { name: "Edit words" }).click();
+  await expect(page.getByRole("button", { name: "Save changes" })).toHaveCount(
+    0,
+  );
+  await words.fill("Changed my mind.");
+  await expect(
+    page.getByRole("button", { name: "Save changes" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await expect(page.locator(".ep-transcript")).toHaveText(
+    "A fictional evening: soup, a book, an early night.",
+  );
+  // Edit and save.
+  await page.getByRole("button", { name: "Edit words" }).click();
+  await words.fill("A fictional evening: soup and an early night.");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText("Saved in your journal")).toBeVisible();
+  await expect(page.locator(".ep-transcript")).toHaveText(
+    "A fictional evening: soup and an early night.",
+  );
+  // Deleting asks first, inline.
+  await page.getByRole("button", { name: "Delete entry" }).click();
+  await expect(
+    page.getByText("Delete this entry? This can’t be undone."),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Keep it" }).click();
+  await expect(
+    page.getByRole("button", { name: "Delete entry" }),
+  ).toBeVisible();
 });
