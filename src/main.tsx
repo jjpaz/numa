@@ -9,8 +9,6 @@ import "./styles.css";
 import "./theme.css";
 import "./landing.css";
 import "./garden.css";
-import "./entry.css";
-import "./new-entry.css";
 import "./journal.css";
 import "./secondary.css";
 import "./clinic.css";

@@ -3,7 +3,7 @@
 // plantsFrom() in src/today.ts; only the drawing lives here. A plant flowers
 // (peach petals, butter centre) when its entry was marked "helpful"; every
 // other plant stays green. Nothing withers and nothing is taken away.
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useId, useRef, type CSSProperties } from "react";
 import { hashString, r1 } from "./voiceLine";
 import { GrassLayers, useBoxWidth } from "./Grass";
 import {
@@ -331,6 +331,7 @@ export function PlantFigure({
 }) {
   const plant = plantsFrom([{ ...entry, saved: true }])[0];
   const seed = hashString(entry.id);
+  const patch = "pt-patch" + useId().replace(/:/g, "");
   const bloom = entry.saved && entry.action?.feedback === "helpful";
   const young = !entry.saved;
   // Open once when the flower arrives while the page is open.
@@ -366,8 +367,15 @@ export function PlantFigure({
           bloomClass={opening ? "is-opening" : undefined}
         />
       </g>
-      <g transform="translate(-54 6)">
-        <GrassLayers width={108} base={2} height={22} soil={5} seed={seed} />
+      <defs>
+        <clipPath id={patch}>
+          <ellipse cx="0" cy="2" rx="46" ry="30" />
+        </clipPath>
+      </defs>
+      <g clipPath={`url(#${patch})`}>
+        <g transform="translate(-54 6)">
+          <GrassLayers width={108} base={2} height={22} soil={5} seed={seed} />
+        </g>
       </g>
     </svg>
   );
