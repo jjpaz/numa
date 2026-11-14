@@ -31,6 +31,7 @@ El modo local utiliza memoria temporal. Existe una utilidad de copia/restauraci�
 - El diario se puede guardar sin un resultado de ML, sin una puntuación de ánimo y aunque una integración falle.
 - No determinar qué módulos puede ver alguien a partir de una estimación emocional. Conservar elección, privacidad y modo sencillo.
 - **Una base persistente: PostgreSQL en Aiven. Un proveedor de LLM: Gemini. Un entorno de cómputo ML: Modal.** No añadir otra base, LLM o nube para aumentar participaciones en premios.
+- **Toda funcionalidad nueva debe poder desplegarse y funcionar fuera del ordenador de desarrollo.** Destinos previstos: frontend en Vercel, backend/ML en Modal (Linux) y persistencia en Aiven. Evitar dependencias de rutas `C:\`, procesos de desarrollo, archivos del usuario o utilidades exclusivas de Windows en el runtime. Configurar rutas de caché, secretos y orígenes mediante entorno o parámetros; usar el volumen de Modal solo para artefactos del modelo y audio temporal para procesamiento. Fixtures, comandos y locks de Windows son herramientas de desarrollo opcionales. Cada entrega debe documentar su ruta de despliegue y distinguir portabilidad prevista de despliegue realmente verificado; una prueba local no completa la aceptación cloud de las fases F/G.
 - El psicólogo continúa recibiendo una proyección restringida. Ni transcripciones, resúmenes privados, audio, preguntas de experimentos ni reflexiones se incorporan a sus respuestas.
 - Sueño, actividad, meteorología y música siguen simulados y etiquetados. Apple Health, Last.fm, calendario y wearables no son requisitos de esta entrega.
 - Ninguna salida nueva debe presentarse como diagnóstico, medida de sinceridad o recaída confirmada tras TMS.
@@ -49,11 +50,21 @@ Si hay una vista previa activa con datos que conservar, no reiniciarla sin copia
 
 ## 4. Orden de implementación
 
+**Orden acordado tras completar la fase A:** las letras siguientes conservan los bloques de trabajo originales; la ejecución pendiente sigue este orden para validar primero el entorno definitivo:
+
+1. **Validación inicial de Modal (adelanto de la fase F):** fijar un entorno Linux compatible, cargar los pesos y ejecutar una inferencia remota aislada. No exigir Gemini/Aiven para esta comprobación ni conectar todavía la aplicación. Registrar resultados y dependencias antes de construir sobre ellos.
+2. **Fase B:** VAD y calidad del audio sobre el entorno ya verificado.
+3. **Fases C/D:** integrar el contrato del backend y el historial versionado; completar las comprobaciones técnicas correspondientes.
+4. **Fase E y cierre de F:** conectar Aiven/Gemini y terminar el despliegue del backend con sus secretos, orígenes y comprobaciones.
+5. **Fase G:** conectar/publicar el frontend y verificar el recorrido externo completo.
+
+Cerrar cada bloque con implementación, pruebas y documentación antes de abrir otro. Si no hay margen para completarlo, detenerse antes de empezarlo. No avanzar con dependencias exclusivas de desarrollo que después haya que sustituir para alojar el producto.
+
 ### Fase A — ejecutar DAM de forma independiente (completada técnicamente)
 
 **Objetivo:** obtener una inferencia real reproducible, sin necesitar Gemini, Aiven o el servidor web.
 
-**Estado al 14 de noviembre:** entorno `.venv-ml` con Python 3.11.14, PyTorch/torchaudio 2.7.0 CPU, lock de dependencias y manifiesto con revisiones completas. CLI `python -m backend.ml.check`, caché ignorada e informes privados explícitos. Inferencia real sin red: carga 6,796 s, inferencia 5,340 s en un proceso nuevo con pesos ya descargados. Prueba separada con pesos reales y repetición aprobada. El audio fue generado con TTS inglesa de Windows; no se usaron grabaciones privadas. **La fase B es el siguiente trabajo pendiente.** Los pasos conservados a continuación documentan lo realizado y cómo reproducirlo; las instrucciones exactas están en `docs/ML_DAM.md`.
+**Estado al 14 de noviembre:** entorno `.venv-ml` con Python 3.11.14, PyTorch/torchaudio 2.7.0 CPU, lock de dependencias y manifiesto con revisiones completas. CLI `python -m backend.ml.check`, caché ignorada e informes privados explícitos. Inferencia real sin red: carga 6,796 s, inferencia 5,340 s en un proceso nuevo con pesos ya descargados. Prueba separada con pesos reales y repetición aprobada. El audio fue generado con TTS inglesa de Windows; no se usaron grabaciones privadas. **El siguiente trabajo es validar DAM en Modal antes de la fase B**, según el orden acordado arriba. Los pasos conservados a continuación documentan lo realizado y cómo reproducirlo; las instrucciones exactas están en `docs/ML_DAM.md`.
 
 1. Crear un entorno ML separado con Python 3.11. No alterar la `.venv` que mantiene funcionando el prototipo hasta verificar compatibilidad.
 2. Consultar la ficha, código, dependencias y licencia actuales de [KintsugiHealth/DAM](https://huggingface.co/KintsugiHealth/dam). Fijar un commit completo, no una rama móvil como `main`, para la ejecución reproducible.
@@ -146,6 +157,8 @@ Si hay una vista previa activa con datos que conservar, no reiniciarla sin copia
 **Aceptación:** ambas integraciones funcionan por separado y en el flujo de una entrada. El frontend no contiene claves o URI de la base de datos. La aplicación conectada mantiene PostgreSQL como única fuente persistente.
 
 ### Fase F — adaptar Modal y los comandos de comprobación
+
+**Ejecutar primero la validación aislada del entorno e inferencia en Modal**, antes de la fase B. El despliegue de la aplicación completa y las comprobaciones de credenciales/concurrencia de este bloque se terminan después de las integraciones. No confundir estos dos hitos ni marcar toda la fase F completada con una sola inferencia remota.
 
 1. Sustituir las dependencias de SpeechBrain de `backend/modal_app.py` por el entorno DAM ya verificado. Conservar Python 3.11 y ffmpeg si siguen siendo compatibles.
 2. Reutilizar un único modelo cargado y la caché de pesos. No guardar audio de pacientes en el volumen del modelo.
@@ -249,4 +262,4 @@ Procesar una grabación no implica permiso para reutilizarla en entrenamiento. M
 
 ## 9. Texto listo para iniciar otro chat con Codex
 
-> Trabaja en `C:\JUNCTION\numa`. Lee `NUMA_NEXT_STEPS.md` y verifica el estado del repositorio antes de editar. La fase A está completada como prueba técnica independiente de DAM en CPU; consulta `docs/ML_DAM.md`. Retoma por la fase B: VAD y calidad de audio antes de integrar DAM en la aplicación. Trabaja en secciones acotadas y no empieces una si no hay margen para terminarla, verificarla y documentarla. Conserva el frontend y las decisiones de privacidad y crecimiento. Usa Aiven como única base persistente, Gemini como único LLM y Modal para ML. No confundas código preparado con integraciones ejecutadas ni una prueba TTS con validación clínica. No entrenes desde cero ni inventes resultados clínicos. Mantén el journal utilizable si una rama falla. No imprimas secretos ni contenido privado; conserva cambios y datos locales del usuario antes de reiniciar servicios. Ejecuta las verificaciones correspondientes y deja un registro honesto de lo completado y lo bloqueado por acceso externo.
+> Trabaja en `C:\JUNCTION\numa`. Lee `NUMA_NEXT_STEPS.md` y verifica el estado del repositorio antes de editar. La fase A está completada como prueba técnica independiente de DAM en CPU; consulta `docs/ML_DAM.md`. El siguiente bloque es validar DAM en Modal/Linux mediante una inferencia remota aislada, adelantando esa parte de la fase F sin exigir Gemini/Aiven. Después sigue B (VAD/calidad), C/D (contrato e historial), E/cierre de F (integraciones y backend) y G (frontend y recorrido externo). Toda funcionalidad debe funcionar alojada fuera del ordenador de desarrollo. Trabaja en secciones acotadas y no empieces una si no hay margen para terminarla, verificarla y documentarla. Conserva el frontend y las decisiones de privacidad y crecimiento. Usa Aiven como única base persistente, Gemini como único LLM y Modal para ML. No confundas código preparado con integraciones ejecutadas ni una prueba TTS con validación clínica. No entrenes desde cero ni inventes resultados clínicos. Mantén el journal utilizable si una rama falla. No imprimas secretos ni contenido privado; conserva cambios y datos locales del usuario antes de reiniciar servicios. Ejecuta las verificaciones correspondientes y deja un registro honesto de lo completado y lo bloqueado por acceso externo.
