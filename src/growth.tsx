@@ -7,7 +7,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useNavigate } from "react-router-dom";
 import { api, json } from "./api";
 import type {
   Experiment,
@@ -19,8 +18,8 @@ import type {
 import { ACTION_KINDS, Loading, Problem } from "./components";
 import { ObservationChart } from "./clinicCharts";
 
+// The interface never sends simple_mode: there is no simple view any more.
 type GrowthPatch = {
-  simple_mode?: boolean;
   modules?: GrowthModule[];
   dismiss_invitation?: string;
   habit_label?: string;
@@ -94,25 +93,6 @@ export function GrowthProvider({ children }: { children: ReactNode }) {
     <GrowthContext.Provider value={{ growth, busy, error, update, refresh }}>
       {children}
     </GrowthContext.Provider>
-  );
-}
-
-export function SimpleModeControl() {
-  const { growth, update, busy } = useGrowth();
-  const navigate = useNavigate();
-  return (
-    <button
-      type="button"
-      className="mg-pebble simple-mode-control"
-      disabled={!growth || busy}
-      aria-pressed={growth?.simple_mode || false}
-      onClick={async () => {
-        if (await update({ simple_mode: !growth!.simple_mode }))
-          navigate("/patient");
-      }}
-    >
-      {growth?.simple_mode ? "Back to my space" : "Today, something simple"}
-    </button>
   );
 }
 

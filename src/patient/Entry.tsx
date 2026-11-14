@@ -65,17 +65,15 @@ const PROBABILITY_LABELS: Record<string, string> = {
 function EntrySignals({
   entry,
   modules,
-  simple,
 }: {
   entry: Entry;
   modules: string[];
-  simple: boolean;
 }) {
   const features = entry.voice?.features;
   const context = entry.context;
-  const contextModules = simple
-    ? []
-    : modules.filter((m) => ["sleep", "activity", "music"].includes(m));
+  const contextModules = modules.filter((m) =>
+    ["sleep", "activity", "music"].includes(m),
+  );
   return (
     <>
       <h3>From your voice</h3>
@@ -298,8 +296,7 @@ export function EntryPage() {
       </div>
     );
   const processing = ["pending", "processing"].includes(entry.status),
-    sample = entry.source === "simulated",
-    simple = !!growth?.simple_mode;
+    sample = entry.source === "simulated";
   const writing = !sample && !processing && (!entry.saved || editing);
   const longWords = (writing ? text : entry.transcript).length > 600;
   const confirm = (
@@ -326,7 +323,6 @@ export function EntryPage() {
     <EntrySignals
       entry={entry}
       modules={growth?.modules ?? []}
-      simple={simple}
     />
   );
   return (
@@ -491,17 +487,8 @@ export function EntryPage() {
               {confirmAt === "sheet" && confirm}
             </section>
             <aside className="ep-noticed" aria-labelledby="ep-noticed">
-              {simple ? (
-                <details className="ep-noticed-fold">
-                  <summary id="ep-noticed">What Numa noticed</summary>
-                  {signals}
-                </details>
-              ) : (
-                <>
-                  <h2 id="ep-noticed">What Numa noticed</h2>
-                  {signals}
-                </>
-              )}
+              <h2 id="ep-noticed">What Numa noticed</h2>
+              {signals}
             </aside>
           </div>
           {entry.saved && !sample && (

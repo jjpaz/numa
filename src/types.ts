@@ -118,6 +118,7 @@ export type GrowthModule =
   | "experiments";
 export interface Growth {
   modules: GrowthModule[];
+  /** Still sent by the backend; the interface ignores it (no simple view). */
   simple_mode: boolean;
   dismissed_invitations: string[];
   remembered_pages: number;
