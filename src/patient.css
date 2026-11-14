@@ -379,3 +379,352 @@
     animation: none;
   }
 }
+
+/* ───────── Home: the mailbox ───────── */
+.pt-home {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-block: clamp(20px, 4vh, 48px);
+  text-align: center;
+}
+.pt-daily {
+  max-width: 36ch;
+  margin-top: 12px !important;
+  font-size: clamp(18px, 1.5vw, 21px);
+  line-height: 1.45;
+  color: var(--n-forest-soft) !important;
+}
+.pt-home > .pt-error {
+  margin-top: 16px;
+}
+.pt-mailbox {
+  view-transition-name: mailbox;
+  width: 100%;
+  max-width: 640px;
+  margin-top: clamp(24px, 4.5vh, 44px);
+  border-radius: var(--n-radius-mailbox);
+  background: var(--n-oat);
+  box-shadow:
+    0 1px 0 rgb(122 92 44 / 0.08),
+    0 12px 24px -20px rgb(122 82 30 / 0.5);
+}
+.pt-mailbox.is-open {
+  max-width: 720px;
+  text-align: left;
+}
+.pt-mailbox.is-waiting {
+  padding: 48px 24px;
+}
+.pt-mailbox-inner {
+  padding: clamp(24px, 4vw, 36px) clamp(18px, 4vw, 40px);
+}
+.pt-mailbox-view {
+  animation: pt-appear 260ms var(--n-ease) both;
+}
+@keyframes pt-appear {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.pt-hint {
+  font-size: var(--n-text-16);
+  color: var(--n-forest-soft) !important;
+}
+.pt-voice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.pt-line {
+  width: 100%;
+  height: 64px;
+}
+.pt-line svg {
+  display: block;
+  overflow: visible;
+}
+.pt-line-rest {
+  stroke: var(--n-forest-soft);
+  stroke-opacity: 0.5;
+  stroke-width: 2;
+  stroke-dasharray: 0 7;
+  stroke-linecap: round;
+}
+.pt-line-voice {
+  fill: none;
+  stroke: var(--n-forest);
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pt-line-tip {
+  fill: var(--n-forest);
+}
+.pt-line.is-still {
+  margin: 16px 0 12px;
+}
+.pt-mic {
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--n-forest);
+  color: var(--n-cream);
+  cursor: pointer;
+  transition:
+    background-color 160ms var(--n-ease),
+    transform 160ms var(--n-ease);
+}
+.pt-mic:hover {
+  background: #3d4a3b;
+}
+.pt-mic:active {
+  transform: scale(0.97);
+}
+.pt-app .pt-mic:focus-visible {
+  outline: 3px solid var(--n-forest);
+  outline-offset: 4px;
+}
+.pt-clock {
+  font-size: var(--n-text-18);
+  font-variant-numeric: tabular-nums;
+  color: var(--n-forest-soft) !important;
+}
+.pt-clock span {
+  font-weight: 600;
+  color: var(--n-forest);
+}
+.pt-switch {
+  margin-top: 2px;
+}
+/* Writing instead: no box, only a line to write on. */
+.pt-write {
+  text-align: left;
+}
+.pt-write label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--n-text-16);
+  font-weight: 600;
+  color: var(--n-forest);
+}
+.pt-note,
+.pt-transcript {
+  display: block;
+  width: 100%;
+  min-height: calc(1.45em * 3 + 16px);
+  margin: 0;
+  padding: 4px 0 10px;
+  overflow: hidden;
+  resize: none;
+  border: 0;
+  border-bottom: 1px solid rgb(47 58 46 / 0.3);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-family: var(--n-font-display) !important;
+  font-size: 24px;
+  line-height: 1.45;
+  color: var(--n-forest);
+}
+.pt-transcript {
+  font-size: clamp(21px, 1.8vw, 24px);
+  min-height: calc(1.45em * 2 + 16px);
+}
+.pt-note::placeholder,
+.pt-transcript::placeholder {
+  color: var(--n-forest-soft);
+  opacity: 0.9;
+}
+/* Focus: the line under the words thickens; no box appears. */
+.pt-app .pt-note:focus,
+.pt-app .pt-transcript:focus {
+  outline: none;
+  padding-bottom: 9px;
+  border-bottom: 2px solid var(--n-forest);
+}
+.pt-write .pt-hint {
+  margin-top: 8px;
+}
+.pt-write-actions,
+.pt-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 28px;
+  margin-top: 22px;
+}
+/* The review window: the mailbox, opened. */
+.pt-review-title {
+  font-size: clamp(26px, 2.4vw, 32px);
+  line-height: 1.15;
+}
+.pt-review-title:focus {
+  outline: none;
+}
+.pt-mailbox.is-open .pt-transcript {
+  margin-top: 18px;
+}
+.pt-mailbox.is-open .pt-hint {
+  margin-top: 4px;
+}
+.pt-reflection {
+  margin-top: 14px !important;
+  font-family: var(--n-font-display);
+  font-size: var(--n-text-18);
+  line-height: 1.4;
+  color: var(--n-forest-soft) !important;
+}
+.pt-mailbox .pt-error {
+  margin: 18px auto 0;
+  text-align: left;
+}
+.pt-mailbox.is-open .pt-error {
+  margin-left: 0;
+}
+/* Planted: the calm state. */
+.pt-planted {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.pt-planted-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--n-text-21);
+  font-family: var(--n-font-display);
+  color: var(--n-forest);
+}
+.pt-planted-status:focus {
+  outline: none;
+}
+.pt-planted-status svg {
+  color: var(--n-grass-3);
+}
+.pt-planted-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 28px;
+}
+/* Consent: one box under the mailbox, then a single quiet line. */
+.pt-consent {
+  width: 100%;
+  max-width: 640px;
+  margin-top: 18px;
+  text-align: left;
+}
+.pt-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-weight: 400;
+  cursor: pointer;
+}
+.pt-check input {
+  flex: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  border: 1.5px solid var(--n-forest);
+  border-radius: 6px;
+  background: transparent center / 14px 14px no-repeat;
+  cursor: pointer;
+}
+.pt-check input:checked {
+  background-color: var(--n-forest);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2.5 7.4l3 3 6-6.6' fill='none' stroke='%23f6efdd' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.pt-check span {
+  font-size: var(--n-text-16);
+  line-height: 1.45;
+  color: var(--n-forest);
+}
+.pt-need {
+  margin: 6px 0 0 34px !important;
+  font-size: var(--n-text-16);
+  font-weight: 600;
+  color: var(--n-danger) !important;
+}
+.pt-terms {
+  margin: 4px 0 0 34px;
+}
+.pt-terms summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  font-size: var(--n-text-14);
+  font-weight: 500;
+  color: var(--n-forest);
+  text-decoration: underline;
+  text-decoration-color: rgb(47 58 46 / 0.35);
+  text-underline-offset: 5px;
+  cursor: pointer;
+}
+.pt-terms p {
+  max-width: 62ch;
+  margin-top: 4px;
+  font-size: var(--n-text-14);
+  line-height: 1.5;
+  color: var(--n-forest-soft);
+}
+.pt-terms.is-quiet {
+  margin: 0;
+  text-align: center;
+}
+.pt-terms.is-quiet p {
+  margin-inline: auto;
+  text-align: left;
+}
+
+@media (max-width: 720px) {
+  .pt-home {
+    justify-content: flex-start;
+    padding-block: 18px 8px;
+  }
+  .pt-daily {
+    margin-top: 8px !important;
+  }
+  .pt-mailbox {
+    margin-top: 20px;
+    border-radius: 28px;
+  }
+  .pt-line {
+    height: 52px;
+  }
+  .pt-voice {
+    gap: 8px;
+  }
+  .pt-consent {
+    margin-top: 14px;
+  }
+  .pt-check span {
+    font-size: 15px;
+  }
+  .pt-note {
+    font-size: 21px;
+  }
+  .pt-app.is-home .pt-footer {
+    padding-top: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pt-mailbox-view {
+    animation: none;
+  }
+  .pt-mic {
+    transition: none;
+  }
+}

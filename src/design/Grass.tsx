@@ -143,7 +143,8 @@ export function useBoxWidth<T extends HTMLElement>() {
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const measure = () => setWidth(Math.round(el.getBoundingClientRect().width));
+    // Layout width, not the painted box: a scaling animation must not resize the drawing.
+    const measure = () => setWidth(el.offsetWidth);
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(el);

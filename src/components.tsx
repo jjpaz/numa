@@ -1,27 +1,24 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+  type TextareaHTMLAttributes,
+} from "react";
 import {
   Mic,
   Square,
   RotateCcw,
-  ArrowUpRight,
-  Leaf,
-  Wind,
-  Music,
-  Users,
-  CloudSun,
-  Moon,
-  Footprints,
-  LockKeyhole,
-  Sprout,
-  Check,
   LoaderCircle,
   CircleAlert,
   Play,
   Pause,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import type { Context, Trend } from "./types";
-import { dateLabel } from "./api";
+import type { Context } from "./types";
 import { catmullRom, cubicD, r1, voiceWave, type Pt } from "./design/voiceLine";
 
 export function Wordmark() {
@@ -34,15 +31,6 @@ export function Wordmark() {
     </Link>
   );
 }
-export function Badge({
-  children,
-  tone = "quiet",
-}: {
-  children: React.ReactNode;
-  tone?: string;
-}) {
-  return <span className={"badge " + tone}>{children}</span>;
-}
 export function ErrorNotice({ message }: { message: string }) {
   return message ? (
     <div role="alert" className="error-notice">
@@ -53,31 +41,39 @@ export function ErrorNotice({ message }: { message: string }) {
 export function Loading() {
   return (
     <div className="loading">
-      <LoaderCircle className="spin" size={22} /> Making a little space…
+      <LoaderCircle className="spin" size={22} aria-hidden="true" /> Making a
+      little space…
     </div>
   );
 }
-export function Empty({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+
+/** The small activities Numa can suggest, in the order they are offered. */
+export const ACTION_KINDS = ["walk", "music", "breathe", "connect"] as const;
+
+/** A borderless textarea that grows with its words. */
+export const GrowingTextarea = forwardRef<
+  HTMLTextAreaElement,
+  TextareaHTMLAttributes<HTMLTextAreaElement>
+>(function GrowingTextarea(props, forwarded) {
+  const ref = useRef<HTMLTextAreaElement | null>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }, [props.value]);
   return (
-    <div className="empty">
-      <Sprout size={32} />
-      <h3>{title}</h3>
-      <p>{children}</p>
-    </div>
+    <textarea
+      ref={(el) => {
+        ref.current = el;
+        if (typeof forwarded === "function") forwarded(el);
+        else if (forwarded) forwarded.current = el;
+      }}
+      rows={1}
+      {...props}
+    />
   );
-}
-export const actionIcons: Record<string, typeof Leaf> = {
-  walk: Footprints,
-  music: Music,
-  breathe: Wind,
-  connect: Users,
-};
+});
 
 export function ContextCards({
   context,
@@ -124,115 +120,199 @@ export function ContextCards({
   );
 }
 
-export function VoiceChart({ trend }: { trend: Trend }) {
-  const [selected, setSelected] = useState<number | null>(null);
-  if (!trend.ready)
-    return (
-      <div className="baseline-building">
-        <div className="seed-circles">
-          {Array.from({ length: 5 }, (_, i) => (
-            <span className={i < trend.days ? "filled" : ""} key={i}>
-              {i < trend.days ? <Check size={14} /> : i + 1}
-            </span>
-          ))}
-        </div>
-        <h3>Learning your voice</h3>
-        <p>{trend.days} of 5 days. Your own voice will be your reference.</p>
-      </div>
-    );
-  const w = 680,
-    h = 180,
-    p = 25,
-    max = Math.max(5, ...trend.points.map((p) => p.deviation));
-  const x = (i: number) =>
-    p + (i * (w - 2 * p)) / Math.max(1, trend.points.length - 1);
-  const y = (v: number) => h - p - (v * (h - 2 * p)) / max;
-  const path = trend.points
-    .map((point, i) => `${i ? "L" : "M"} ${x(i)} ${y(point.deviation)}`)
-    .join(" ");
-  return (
-    <div className="voice-chart">
-      <svg
-        viewBox={`0 0 ${w} ${h}`}
-        role="img"
-        aria-label="Vocal differences relative to your personal baseline. This is not a mood score."
-      >
-        <rect
-          x={p}
-          y={y(3)}
-          width={w - p * 2}
-          height={y(0) - y(3)}
-          fill="#eaf0e7"
-          rx="8"
-        />
-        {[0, 3].map((v) => (
-          <g key={v}>
-            <line
-              x1={p}
-              y1={y(v)}
-              x2={w - p}
-              y2={y(v)}
-              stroke="#c9d5c7"
-              strokeDasharray="4 5"
-            />
-            <text x={p + 7} y={y(v) + 14} className="chart-label">
-              {v === 0 ? "Personal baseline" : "Observation threshold"}
-            </text>
-          </g>
-        ))}
-        <path
-          d={path}
-          fill="none"
-          stroke="#50745a"
-          strokeWidth="2.5"
-          strokeLinejoin="round"
-        />
-        {trend.points.map((point, i) => (
-          <circle
-            key={point.date}
-            cx={x(i)}
-            cy={y(point.deviation)}
-            r={selected === i ? 6 : 4}
-            fill={point.outside ? "#be805d" : "#50745a"}
-            stroke="#fff"
-            strokeWidth="2"
-            onMouseEnter={() => setSelected(i)}
-            onFocus={() => setSelected(i)}
-            tabIndex={0}
-            aria-label={`${point.date}: ${point.outside ? "outside typical range" : "within typical range"}`}
-          />
-        ))}
-      </svg>
-      <div className="chart-dates">
-        <span>{dateLabel(trend.points[0].date)}</span>
-        <span>
-          {selected !== null
-            ? `${dateLabel(trend.points[selected].date)} · ${trend.points[selected].outside ? "Outside typical range" : "Within typical range"}`
-            : "Differences in voice, not a mood score"}
-        </span>
-        <span>{dateLabel(trend.points.at(-1)!.date)}</span>
-      </div>
-    </div>
-  );
-}
-
 /* ───────────── Recording: your voice draws the line ─────────────
-   See DESIGN.md → "Recording". The live line uses only the measured loudness
+   See DESIGN.md → "The mailbox". The live line uses only the measured loudness
    (RMS from the AnalyserNode, ~10 samples a second). The carrier that makes it
    read as a line is fixed and deterministic; its height at every point is the
    measured loudness at that moment, nothing invented. */
 
-const LIMIT_SECONDS = 120;
+export const LIMIT_SECONDS = 120;
 const SAMPLE_MS = 100;
 
 /** Loudness at a moment: seconds since the start and smoothed 0..1. */
-type Level = { t: number; v: number };
+export type Level = { t: number; v: number };
 
-const clock = (s: number) =>
+export const clock = (s: number) =>
   `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
 /** 0..1 from the measured RMS: a small noise floor and a soft limit. */
 const loudness = (rms: number) => Math.tanh(Math.max(0, rms - 0.004) * 9);
+
+/** The measured loudness at second t, interpolated between samples. */
+export function levelAt(levels: Level[], t: number) {
+  if (t <= 0 || !levels.length) return 0;
+  if (t < levels[0].t) return levels[0].v * (t / levels[0].t);
+  let lo = 0,
+    hi = levels.length - 1;
+  if (t >= levels[hi].t) return levels[hi].v;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (levels[mid].t <= t) lo = mid;
+    else hi = mid;
+  }
+  const a = levels[lo],
+    b = levels[hi];
+  return a.v + ((b.v - a.v) * (t - a.t)) / Math.max(1e-6, b.t - a.t);
+}
+
+export type CaptureStatus = "idle" | "recording" | "done";
+
+/**
+ * The microphone: start, stop, the real loudness ~10 times a second, the
+ * 2-minute limit and a full clean-up (tracks stopped, audio context closed)
+ * when recording ends or the component goes away.
+ */
+export function useVoiceCapture({
+  onBlob,
+  active = true,
+}: {
+  onBlob: (blob: Blob, seconds: number) => void;
+  /** When false (e.g. the person switched to writing) a running recording stops. */
+  active?: boolean;
+}) {
+  const [status, setStatus] = useState<CaptureStatus>("idle");
+  const [elapsed, setElapsed] = useState(0);
+  const [error, setError] = useState("");
+  const levels = useRef<Level[]>([]);
+  const capture = useRef<{
+    recorder: MediaRecorder;
+    stream: MediaStream;
+    ctx: AudioContext;
+    analyser: AnalyserNode;
+  } | null>(null);
+  const callback = useRef(onBlob);
+  callback.current = onBlob;
+  const recordingAt = useRef(0);
+  useEffect(
+    () => () => {
+      const c = capture.current;
+      if (c) {
+        c.recorder.onstop = null;
+        if (c.recorder.state !== "inactive") c.recorder.stop();
+        c.stream.getTracks().forEach((t) => t.stop());
+        void c.ctx.close();
+      }
+    },
+    [],
+  );
+  useEffect(() => {
+    if (active) return;
+    if (capture.current?.recorder.state === "recording")
+      capture.current.recorder.stop();
+  }, [active]);
+  // ~10 times a second: the real RMS of the microphone, smoothed, and the clock.
+  useEffect(() => {
+    if (status !== "recording") return;
+    const c = capture.current;
+    if (!c) return;
+    const buffer = new Float32Array(c.analyser.fftSize);
+    let smooth = 0;
+    const timer = setInterval(() => {
+      const s = (performance.now() - recordingAt.current) / 1000;
+      c.analyser.getFloatTimeDomainData(buffer);
+      let sum = 0;
+      for (let i = 0; i < buffer.length; i++) sum += buffer[i] * buffer[i];
+      smooth += (loudness(Math.sqrt(sum / buffer.length)) - smooth) * 0.5;
+      levels.current.push({ t: s, v: smooth });
+      setElapsed(Math.min(s, LIMIT_SECONDS));
+      if (s >= LIMIT_SECONDS && c.recorder.state === "recording")
+        c.recorder.stop();
+    }, SAMPLE_MS);
+    return () => clearInterval(timer);
+  }, [status]);
+  async function start() {
+    setError("");
+    setElapsed(0);
+    levels.current = [];
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+      setError(
+        "Recording is not available in this browser. Try Chrome or Safari over HTTPS.",
+      );
+      return;
+    }
+    let stream: MediaStream | undefined, ctx: AudioContext | undefined;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: false,
+        },
+      });
+      ctx = new AudioContext();
+      await ctx.resume();
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 2048;
+      ctx.createMediaStreamSource(stream).connect(analyser);
+      const mime = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find(
+        (m) => MediaRecorder.isTypeSupported(m),
+      );
+      const recorder = new MediaRecorder(
+        stream,
+        mime ? { mimeType: mime } : {},
+      );
+      const chunks: BlobPart[] = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size) chunks.push(e.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, {
+          type: recorder.mimeType || "audio/webm",
+        });
+        const seconds = Math.min(
+          LIMIT_SECONDS,
+          (performance.now() - recordingAt.current) / 1000,
+        );
+        setElapsed(seconds);
+        stream!.getTracks().forEach((t) => t.stop());
+        void ctx!.close();
+        capture.current = null;
+        setStatus("done");
+        callback.current(blob, seconds);
+      };
+      stream.getAudioTracks().forEach(
+        (t) =>
+          (t.onended = () => {
+            if (recorder.state === "recording") recorder.stop();
+          }),
+      );
+      capture.current = { recorder, stream, ctx, analyser };
+      recordingAt.current = performance.now();
+      recorder.start(250);
+      setStatus("recording");
+    } catch (e) {
+      stream?.getTracks().forEach((t) => t.stop());
+      if (ctx) void ctx.close();
+      const name = (e as DOMException)?.name;
+      setError(
+        name === "NotFoundError" || name === "OverconstrainedError"
+          ? "No microphone was found on this device."
+          : "Microphone access was not available. You can allow it in your browser settings.",
+      );
+      setStatus("idle");
+    }
+  }
+  function stop() {
+    if (capture.current?.recorder.state === "recording")
+      capture.current.recorder.stop();
+  }
+  function reset() {
+    setStatus("idle");
+    setElapsed(0);
+    setError("");
+    levels.current = [];
+  }
+  return {
+    status,
+    elapsed,
+    error,
+    setError,
+    levels: levels.current,
+    start,
+    stop,
+    reset,
+  };
+}
 
 function useElementWidth<T extends HTMLElement>() {
   const ref = useRef<T>(null);
@@ -249,13 +329,13 @@ function useElementWidth<T extends HTMLElement>() {
   return [ref, width] as const;
 }
 
-const PEBBLE = 72; // the record button: the line leaves its edge
+const PEBBLE = 72; // the comparison's record button: the line leaves its edge
 const HINT_HEIGHT = 26; // "Tap to begin" sits above the highest crest
 
 /**
- * The record pebble is the origin of the line. From its edge, a quiet start
- * with the system's micro-undulation, then the two minutes up to the right edge
- * of the content: recorded voice, then dots for the time still free.
+ * The comparison recorder's line: the pebble is its origin. From its edge, a
+ * quiet start, then the two minutes up to the right edge of the content:
+ * recorded voice, then dots for the time still free.
  */
 function RecordingLine({
   levels,
@@ -266,8 +346,8 @@ function RecordingLine({
 }: {
   levels: Level[];
   elapsed: number;
-  status: "idle" | "recording" | "done";
-  control: React.ReactNode;
+  status: CaptureStatus;
+  control: ReactNode;
   hint: string;
 }) {
   const [ref, width] = useElementWidth<HTMLDivElement>();
@@ -289,25 +369,16 @@ function RecordingLine({
   let tip: Pt = [end, axis];
   let seed: Pt = [end, axis];
   if (width > 0) {
-    let i = 0;
     const envelope = (local: number) => {
       const x = local + PEBBLE;
       // Before any recording: the line at rest, a micro-undulation only.
-      // It leaves the pebble on the axis and eases in.
       if (x < recStart)
         return (
           0.07 *
           Math.sqrt(Math.sin((Math.PI * (x - PEBBLE)) / (2 * lead))) *
           (0.6 + 0.4 * Math.sin(x / 17) ** 2)
         );
-      const t = ((x - recStart) / span) * LIMIT_SECONDS;
-      if (t <= 0 || !levels.length) return 0;
-      if (t < levels[0].t) return levels[0].v * (t / levels[0].t);
-      while (i < levels.length - 1 && levels[i + 1].t < t) i++;
-      const a = levels[i],
-        b = levels[i + 1];
-      if (!b) return a.v;
-      return a.v + ((b.v - a.v) * (t - a.t)) / Math.max(1e-6, b.t - a.t);
+      return levelAt(levels, ((x - recStart) / span) * LIMIT_SECONDS);
     };
     const wave: Pt[] = voiceWave({
       to: end - PEBBLE,
@@ -321,8 +392,6 @@ function RecordingLine({
     }).map(([x, y]) => [x + PEBBLE, y]);
     tip = wave[wave.length - 1];
     if (status === "done") {
-      // It comes home to the axis, then rises a little to a seed. The recorded
-      // part is never reshaped; near the 2-minute edge the rise gets narrower.
       const room = width - end;
       const settle = Math.min(wavelength * 0.75, room * 0.35);
       const from = end + settle;
@@ -346,7 +415,6 @@ function RecordingLine({
       : status === "done"
         ? `Your recording, ${clock(elapsed)} long.`
         : "Your voice line. Up to 2 minutes of recording.";
-  // The clock rides beside the tip; on small screens it sits under it.
   const time: Pt = compact
     ? [Math.min(Math.max(end - 16, recStart - 16), width - 96), axis + 12]
     : [end + 14 + 48 > width ? end - 62 : end + 14, axis - 12];
@@ -360,7 +428,7 @@ function RecordingLine({
         {
           "--rec-axis": `${axis}px`,
           "--rec-height": `${height}px`,
-        } as React.CSSProperties
+        } as CSSProperties
       }
     >
       <div className="rec-origin">{control}</div>
@@ -419,160 +487,36 @@ function RecordingLine({
   );
 }
 
+/** The optional voice comparison on an entry page (on the green band). */
 export function Recorder({
   onReady,
   onClear,
-  label = "Record a voice note",
-  tone = "light",
-  active = true,
-  onWriteInstead,
+  label = "Record a voice comparison",
 }: {
   onReady: (blob: Blob) => void;
   onClear: () => void;
   label?: string;
-  /** "dark" for the moss band: ivory strokes and text. */
-  tone?: "light" | "dark";
-  /** When false (e.g. the person switched to writing) a running recording stops. */
-  active?: boolean;
-  /** Offered beside microphone errors. */
-  onWriteInstead?: () => void;
 }) {
-  const [status, setStatus] = useState<"idle" | "recording" | "done">("idle");
-  const [elapsed, setElapsed] = useState(0);
-  const [error, setError] = useState("");
   const [url, setUrl] = useState("");
   const [playing, setPlaying] = useState(false);
-  const levels = useRef<Level[]>([]);
   const audio = useRef<HTMLAudioElement>(null);
-  const capture = useRef<{
-    recorder: MediaRecorder;
-    stream: MediaStream;
-    ctx: AudioContext;
-    analyser: AnalyserNode;
-  } | null>(null);
-  const callback = useRef(onReady);
-  callback.current = onReady;
-  const recordingAt = useRef(0);
-  useEffect(
-    () => () => {
-      const c = capture.current;
-      if (c) {
-        c.recorder.onstop = null;
-        if (c.recorder.state !== "inactive") c.recorder.stop();
-        c.stream.getTracks().forEach((t) => t.stop());
-        void c.ctx.close();
-      }
+  const voice = useVoiceCapture({
+    onBlob(blob) {
+      setUrl(URL.createObjectURL(blob));
+      onReady(blob);
     },
-    [],
-  );
+  });
   useEffect(
     () => () => {
       if (url) URL.revokeObjectURL(url);
     },
     [url],
   );
-  useEffect(() => {
-    if (active) return;
-    if (capture.current?.recorder.state === "recording")
-      capture.current.recorder.stop();
-    audio.current?.pause();
-  }, [active]);
-  // ~10 times a second: the real RMS of the microphone, smoothed, and the clock.
-  useEffect(() => {
-    if (status !== "recording") return;
-    const c = capture.current;
-    if (!c) return;
-    const buffer = new Float32Array(c.analyser.fftSize);
-    let smooth = 0;
-    const timer = setInterval(() => {
-      const s = (performance.now() - recordingAt.current) / 1000;
-      c.analyser.getFloatTimeDomainData(buffer);
-      let sum = 0;
-      for (let i = 0; i < buffer.length; i++) sum += buffer[i] * buffer[i];
-      smooth += (loudness(Math.sqrt(sum / buffer.length)) - smooth) * 0.5;
-      levels.current.push({ t: s, v: smooth });
-      setElapsed(Math.min(s, LIMIT_SECONDS));
-      if (s >= LIMIT_SECONDS && c.recorder.state === "recording")
-        c.recorder.stop();
-    }, SAMPLE_MS);
-    return () => clearInterval(timer);
-  }, [status]);
-  async function start() {
-    setError("");
-    setElapsed(0);
+  function begin() {
     setUrl("");
     setPlaying(false);
-    levels.current = [];
     onClear();
-    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-      setError(
-        "Recording is not available in this browser. Try Chrome or Safari over HTTPS.",
-      );
-      return;
-    }
-    let stream: MediaStream | undefined, ctx: AudioContext | undefined;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: false,
-        },
-      });
-      ctx = new AudioContext();
-      await ctx.resume();
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 2048;
-      ctx.createMediaStreamSource(stream).connect(analyser);
-      const mime = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"].find(
-        (m) => MediaRecorder.isTypeSupported(m),
-      );
-      const recorder = new MediaRecorder(
-        stream,
-        mime ? { mimeType: mime } : {},
-      );
-      const chunks: BlobPart[] = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size) chunks.push(e.data);
-      };
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, {
-          type: recorder.mimeType || "audio/webm",
-        });
-        setElapsed(
-          Math.min(
-            LIMIT_SECONDS,
-            (performance.now() - recordingAt.current) / 1000,
-          ),
-        );
-        setUrl(URL.createObjectURL(blob));
-        callback.current(blob);
-        stream!.getTracks().forEach((t) => t.stop());
-        void ctx!.close();
-        capture.current = null;
-        setStatus("done");
-      };
-      stream.getAudioTracks().forEach(
-        (t) =>
-          (t.onended = () => {
-            if (recorder.state === "recording") recorder.stop();
-          }),
-      );
-      capture.current = { recorder, stream, ctx, analyser };
-      recordingAt.current = performance.now();
-      recorder.start(250);
-      setStatus("recording");
-    } catch (e) {
-      stream?.getTracks().forEach((t) => t.stop());
-      if (ctx) void ctx.close();
-      const name = (e as DOMException)?.name;
-      setError(
-        name === "NotFoundError" || name === "OverconstrainedError"
-          ? "No microphone was found on this device."
-          : "Microphone access was not available. You can allow it in your browser settings.",
-      );
-      setStatus("idle");
-    }
+    void voice.start();
   }
   function toggleListen() {
     const a = audio.current;
@@ -580,10 +524,11 @@ export function Recorder({
     if (a.paused) void a.play().catch(() => setPlaying(false));
     else a.pause();
   }
+  const { status, elapsed } = voice;
   return (
-    <div className={"rec" + (tone === "dark" ? " is-dark" : "")}>
+    <div className="rec is-dark">
       <RecordingLine
-        levels={levels.current}
+        levels={voice.levels}
         elapsed={elapsed}
         status={status}
         hint={
@@ -598,7 +543,7 @@ export function Recorder({
             <button
               type="button"
               className="rec-pebble"
-              onClick={() => capture.current?.recorder.stop()}
+              onClick={voice.stop}
               aria-label="Stop recording"
             >
               <Square size={22} fill="currentColor" aria-hidden="true" />
@@ -607,7 +552,7 @@ export function Recorder({
             <button
               type="button"
               className="rec-pebble"
-              onClick={() => void start()}
+              onClick={begin}
               aria-label={status === "done" ? "Record again" : label}
             >
               {status === "done" ? (
@@ -647,24 +592,10 @@ export function Recorder({
           />
         </div>
       )}
-      {error && (
+      {voice.error && (
         <p className="rec-error" role="alert">
           <CircleAlert size={18} aria-hidden="true" />
-          <span>
-            {error}
-            {onWriteInstead && (
-              <>
-                {" "}
-                <button
-                  type="button"
-                  className="rec-link"
-                  onClick={onWriteInstead}
-                >
-                  Write a note instead
-                </button>
-              </>
-            )}
-          </span>
+          <span>{voice.error}</span>
         </p>
       )}
       <p className="visually-hidden" role="status">
@@ -675,49 +606,5 @@ export function Recorder({
             : ""}
       </p>
     </div>
-  );
-}
-
-export function PrivacyNote() {
-  return (
-    <div className="privacy-note">
-      <LockKeyhole size={15} />
-      <span>
-        Your words stay in your journal. Your psychologist sees trends only.
-      </span>
-    </div>
-  );
-}
-export function SectionTitle({
-  eyebrow,
-  title,
-  children,
-}: {
-  eyebrow?: string;
-  title: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <div className="section-heading">
-      <div>
-        {eyebrow && <span className="eyebrow">{eyebrow}</span>}
-        <h2>{title}</h2>
-      </div>
-      {children}
-    </div>
-  );
-}
-export function TextLink({
-  to,
-  children,
-}: {
-  to: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link className="text-link" to={to}>
-      {children}
-      <ArrowUpRight size={16} />
-    </Link>
   );
 }

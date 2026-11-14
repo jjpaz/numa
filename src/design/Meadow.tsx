@@ -240,9 +240,11 @@ export function Meadow({
   const helped = helpedIds(entries);
   const mobile = W > 0 && W < 640;
   const soil = compact ? Math.round(height * 0.16) : mobile ? 18 : 26;
-  const grassHeight = compact ? height * 0.66 : height * (mobile ? 0.36 : 0.32);
-  // How big a plant of scale 1 is: the strip only lets them peek out.
-  const unit = compact ? (height - soil) / 96 : mobile ? 1.25 : 1.85;
+  const grassHeight = compact ? height * 0.56 : height * (mobile ? 0.36 : 0.32);
+  // How big a plant of scale 1 is. Every plant stands a little above the
+  // grass around it: in the low strip they peek out, in the meadow they lead.
+  const unit = compact ? 0.92 : mobile ? 1.25 : 1.85;
+  const minTop = grassHeight * (compact ? 1.05 : 1.15);
   const pad = compact ? 24 : mobile ? 20 : 48;
   const placed = plants.map((p) => {
     const seed = hashString(p.id);
@@ -251,7 +253,10 @@ export function Meadow({
       seed,
       x: pad + p.x * Math.max(0, W - 2 * pad),
       base: height - soil * 0.5 - (2 - p.row) * (compact ? 2 : mobile ? 7 : 12),
-      scale: p.scale * ROW_DEPTH[p.row] * unit,
+      scale: Math.max(
+        p.scale * ROW_DEPTH[p.row] * unit,
+        minTop / KIND_HEIGHT[p.kind],
+      ),
       tilt: ((seed >>> 7) % 13) - 6,
     };
   });

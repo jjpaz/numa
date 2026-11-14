@@ -26,13 +26,7 @@ import {
 } from "lucide-react";
 import { api, json } from "./api";
 import type { Experiment, Growth, GrowthModule, User } from "./types";
-import {
-  Badge,
-  ErrorNotice,
-  Loading,
-  PrivacyNote,
-  SectionTitle,
-} from "./components";
+import { ErrorNotice, Loading } from "./components";
 
 type GrowthPatch = {
   simple_mode?: boolean;

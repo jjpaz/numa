@@ -22,6 +22,7 @@ import {
 import { YourSpace, useGrowth } from "./growth";
 import { Auth, useResource } from "./auth";
 import { PatientLayout } from "./patient/Layout";
+import { Home } from "./patient/Home";
 import {
   EntryPlant,
   GardenHome,
@@ -63,18 +64,13 @@ import type {
   User,
 } from "./types";
 import {
-  Badge,
-  Empty,
   ContextCards,
   ErrorNotice,
+  GrowingTextarea,
   Loading,
-  PrivacyNote,
   Recorder,
-  SectionTitle,
-  TextLink,
-  VoiceChart,
   Wordmark,
-  actionIcons,
+  ACTION_KINDS,
 } from "./components";
 import { ObservationChart, Sparkline } from "./clinicCharts";
 
@@ -142,10 +138,10 @@ export function App() {
           <Route path="/login/:role" element={<LoginRoute />} />
           <Route element={<Guard role="patient" />}>
             <Route path="/patient" element={<PatientLayout />}>
-              <Route index element={<Journal />} />
+              <Route index element={<Home />} />
               <Route path="journal" element={<JournalPage />} />
               <Route path="garden" element={<MyGardenPage />} />
-              <Route path="new" element={<NewEntry />} />
+              <Route path="new" element={<Navigate to="/patient" replace />} />
               <Route path="entries/:id" element={<EntryPage />} />
               <Route path="insights" element={<InsightsPage />} />
               <Route path="connections" element={<Connections />} />
@@ -402,13 +398,6 @@ function Login() {
     </div>
   );
 }
-function Journal() {
-  const { user } = useContext(Auth);
-  const entries = useResource<Entry[]>("/patient/entries", 5000);
-  return (
-    <GardenHome user={user!} entries={entries.data} error={entries.error} />
-  );
-}
 function JournalPage() {
   const { user } = useContext(Auth);
   const entries = useResource<Entry[]>("/patient/entries", 5000);
@@ -447,207 +436,12 @@ function SpacePage() {
   );
 }
 
-function NewEntry() {
-  const { user, health } = useContext(Auth);
-  const navigate = useNavigate();
-  const [blob, setBlob] = useState<Blob | null>(null),
-    [text, setText] = useState(""),
-    [write, setWrite] = useState(false),
-    [consent, setConsent] = useState(false),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
-  const requestId = useRef(crypto.randomUUID());
-  const existing = useResource<Entry[]>("/patient/entries");
-  // Switching modes keeps both the recording and the words until something is sent.
-  const switched = useRef(false);
-  useEffect(() => {
-    if (write && switched.current) document.getElementById("ne-note")?.focus();
-  }, [write]);
-  function switchMode(toWriting: boolean) {
-    switched.current = true;
-    setError("");
-    setWrite(toWriting);
-  }
-  const hasContent = write ? !!text.trim() : !!blob;
-  const ready = hasContent && consent && !busy;
-  const needs = [
-    !hasContent && "Record or write something first.",
-    !consent && "Tick the box above to continue.",
-  ].filter(Boolean) as string[];
-  async function submit() {
-    if (!ready) return;
-    setBusy(true);
-    setError("");
-    try {
-      let entry: Entry;
-      if (write) {
-        entry = await api<Entry>("/patient/entries/text", {
-          method: "POST",
-          body: json({ text, request_id: requestId.current }),
-        });
-      } else {
-        const form = new FormData();
-        form.append("audio", blob!, "journal.webm");
-        form.append("request_id", requestId.current);
-        entry = await api<Entry>("/patient/entries/audio", {
-          method: "POST",
-          body: form,
-        });
-      }
-      navigate("/patient/entries/" + entry.id);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-  const local = health?.mode === "local_preview";
-  if (user?.source === "simulated")
-    return (
-      <div className="ne-page">
-        <div className="ne-wrap">
-          <nav className="ne-back" aria-label="Back">
-            <Link to="/patient/garden">My garden</Link>
-          </nav>
-          <header className="ne-head">
-            <h1>This journal is a fictional sample</h1>
-            <p>Use the fresh patient profile to create your own entries.</p>
-          </header>
-        </div>
-      </div>
-    );
-  return (
-    <div className="ne-page">
-      <div className="ne-wrap">
-        <nav className="ne-back" aria-label="Back">
-          <Link to="/patient/garden">My garden</Link>
-        </nav>
-        <div className="ne-notice">
-          <TodayNotice entries={existing.data} />
-        </div>
-        <header className="ne-head">
-          <h1>What happened in your world?</h1>
-          <p>
-            Tell me about something from your day. A passing thought is a good
-            place to start.
-          </p>
-        </header>
-        <div className="ne-capture">
-          <div hidden={write}>
-            <Recorder
-              active={!write}
-              onReady={setBlob}
-              onClear={() => setBlob(null)}
-              onWriteInstead={() => switchMode(true)}
-            />
-          </div>
-          {write && (
-            <div className="ne-write">
-              <label htmlFor="ne-note">Your note</label>
-              <div className="ne-field">
-                <GrowingTextarea
-                  id="ne-note"
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  maxLength={16000}
-                  placeholder="Today, I noticed…"
-                />
-              </div>
-            </div>
-          )}
-          <button
-            type="button"
-            className="ne-toggle"
-            onClick={() => switchMode(!write)}
-          >
-            {write ? "I’d rather leave a voice note" : "I’d rather write today"}
-          </button>
-        </div>
-        <div className="ne-send">
-          <div className="ne-consent">
-            <label className="ne-check">
-              <input
-                type="checkbox"
-                checked={consent}
-                onChange={(e) => setConsent(e.target.checked)}
-                aria-describedby="ne-audio-terms"
-              />
-              <span>
-                {local
-                  ? "This is a fictional experience, and I understand how this preview handles audio."
-                  : "This is a fictional experience, and I understand how Numa handles my audio."}
-              </span>
-            </label>
-            <details className="ne-terms">
-              <summary>How audio is handled</summary>
-              <p id="ne-audio-terms">
-                {local
-                  ? "I understand this preview uses temporary server memory. Audio is processed for acoustic measurements; emotional ML is not active. If Gemini is unavailable, I can add the words myself."
-                  : "I agree to temporary audio processing by Numa on Modal and transcription by Gemini. My saved words remain private to my account. Audio is not retained by Numa after processing."}{" "}
-                Use fictional experiences for this demonstration.
-              </p>
-            </details>
-          </div>
-          <button
-            type="button"
-            className="ne-primary"
-            aria-disabled={!ready}
-            aria-busy={busy || undefined}
-            aria-describedby={needs.length && !busy ? "ne-needs" : undefined}
-            onClick={() => void submit()}
-          >
-            {busy ? "Opening your page…" : "Make a little sense of today"}
-          </button>
-          <p id="ne-needs" className="ne-needs" aria-live="polite">
-            {busy ? "" : needs.join(" ")}
-          </p>
-          {error && (
-            <p className="ne-error" role="alert">
-              <CircleAlert size={18} aria-hidden="true" />
-              <span>
-                {error}
-                {!write && (
-                  <>
-                    {" "}
-                    <button
-                      type="button"
-                      className="ne-error-link"
-                      onClick={() => switchMode(true)}
-                    >
-                      Write a note instead
-                    </button>
-                  </>
-                )}
-              </span>
-            </p>
-          )}
-          <p className="ne-privacy">
-            Your words stay in your journal. Your psychologist sees trends only.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 const entryDate = (value: string) =>
   new Date(value).toLocaleDateString("en-GB", {
     weekday: "long",
     day: "numeric",
     month: "long",
   });
-
-/** A borderless textarea that grows with its words. */
-function GrowingTextarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  const ref = useRef<HTMLTextAreaElement>(null);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = el.scrollHeight + "px";
-  }, [props.value]);
-  return <textarea ref={ref} rows={1} {...props} />;
-}
 
 const PROBABILITY_LABELS: Record<string, string> = {
   neu: "Neutral",
@@ -1267,8 +1061,6 @@ function ActionPanel({
                 <Recorder
                   onReady={setBlob}
                   onClear={() => setBlob(null)}
-                  label="Record a voice comparison"
-                  tone="dark"
                 />
                 <button
                   type="button"
@@ -1429,7 +1221,7 @@ function InsightsPage() {
                 Which small activities would you like Numa to suggest?
               </p>
               <div className="in-prefs">
-                {Object.keys(actionIcons).map((key) => (
+                {ACTION_KINDS.map((key) => (
                   <label className="sc-check" key={key}>
                     <input
                       type="checkbox"
