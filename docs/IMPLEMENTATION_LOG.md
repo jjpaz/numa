@@ -20,6 +20,14 @@
 - Local documentation links and whitespace checks passed. A high-confidence credential
   pattern check found no matches in tracked or proposed source files; this was not a
   full Git-history secret audit.
+- GitHub Actions [run 43660850177](https://github.com/jjpaz/numa/actions/runs/43660850177)
+  passed both jobs; Linux/Python 3.11 reported 116 passed, 3 skipped.
+- A fresh full Edge run could not complete: navigation through the local Vite server
+  timed out at both 45 and 90 seconds. The first attempt did pass the slow-response
+  clinic regression before it was stopped. No full browser pass is claimed for this
+  submission run, and no product changes were made to work around the local blockage.
+- Read-only public checks returned HTTP 200 for the frontend and a healthy API with
+  connected PostgreSQL, Gemini configured, name login enabled and vocal ML disabled.
 
 ## Named demo patients linked to the practice — 15 November 2026
 

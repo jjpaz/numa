@@ -24,8 +24,8 @@ Updated **15 November 2026** for the Junction submission. This page describes th
 
 - Production frontend build: passed.
 - Backend and isolated ML contract tests: **116 passed, 3 skipped**. Dedicated PostgreSQL checks (two) and real DAM inference (one) are opt-in and were not run for this submission check. Provider tests use mocks; these counts do not claim new live Gemini or model execution.
-- Browser regression suite: the final submission run is recorded in the implementation log.
-- GitHub Actions builds the frontend and runs backend/ML contracts without production credentials. See the [actual workflow runs](https://github.com/jjpaz/numa/actions/workflows/ci.yml) for their status; the local checks and hosted checks are separate evidence.
+- Browser regression suite: a fresh full local run could not complete because navigation through the local Vite development server timed out, including with a 90-second limit. This is an unresolved local verification limitation; no new full browser pass is claimed. Earlier browser checks remain recorded in the implementation log.
+- GitHub Actions builds the frontend and runs backend/ML contracts without production credentials. Both jobs passed in the [first submission run](https://github.com/jjpaz/numa/actions/runs/43660850177), with 116 tests passed and 3 skipped on Linux/Python 3.11. See [workflow runs](https://github.com/jjpaz/numa/actions/workflows/ci.yml) for later revisions.
 - The earlier public browser verification created a fictional named profile, planted an entry, observed its name and saved count from an existing psychologist session, and reopened the persisted entry after normalized name login. Clinical responses excluded private text. The temporary verification entry was removed.
 - Real DAM/VAD execution records are historical. They were not repeated or enabled in the application for submission preparation.
 
