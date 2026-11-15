@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { api, json } from "./api";
+import { pollWhileVisible } from "./polling";
 import type { Experiment, Growth, GrowthModule, Insights, User } from "./types";
 import { ACTION_KINDS, Loading, Problem } from "./components";
 import { ObservationChart } from "./clinicCharts";
@@ -52,12 +53,9 @@ export function GrowthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
   useEffect(() => {
-    void refresh();
-    const timer = setInterval(() => {
-      if (document.visibilityState === "visible") void refresh();
-    }, 5000);
+    const stopPolling = pollWhileVisible(refresh, 5000);
     return () => {
-      clearInterval(timer);
+      stopPolling();
       requestVersion.current++;
     };
   }, [refresh]);

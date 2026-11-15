@@ -2,10 +2,13 @@
 
 Fecha de referencia: **15 de noviembre de 2026**.
 
-**Seguimiento más reciente:** consultar `docs/PROJECT_STATUS.md`. El buzón y el
-backend conectado se integraron mediante la PR #2. Se recuperan los experimentos
-DAM/VAD sin activarlos en el diario. Gemini y Aiven ya tienen verificación real
-registrada; la prueba VAD/DAM sobre un archivo real de Safari sigue pendiente.
+**Seguimiento más reciente:** consultar [el estado actual](docs/PROJECT_STATUS.md).
+El buzón y el backend conectado se integraron mediante la PR #2, y la PR #3
+recuperó DAM/VAD sin activarlos. La demo publicada ya incluye perfiles separados
+por nombre, la corrección de carga de la clínica y la marca de texto numa.
+Gemini y Aiven siguen conectados; la prueba VAD/DAM sobre un archivo real de
+Safari sigue pendiente. Las verificaciones más recientes están en el estado
+actual y en el [registro de implementación](docs/IMPLEMENTATION_LOG.md).
 Proyecto: `C:\JUNCTION\numa`.
 
 Este documento permite retomar el trabajo con Codex sin reconstruir el contexto del chat. Describe tareas futuras: **su presencia aquí no significa que estén implementadas o verificadas**. No ejecutar estas tareas al leer el documento; ejecutarlas cuando el usuario pida continuar.
@@ -21,9 +24,9 @@ Este documento permite retomar el trabajo con Codex sin reconstruir el contexto 
 | Recomendaciones | Reglas sobre preferencias, contexto y feedback; explicación determinista | Evaluación con datos reales; no hay recomendador entrenado |
 | Gemini | Transcripción/resumen reales y contratos de fallos; verificación registrada en `8b6859b` | Revalidar si cambian modelo, credenciales o runtime |
 | Persistencia | PostgreSQL/Aiven conectado, TLS, aislamiento y pruebas de persistencia registradas | Mantener pruebas en una base dedicada; cola de reintentos sigue siendo volátil |
-| Despliegue | Backend conectado en Modal y frontend en Vercel registrados | Comprobar versión publicada tras los merges; no asumir despliegue automático |
+| Despliegue | Backend conectado en Modal y frontend en Vercel publicados, incluidos los perfiles por nombre | Mantener registro de versión desplegada; no asumir despliegue automático tras un merge |
 
-Verificación de la recuperación: **111 pruebas de backend/contratos aprobadas,
+Verificación histórica de la recuperación de ramas: **111 pruebas de backend/contratos aprobadas,
 3 omitidas** (dos PostgreSQL dedicado y una DAM real opt-in). Compilación de
 producción aprobada. La suite Edge pasó 30/31; se corrigió la aserción de etiqueta
 ML del caso de grabación y se repitieron grabación y descarte, 2/2 aprobadas.

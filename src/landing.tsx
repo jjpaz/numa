@@ -29,7 +29,7 @@ const BURSTS = [
 interface Measure {
   width: number; // stage width (px)
   contentRight: number; // right edge of the text column
-  baseline: number; // baseline of "come later." from the stage top
+  baseline: number; // baseline of the last headline line from the stage top
   firstLine: number; // vertical centre of the first headline line
   lines: { left: number; right: number; top: number; bottom: number }[];
 }
@@ -388,11 +388,11 @@ export function Landing() {
               ref={title}
               className="landing-title landing-wrap"
             >
-              Some days,
+              The journal
               <br />
-              the words
+              that grows
               <br />
-              come later.
+              with you.
               <span
                 ref={probe}
                 className="landing-baseline"

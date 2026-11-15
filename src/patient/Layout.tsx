@@ -183,10 +183,7 @@ function PatientFrame() {
       </a>
       <header className="pt-header">
         <FlowLink to="/patient" className="pt-wordmark" aria-label="Home">
-          <svg viewBox="0 0 40 40" aria-hidden="true">
-            <path d="M7 29V16c0-9 13-9 13 0v13-9c0-9 13-9 13 0v9" />
-          </svg>
-          numa<span className="pt-wordmark-dot">.</span>
+          numa
         </FlowLink>
         <nav className="pt-nav" aria-label="Your journal">
           <FlowLink to="/patient" nav end>

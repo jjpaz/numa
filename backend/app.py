@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from .repository import Repository, StorageUnavailable
 from .security import issue_token, verify_session
+from .demo_profiles import named_patient, normalize_demo_name
 from .seed import USERS, seed
 from .domain import utcnow, simulated_context, patterns, baseline_and_trend, clinical_projection, recommend, ACTIONS
 from .analysis import transcribe, semantics, analyse_voice, explain_recommendation, ml_enabled
@@ -94,6 +95,10 @@ def create_app(repo=None, demo=None, secret=None):
     def current(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
         if not credentials: raise HTTPException(401,'Please sign in.')
         session = verify_session(credentials.credentials,secret)
+        # Old named sessions all pointed at Alex. Require a fresh name login
+        # instead of silently putting more entries into that shared history.
+        if session['sub']=='patient-live' and 'display_name' in session:
+            raise HTTPException(401,'Demo profiles now use separate names. Please sign in again.')
         user = repo.get('users',session['sub'])
         if not user: raise HTTPException(401,'Unknown session.')
         if session.get('display_name'): user={**user,'name':session['display_name']}
@@ -193,10 +198,13 @@ def create_app(repo=None, demo=None, secret=None):
     @app.post('/api/auth/demo')
     def demo_login(body:DemoLogin):
         if not demo_name_login: raise HTTPException(404,'Demo access is not enabled.')
-        name=body.name.strip()
-        if not name or (body.sample and body.role!='patient'):
+        name=normalize_demo_name(body.name)
+        if not name or len(name)>80 or (body.sample and body.role!='patient'):
             raise HTTPException(422,'Enter a name and choose a valid demo profile.')
-        key='psychologist' if body.role=='psychologist' else 'patient-sample' if body.sample else 'patient-live'
+        if body.role=='patient' and not body.sample:
+            user=named_patient(repo,name)
+            return {'token':issue_token(user['id'],secret),'user':user}
+        key='psychologist' if body.role=='psychologist' else 'patient-sample'
         user={**repo.get('users',key),'name':name}
         return {'token':issue_token(key,secret,display_name=name),'user':user}
 

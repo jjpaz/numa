@@ -24,10 +24,7 @@ import { catmullRom, cubicD, r1, voiceWave, type Pt } from "./design/voiceLine";
 export function Wordmark() {
   return (
     <Link to="/" className="wordmark" aria-label="Numa home">
-      <svg viewBox="0 0 40 40" aria-hidden="true">
-        <path d="M7 29V16c0-9 13-9 13 0v13-9c0-9 13-9 13 0v9" />
-      </svg>
-      numa<span className="wordmark-dot">.</span>
+      numa
     </Link>
   );
 }

@@ -202,7 +202,7 @@ test("mobile navigation and psychologist report fit the viewport", async ({
 
 test("landing and the three places fit a small screen", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: /Some days/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /The journal that grows with you/ })).toBeVisible();
   await page.screenshot({
     path: "test-results/numa-landing-desktop.png",
     fullPage: true,
