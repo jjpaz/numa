@@ -1,108 +1,132 @@
-# Numa
+# numa
 
-Para retomar el trabajo pendiente con Codex: **[NUMA_NEXT_STEPS.md](NUMA_NEXT_STEPS.md)** contiene el estado real, las fases de implementación de DAM, las integraciones pendientes y sus criterios de aceptación.
+## The journal that grows with you.
 
-Referencia de diseño conservada: **[REDESIGN_BRIEF_JOURNAL.md](REDESIGN_BRIEF_JOURNAL.md)**. Sus rutas técnicas describen el prototipo de origen; la estructura actual se documenta aquí y en la guía de próximos pasos.
+Numa is a voice and text journal that helps people reflect on their days and notice what they find helpful. A personal garden grows with saved entries, while a separate psychologist portal shows limited observations without exposing the journal's words.
 
-A private voice journal that learns a person's patterns and what they report finding helpful. Built as an independent Junction prototype with a patient portal and a psychologist portal.
+Built as an independent prototype for Junction 2026.
 
-The patient portal has three places: **Home** (record or write in the mailbox, review, then plant the entry), **My journal** (saved entries), and **My garden** (What helps, Connections and optional Your space modules). Nothing is unlocked by a mood score. Invitations require recorded observations and can be dismissed. Plants remember shared pages, with no streak loss or decline during absences. The old simple-mode control has been removed from the interface.
+**[Try the live demo](https://numa-one-xi.vercel.app)** · **[Patient portal](https://numa-one-xi.vercel.app/login/patient)** · **[Psychologist portal](https://numa-one-xi.vercel.app/login/psychologist)** · **[Current project status](docs/PROJECT_STATUS.md)**
 
-The patient portal uses the cream/forest/peach palette; the public pages and clinic retain their paper/moss/apricot identity. [DESIGN.md](DESIGN.md) documents the current routes, tokens and transitions. [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) distinguishes the connected application from isolated ML experiments.
+## Try it in two minutes
 
-## Run locally (Windows PowerShell)
+1. Open the patient portal and enter a **fictional, distinctive name**. Record a short voice note or write an entry, review the transcription, then press **Plant this entry**.
+2. Explore **My journal** and **My garden**. Record activity feedback or choose an optional module under **Your space**. The [fictional sample journal](https://numa-one-xi.vercel.app/login/patient?sample=1) lets you explore a longer history.
+3. Open the psychologist portal in a separate tab, enter a demo name, and find the patient name you used. The list refreshes automatically; only saved entries contribute to the count. Open the patient to see the limited clinical view.
 
-Requirements: Node 20.19+ or 22.12+, Python 3.11+ for the API, and ffmpeg on PATH for browser recordings. The public Modal API uses Python 3.11 on CPU with vocal ML disabled; isolated DAM/VAD has its own pinned dependencies.
+The public demo uses names without passwords. The same normalized patient name reopens the same journal; anyone who knows that name can access it. Use fictional content only. Sample and psychologist names are greeting aliases. Existing shared entries from the earlier demo remain under **Alex Morgan**.
+
+The [visual recording script](docs/DEMO.md) describes the planned short demo video. The video has not been recorded or published yet.
+
+## What works today
+
+| Area | Current behavior |
+|---|---|
+| Voice and text journal | Real microphone capture, replay before saving, a written alternative, editable review, save and delete. |
+| Transcription and summaries | Gemini processes audio and journal text in the connected demo. |
+| Persistent profiles | Aiven PostgreSQL stores separate named patient profiles, entries, preferences and feedback. |
+| Personal garden | Saved entries, reported helpful activities, optional habits, patterns and private experiments. No mandatory mood score or streak penalty. |
+| Psychologist portal | Assigned patients, saved-entry counts, acoustic observations, activity feedback, notes and a printable report. Transcripts, summaries and experiment reflections are excluded. |
+| Acoustic measurements | Duration, energy and pause estimates are measured from audio. They are not emotional or diagnostic predictions. |
+| Context cards | Sleep, steps, weather, outdoors and music are **simulated and labelled**. External account connections are placeholders. |
+| Vocal ML | **Disabled in the public app.** DAM and Silero VAD have separate experimental tools and recorded technical checks; they are not integrated into the diary. |
+
+The fictional sample's longitudinal history is seeded data, not evidence collected from a new demo entry. The prototype has no clinical validation and provides no diagnosis.
+
+## How it is built
+
+```mermaid
+flowchart LR
+    Patient["Patient web app"] --> API["FastAPI on Modal"]
+    Clinic["Psychologist web app"] --> API
+    API --> DB[("PostgreSQL on Aiven")]
+    API --> Gemini["Gemini: transcription and summaries"]
+    API --> Acoustic["Acoustic measurements"]
+```
+
+Both web portals use React, TypeScript and Vite, deployed on Vercel. The API checks entry ownership and clinician assignment before returning data. Journal text and clinical projections use separate endpoints.
+
+Raw audio is held temporarily for processing and is not stored by Numa. Saved audio cannot be replayed after a reload; transcripts and summaries persist. External processors have their own retention policies. The public demo's open name access is not private account authentication.
+
+See [architecture and data boundaries](docs/ARCHITECTURE.md) and [deployment instructions](docs/DEPLOYMENT.md).
+
+## Run locally
+
+Requirements: Git, Node.js **22.12+**, Python **3.11+**, and FFmpeg on PATH for browser audio decoding. No cloud credentials are needed for the local preview.
+
+```sh
+git clone https://github.com/jjpaz/numa.git
+cd numa
+npm ci
+python -m venv .venv
+```
+
+On macOS/Linux, use `python3` if `python` is unavailable.
+
+**Windows PowerShell — start the API:**
 
 ```powershell
-cd C:\JUNCTION\numa
-npm install
-python -m venv .venv
+Copy-Item .env.example .env
 .\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt
-$env:NUMA_DEMO_MODE = 'true'
 .\.venv\Scripts\python.exe -m uvicorn backend.app:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
-In another terminal:
+**macOS/Linux — start the API:**
 
-```powershell
-cd C:\JUNCTION\numa
+```sh
+cp .env.example .env
+.venv/bin/python -m pip install -r backend/requirements.txt
+.venv/bin/python -m uvicorn backend.app:create_app --factory --host 127.0.0.1 --port 8000
+```
+
+In a second terminal, from the cloned `numa` directory:
+
+```sh
 npm run dev
 ```
 
-Open http://127.0.0.1:5173. Vite proxies `/api` to the backend. Microphones require localhost or HTTPS. Browser audio is real; no synthetic waveform is substituted for recording.
+Open [localhost:5173](http://127.0.0.1:5173). Vite proxies API requests to port 8000. Microphone access requires localhost or HTTPS.
 
-After installing dependencies, `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local.ps1` starts both preview servers in hidden background windows and prints their PIDs. Logs are in `.local/`; stop those exact processes when finished. The helper deliberately uses ephemeral preview storage.
-
-Local preview accounts:
-
-| Account | Email | Password |
+| Local preview account | Email | Password |
 |---|---|---|
 | Fresh patient | patient@numa.demo | journal-demo |
-| Read-only fictional journal | sample@numa.demo | sample-demo |
+| Fictional sample | sample@numa.demo | sample-demo |
 | Psychologist | psychologist@numa.demo | care-demo |
 
-The preview explicitly uses ephemeral process memory, not a second persistent database. Restarting resets preview entries. PostgreSQL on Aiven is the sole persistent datastore in connected mode. No emotional ML is claimed in local preview: it measures duration, energy and pauses, and labels model inference as not configured. Without Gemini, voice transcription is unavailable; type or edit the words to finish the journal flow. Written notes use a transparent text passthrough in local preview and never invent feeling labels.
+The local preview uses ephemeral memory: restarting resets its entries. Without Gemini, recordings still yield acoustic measurements, but automatic transcription is unavailable; type or edit the words to complete the flow. Written entries use a labelled text passthrough. To try name-based profiles locally, add `NUMA_DEMO_NAME_LOGIN=true` to `.env` and restart the API.
 
-## Connected mode
+## Checks
 
-The connected deployment was verified with Aiven PostgreSQL persistence, Gemini transcription/summaries and name-only presentation access in the integration record for `8b6859b`. The public API keeps `NUMA_DEMO_MODE=false` and `NUMA_ML_ENABLED=false`. Recovering the ML experiments does not enable them or redeploy the application. See [docs/IMPLEMENTATION_LOG.md](docs/IMPLEMENTATION_LOG.md) for historical live checks and [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) for current source validation.
-
-For the isolated DAM experiment (Python 3.11, CPU, no Gemini/database), see **[docs/ML_DAM.md](docs/ML_DAM.md)**. Its CLI is separate from the application's existing SpeechBrain adapter. Completing that check does not enable DAM in either portal.
-
-The isolated **Modal/Linux CPU execution with real DAM weights** is also verified; see **[docs/ML_DAM_MODAL.md](docs/ML_DAM_MODAL.md)** for the lock, command, timings and limitations. It does not change the public demo or connect DAM to the journal.
-
-The separate **VAD/audio-quality gate** has a recorded 19-case Modal validation, including a real Chromium MediaRecorder file with synthetic input and DAM inference on the reference fixture. See **[docs/ML_VAD.md](docs/ML_VAD.md)**. The user reported a working Safari recording UI; VAD/DAM over a real Safari file is still unverified. These historical remote tests were not rerun during branch recovery.
-
-To reproduce the connected deployment in an authorized environment:
-
-1. Use the team's configured Gemini, Aiven and Modal accounts. Event offer information is in `docs/RESOURCES.md`; a working service does not prove that an offer was redeemed.
-2. Use the Aiven PostgreSQL TLS URI with `postgresql://` or `postgresql+psycopg://`, `sslmode=verify-full` and the supplied CA when required. Never expose it to the browser. Tests use a different database through `TEST_DATABASE_URL`.
-3. Configure the existing Modal secret `numa-secrets` from `.env.production.example` / `backend/connected.env.example`. Keep `NUMA_DEMO_MODE=false`, `NUMA_ML_ENABLED=false`, unique account passwords and a random session secret. `NUMA_DEMO_NAME_LOGIN=true` explicitly enables open presentation access with shared demo profiles; names are not separate private accounts. Keep `NUMA_SEED_DEMO=true` only for the fictional presentation profiles.
-4. Install and authenticate the Modal CLI if needed, then deploy from the project root when a deployment is intended:
-
-```powershell
-python -m pip install modal
-modal setup
-modal deploy -m backend.modal_app
-```
-
-5. Put the returned backend origin (without `/api`) in Vercel's `VITE_API_BASE` variable. Set Modal's `NUMA_ALLOWED_ORIGINS` to the exact HTTPS frontend origin. Redeploy after changing frontend build variables. Vercel build command: `npm run build`; output: `dist`.
-6. `python -m backend.smoke` checks PostgreSQL write/read/delete and Gemini JSON using the configured environment. It creates a verification record and makes a live provider request. Do not add `--voice` to the ML-disabled public setup: that legacy option targets SpeechBrain and is not a DAM test. DAM/VAD checks use the separate runbooks above.
-
-`GEMINI_MODEL` has no guessed default: select and verify an accessible audio/JSON model explicitly. Gemini handles transcription and summaries; recommendation explanations use the deterministic rule's reason. The public API image has no model Volume or heavyweight ML installs. Only the isolated validation apps use an artifact-only Volume. The API uses one Modal container and bounded in-memory queues; pending writes are not durable during a database outage plus process loss.
-
-## Verification
-
-```powershell
+```sh
 npm run build
-.\.venv\Scripts\python.exe -m pytest backend/tests backend/ml/tests -q
-npm run test:e2e
 ```
 
-E2E tests use installed Microsoft Edge in headless mode and start both local servers. Run with the local demo environment, not a production `.env`. On non-Windows environments adapt the backend `webServer.command` and browser channel in `playwright.config.ts`.
+Run the backend and isolated ML contract tests with your virtual environment's Python:
 
-Browser tests use isolated ports **5174/8001**, leaving the user's preview on 5173/8000 untouched. Reduced motion keeps visual captures deterministic. When updating an already running ephemeral preview, `python -m backend.preview` backs up accessible journal state privately to ignored `.local/preview-restore.json`; start `uvicorn backend.preview:create_preview --factory` to restore it once. The backup is archived locally, never sent to the browser or committed. This explicit maintenance backup does not change connected-mode PostgreSQL persistence or raw audio retention.
+```powershell
+# Windows
+.\.venv\Scripts\python.exe -m pytest backend/tests backend/ml/tests -q
+```
 
-Set `TEST_DATABASE_URL` to a dedicated PostgreSQL instance to enable the persistence integration test. It creates and removes only its own uniquely named verification record. API and browser tests otherwise use fresh, isolated in-memory fixtures.
+```sh
+# macOS/Linux
+.venv/bin/python -m pytest backend/tests backend/ml/tests -q
+```
 
-## What is implemented
+[GitHub Actions](https://github.com/jjpaz/numa/actions/workflows/ci.yml) builds the frontend and runs the backend/ML contract tests on pushes to `main` and pull requests. It uses test fixtures and mocked providers, without production secrets. The workflow also installs the optional Modal SDK to cover import-boundary checks; it does not deploy services or download model weights. Real PostgreSQL and DAM tests remain opt-in.
 
-- Real microphone capture, waveform, replay/re-record, two-minute limit and written alternative.
-- Separate vocal and explicit-language analysis, editable private transcript/summary, save/delete.
-- Optional actions, preferences, helpfulness feedback and a separate voice comparison.
-- A baseline from five distinct days, robust deviation observations and a three-observation review heuristic.
-- Fictional longitudinal scenarios, a private page timeline, optional context and evidence-counted personal patterns.
-- Patient-selected disclosure, optional modules, habits and private experiments; the removed simple-mode field remains only for backend compatibility.
-- Server-side authorization and a restrictive clinical projection; no private journal fields in psychologist endpoints.
-- Five-second dashboard refresh, notes and printable observation report.
-- Connected Gemini/PostgreSQL backend and CPU Modal deployment with vocal ML disabled.
-- Isolated DAM and Silero VAD validation tools, manifests, CPU locks and contract tests; no journal integration yet.
+The existing browser suite runs with `npm run test:e2e` on Windows with Microsoft Edge and FFmpeg installed. It starts isolated servers on ports **5174/8001**; its backend launch command currently uses PowerShell. Run it with local demo settings, not a production environment. Browser tests are separate from the GitHub Actions checks.
 
-## Boundaries
+## Project guide
 
-Sleep, weather, steps, outdoors and music are always simulated and labelled. Apple Health, Last.fm, calendar and wearable connections are future placeholders. The journal never asks for a mandatory mood score. A model category is an experimental vocal-expression output, not a depression probability, a truth detector or a substitute for a person's account. Helpfulness feedback and acoustic changes remain distinct observations.
+- [Current status and validation](docs/PROJECT_STATUS.md)
+- [Architecture, privacy boundaries and limitations](docs/ARCHITECTURE.md)
+- [Connected deployment and local maintenance](docs/DEPLOYMENT.md)
+- [Visual demo script](docs/DEMO.md)
+- [Implementation and historical verification log](docs/IMPLEMENTATION_LOG.md)
+- [Isolated DAM](docs/ML_DAM.md), [Modal execution](docs/ML_DAM_MODAL.md) and [VAD experiment](docs/ML_VAD.md)
+- [Design system](DESIGN.md) and [future work](NUMA_NEXT_STEPS.md)
 
-Only fictional experiences should be entered into this publicly demonstrated prototype. Numa does not persist raw audio: it is held in memory during processing, passed to configured processors, then released. Provider-side retention follows provider account terms; this project does not claim zero retention by external services. Tokens last eight hours; there is no public registration. No automated medical escalation or medication advice is implemented.
+## License
 
-See `NUMA_BUILD_BRIEF.md`, `docs/ARCHITECTURE.md`, `docs/DEMO.md`, and `docs/IMPLEMENTATION_LOG.md` for the handoff and current verification evidence.
+Numa's source code is available under the [MIT license](LICENSE). Third-party model code, weights and datasets retain their own licenses and attribution.

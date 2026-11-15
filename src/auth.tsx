@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { api, getToken } from "./api";
+import { pollWhileVisible } from "./polling";
 import type { Health, User } from "./types";
 
 export const Auth = createContext<{
@@ -60,15 +61,10 @@ export function useResource<T>(path: string, interval = 0) {
   }, [path]);
   useEffect(() => {
     setData((lastSeen.get(cacheKey(path)) as T | undefined) ?? null);
-    void refresh();
-    const timer = interval
-      ? setInterval(() => {
-          if (document.visibilityState === "visible") void refresh();
-        }, interval)
-      : undefined;
+    const stopPolling = pollWhileVisible(refresh, interval);
     return () => {
       active.current++;
-      clearInterval(timer);
+      stopPolling();
     };
   }, [refresh, interval, path]);
   return { data, error, refresh };

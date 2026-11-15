@@ -1,5 +1,55 @@
 # Implementation and verification record
 
+## Submission source synchronization and CI — 15 November 2026
+
+- Added the already deployed named-patient, clinic-polling and branding fixes to
+  the submission source change. The headline is “The journal that grows with you.”
+  and the shared headers use the text-only numa wordmark.
+- Rewrote the README around the live demo, a short patient/psychologist walkthrough,
+  current behavior and portable local setup. Added a deployment guide and reconciled
+  the status and architecture documents with the current routes and open name access.
+  The visual video script remains a script; no recording, audio or subtitles were made.
+- Added GitHub Actions for a Node 22 frontend build and Python 3.11 backend/isolated
+  ML contracts. Actions are pinned to verified commit SHAs; checks need no production
+  secrets and perform no deployment or real model inference.
+- Local production build passed. Backend and isolated ML contracts: **116 passed,
+  3 skipped**, with three existing dependency deprecation warnings. The skipped cases
+  require a dedicated PostgreSQL database (two) or opt-in real DAM inference (one).
+  The first sandbox attempt stalled in TestClient's internal socket setup; the retry
+  outside that restriction passed with dotenv loading and external credentials disabled.
+- Local documentation links and whitespace checks passed. A high-confidence credential
+  pattern check found no matches in tracked or proposed source files; this was not a
+  full Git-history secret audit.
+- GitHub Actions [run 43660850177](https://github.com/jjpaz/numa/actions/runs/43660850177)
+  passed both jobs; Linux/Python 3.11 reported 116 passed, 3 skipped.
+- A fresh full Edge run could not complete: navigation through the local Vite server
+  timed out at both 45 and 90 seconds. The first attempt did pass the slow-response
+  clinic regression before it was stopped. No full browser pass is claimed for this
+  submission run, and no product changes were made to work around the local blockage.
+- Read-only public checks returned HTTP 200 for the frontend and a healthy API with
+  connected PostgreSQL, Gemini configured, name login enabled and vocal ML disabled.
+
+## Named demo patients linked to the practice — 15 November 2026
+
+- Name-only patient login now creates or reopens a persistent profile and assigns
+  it to the shared demo psychologist. Unicode, case and whitespace normalization
+  prevent duplicate names; different names have distinct entry owners. Compact
+  profile IDs keep even the longest accepted entry request IDs within PostgreSQL's
+  existing 128-character key. No schema or provider configuration changed.
+- Existing shared entries remain under Alex Morgan. Old named patient sessions
+  receive 401 and must sign in again; password access to the legacy profile still
+  works. Sample and psychologist names remain greeting aliases. The login now
+  explains that anyone using the same demo name can reopen its journal.
+- Backend suite: **71 passed**, including named-profile ownership, saved counts,
+  clinical privacy, normalized re-entry, mock database restart/signing-key rotation,
+  and legacy-session compatibility. Production frontend build and diff checks pass.
+- Deployed the API to the existing Modal app and the frontend to the existing
+  Vercel production project. Public browser verification created a unique fictional
+  profile, wrote/reviewed/planted an entry through the mailbox, observed its name
+  and saved count from an already-open psychologist session, and reopened the
+  persisted PostgreSQL entry with different name casing. Clinical responses still
+  exclude journal text. The verification entry was deleted afterward.
+
 ## Mailbox integration and isolated ML recovery — 14–15 November 2026
 
 - PR #2 merged the complete patient mailbox branch and all pending connected

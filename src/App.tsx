@@ -251,9 +251,7 @@ function Login() {
         <h1>
           {clinic
             ? "Welcome to your practice."
-            : sample
-              ? "A journal, already growing."
-              : "A quiet place to begin."}
+            : "The journal that grows with you."}
         </h1>
         <p className="lg-lede">
           {clinic
@@ -283,7 +281,9 @@ function Login() {
                   autoComplete="name"
                 />
                 <p className="lg-help">
-                  Any name will do. It is only used to greet you in this demo.
+                  {clinic || sample
+                    ? "This name is only used to greet you in this demo."
+                    : "Use a fictional name. Your psychologist will see this name. Anyone using the same name can reopen this demo journal."}
                 </p>
               </>
             ) : (
@@ -466,7 +466,7 @@ function ClinicLayout() {
             </time>
             <span className="cl-live">
               <span className="cl-live-dot" aria-hidden="true" />
-              Live, updates every 5 seconds
+              Live, updates automatically
             </span>
           </p>
         </header>
@@ -502,7 +502,7 @@ function ClinicDashboard() {
       </header>
       <ErrorNotice message={error} />
       {!patients ? (
-        <Loading />
+        !error && <Loading />
       ) : (
         <>
           <p className="cl-summary">
